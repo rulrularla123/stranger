@@ -11,6 +11,7 @@ import {
 import type { RoleId } from '../types/stranger.ts';
 import { soundEngine } from '../audio/soundEngine.ts';
 import type { SessionClient } from '../net/sessionClient.ts';
+import { charSpriteHtml } from './kidVisuals.ts';
 
 const MAX_COMPOSED_TOKENS = 8;
 
@@ -21,7 +22,6 @@ export class CMenuWheel {
   private selected: string[] = [];
   private targetRoleId: RoleId | null = null;
   private numDraft = '';
-  private activeCatIdx = 0;
 
   constructor(container: HTMLElement, session: SessionClient) {
     this.session = session;
@@ -80,7 +80,7 @@ export class CMenuWheel {
     return true;
   }
 
-  private buildPreviewHtml(withRemoveButtons: boolean): string {
+  private buildPreviewHtml(): string {
     const room = this.session.getRoom();
     const targetName = this.targetRoleId
       ? room?.slots[this.targetRoleId]?.nickname || ROLES[this.targetRoleId].name
@@ -91,26 +91,24 @@ export class CMenuWheel {
     const chips = this.selected
       .map((id, idx) => {
         const pill = renderTokenPillHtml(id, room?.slots);
-        if (!withRemoveButtons) return pill;
         return `<span class="cw-chip-wrap">${pill}<button class="cw-chip-rm" data-rm-idx="${idx}" title="항목 삭제">×</button></span>`;
       })
-      .join(' <span class="cw-plus">+</span> ');
+      .join('');
 
     const draftPill = draftClean
-      ? `${chips ? ' <span class="cw-plus">+</span> ' : ''}${renderTokenPillHtml(`VAL:${draftClean}`, room?.slots)}`
+      ? `<span class="cw-chip-draft">${renderTokenPillHtml(`VAL:${draftClean}`, room?.slots)}</span>`
       : '';
 
     const emptyHint =
       !chips && !draftPill
-        ? '<span class="cw-hint">아이콘·숫자·상대방 이름을 조합하세요 (최대 8개)</span>'
+        ? '<span class="cw-hint">아래에서 아이콘 · 숫자 · 이름을 눌러 조합하세요 (최대 8개)</span>'
         : '';
 
-    return `${targetHtml} ${chips}${draftPill}${emptyHint}`;
+    return `${targetHtml} <span class="cw-preview-list">${chips}${draftPill}${emptyHint}</span>`;
   }
 
   private updatePreviewDom() {
     const composeEl = this.root.querySelector('#cw-compose-chips');
-    const hubSelEl = this.root.querySelector('#cw-hub-sel');
     const sendBtn = this.root.querySelector<HTMLButtonElement>('#cw-send');
     const undoBtn = this.root.querySelector<HTMLButtonElement>('#cw-undo');
     const countEl = this.root.querySelector('#cw-count');
@@ -118,7 +116,7 @@ export class CMenuWheel {
     const canSend = this.selected.length > 0 || hasDraft;
 
     if (composeEl) {
-      composeEl.innerHTML = this.buildPreviewHtml(true);
+      composeEl.innerHTML = this.buildPreviewHtml();
       composeEl.querySelectorAll<HTMLElement>('[data-rm-idx]').forEach((btn) => {
         btn.onclick = () => {
           const idx = Number(btn.dataset.rmIdx);
@@ -129,9 +127,6 @@ export class CMenuWheel {
           }
         };
       });
-    }
-    if (hubSelEl) {
-      hubSelEl.innerHTML = this.buildPreviewHtml(false);
     }
     if (sendBtn) sendBtn.disabled = !canSend;
     if (undoBtn) undoBtn.disabled = this.selected.length === 0;
@@ -146,39 +141,39 @@ export class CMenuWheel {
     const hasDraft = Boolean(sanitizeRadioNumber(this.numDraft));
     const canSend = this.selected.length > 0 || hasDraft;
 
-    const ringTokens = C_CATEGORIES.flatMap((cat) => cat.tokens);
-    const radius = 196;
-    const cx = 250;
-    const cy = 250;
-
-    const nodesHtml = ringTokens
-      .map((tok, i) => {
-        const angle = (i / ringTokens.length) * Math.PI * 2 - Math.PI / 2;
-        const x = Math.round(cx + Math.cos(angle) * radius);
-        const y = Math.round(cy + Math.sin(angle) * radius);
-        const isSel = this.selected.includes(tok.id);
-        return `<button class="cw-node ${isSel ? 'selected' : ''}" data-tok="${tok.id}"
-          style="left:${x}px;top:${y}px;--tok-color:${tok.color}" title="${tok.sub} (클릭해 조합에 추가)">
-          <span class="cw-glyph">${tok.glyph}</span>
-          <span class="cw-label">${tok.label}</span>
-        </button>`;
-      })
-      .join('');
-
-    const activeCat = C_CATEGORIES[this.activeCatIdx];
+    const rowsHtml = C_CATEGORIES.map(
+      (cat) => `
+        <div class="cw-cat-row">
+          <div class="cw-cat-row-lbl" style="color:${cat.color}">${cat.label}</div>
+          <div class="cw-tile-row">
+            ${cat.tokens
+              .map(
+                (t) => `<button class="cw-tile ${this.selected.includes(t.id) ? 'selected' : ''}" data-tok="${t.id}"
+                  style="--tok-color:${t.color}" title="${escapeTokenText(t.sub)}">
+                  <span class="cw-tile-glyph">${t.glyph}</span>
+                  <span class="cw-tile-label">${t.label}</span>
+                </button>`
+              )
+              .join('')}
+          </div>
+        </div>
+      `
+    ).join('');
 
     this.root.innerHTML = `
-      <div class="cw-dialog" role="dialog" aria-label="C-Menu 2.0 조합형 전술 무전 휠">
+      <div class="cw-dialog" role="dialog" aria-label="무전 보내기">
         <div class="cw-head">
-          <div>
-            <span class="cw-badge" style="color:${rMeta.color};border-color:${rMeta.color}">${rMeta.badge} ${rMeta.name} (${rMeta.shortRole})</span>
-            <strong>C-Menu 2.0 조합 무전 (최대 ${MAX_COMPOSED_TOKENS}개 · 이름 + 아이콘 + 숫자)</strong>
+          <div class="cw-head-who">
+            ${charSpriteHtml(myRole, 0.85)}
+            <span class="cw-badge" style="color:${rMeta.color};border-color:${rMeta.color}">${rMeta.badge} ${rMeta.name}</span>
+            <strong>📡 무전 보내기</strong>
           </div>
-          <button class="au-close-x" id="cw-close" aria-label="무전 휠 닫기">✕</button>
+          <button class="au-close-x" id="cw-close" aria-label="닫기">✕</button>
         </div>
 
         <div class="cw-target-bar">
-          <span class="cw-bar-lbl">수신자 지정</span>
+          <span class="cw-step-num">1</span>
+          <span class="cw-bar-lbl">받는 사람</span>
           <button class="cw-target-btn ${this.targetRoleId === null ? 'active' : ''}" data-target="">📢 전체</button>
           ${ROLE_ORDER.map((rId) => {
             const meta = ROLES[rId];
@@ -191,62 +186,41 @@ export class CMenuWheel {
         </div>
 
         <div class="cw-compose-bar">
+          <span class="cw-step-num">2</span>
           <div class="cw-compose-chips" id="cw-compose-chips"></div>
           <div class="cw-compose-ctrl">
             <span class="cw-count-pill" id="cw-count">${this.selected.length}/${MAX_COMPOSED_TOKENS}</span>
-            <button class="s-btn" id="cw-undo" ${this.selected.length ? '' : 'disabled'}>⌫ 하나 지우기</button>
-            <button class="s-btn" id="cw-clear">초기화</button>
+            <button class="s-btn" id="cw-undo" ${this.selected.length ? '' : 'disabled'} title="마지막 항목 지우기">⌫</button>
+            <button class="s-btn" id="cw-clear">지우기</button>
+            <button class="s-btn primary" id="cw-send" ${canSend ? '' : 'disabled'} title="Enter 키로도 바로 보내기">📡 보내기</button>
           </div>
         </div>
 
-        <div class="cw-body">
-          <div class="cw-wheel-stage">
-            <div class="cw-ring-bg"></div>
-            <div class="cw-quad-lbl q1">① 수치·순서</div>
-            <div class="cw-quad-lbl q2">② 방위·동작</div>
-            <div class="cw-quad-lbl q3">③ 문양·속성</div>
-            <div class="cw-quad-lbl q4">④ 협동 콜사인</div>
-            ${nodesHtml}
-            <div class="cw-hub">
-              <div class="cw-hub-title">조합 무전 미리보기</div>
-              <div class="cw-hub-sel" id="cw-hub-sel"></div>
-              <div class="cw-hub-actions">
-                <button class="s-btn primary" id="cw-send" ${canSend ? '' : 'disabled'} title="Enter 키로도 즉시 발신">📡 발신 (Enter)</button>
-              </div>
-            </div>
+        <div class="cw-composer-grid">
+          <div class="cw-icon-palette">
+            <div class="cw-palette-head"><span class="cw-step-num">3</span> 아이콘 눌러 추가</div>
+            ${rowsHtml}
           </div>
 
-          <div class="cw-cat-side">
-            <div class="cw-cat-tabs">
-              ${C_CATEGORIES.map(
-                (c, idx) =>
-                  `<button class="cw-cat-tab ${idx === this.activeCatIdx ? 'active' : ''}" data-cidx="${idx}" style="--cat-col:${c.color}">${c.label}</button>`
-              ).join('')}
-            </div>
-            <div class="cw-cat-grid">
-              ${activeCat.tokens
-                .map(
-                  (t) => `<button class="cw-list-btn ${this.selected.includes(t.id) ? 'selected' : ''}" data-tok="${t.id}" style="--tok-color:${t.color}">
-                    <span class="cw-list-glyph">${t.glyph}</span>
-                    <span><strong>${t.label}</strong><small>${t.sub}</small></span>
-                  </button>`
-                )
-                .join('')}
-            </div>
-
+          <div class="cw-extra-col">
             <div class="cw-num-panel">
-              <div class="cw-bar-lbl">🔢 숫자 조합 추가 &amp; @이름 칩 삽입</div>
+              <div class="cw-bar-lbl">🔢 숫자 추가</div>
               <div class="cw-num-row">
                 <input id="cw-num-input" class="cw-num-input" type="text" inputmode="decimal" maxlength="10"
-                  value="${escapeTokenText(this.numDraft)}" placeholder="숫자 (예: 180, 45/18, 7.0)" />
-                <button class="s-btn amber" id="cw-num-add">+ 숫자 추가</button>
+                  value="${escapeTokenText(this.numDraft)}" placeholder="180, 45/18, 7.0" />
+                <button class="s-btn amber" id="cw-num-add">+ 추가</button>
               </div>
               <div class="cw-keypad">
-                ${['1', '2', '3', '4', '5', '6', '7', '8', '9', '0', '.', '/', '⌫']
+                ${['1', '2', '3', '4', '5', '6', '7', '8', '9', '.', '0', '/']
                   .map((k) => `<button class="cw-key-btn" data-kpad="${k}">${k}</button>`)
                   .join('')}
+                <button class="cw-key-btn cw-key-bs" data-kpad="⌫">⌫ 지우기</button>
               </div>
-              <div class="cw-mention-row">
+            </div>
+
+            <div class="cw-mention-panel">
+              <div class="cw-bar-lbl">👤 이름 넣기</div>
+              <div class="cw-mention-grid">
                 ${ROLE_ORDER.map((rId) => {
                   const meta = ROLES[rId];
                   const nick = room?.slots[rId]?.nickname || meta.name;
@@ -293,13 +267,6 @@ export class CMenuWheel {
         if (!ROLE_ORDER.includes(rid)) return;
         soundEngine.playClick();
         this.pushToken(`ROLE:${rid}`);
-        this.render();
-      };
-    });
-
-    this.root.querySelectorAll<HTMLElement>('[data-cidx]').forEach((btn) => {
-      btn.onclick = () => {
-        this.activeCatIdx = Number(btn.dataset.cidx);
         this.render();
       };
     });

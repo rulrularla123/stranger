@@ -52,7 +52,7 @@ export const ROLES: Record<RoleId, RoleMeta> = {
 export const C_CATEGORIES: TokenCategory[] = [
   {
     id: 'num',
-    label: '① 수치·순서',
+    label: '🔢 순서',
     color: '#F4F7FA',
     tokens: [
       { id: 'NUM_1', category: 'num', glyph: '①', label: '1번', sub: '첫번째 / 1방울', color: '#F4F7FA' },
@@ -64,7 +64,7 @@ export const C_CATEGORIES: TokenCategory[] = [
   },
   {
     id: 'dir',
-    label: '② 방위·동작',
+    label: '🧭 방향',
     color: '#52EFBF',
     tokens: [
       { id: 'DIR_N', category: 'dir', glyph: '↑', label: '북 ↑', sub: '위 / 북쪽', color: '#52EFBF' },
@@ -76,7 +76,7 @@ export const C_CATEGORIES: TokenCategory[] = [
   },
   {
     id: 'sym',
-    label: '③ 문양·속성',
+    label: '🎨 그림',
     color: '#E6C886',
     tokens: [
       { id: 'SYM_SUN', category: 'sym', glyph: '☀', label: '태양 ☀', sub: '황금 / 지붕 / 호박', color: '#E6C886' },
@@ -89,7 +89,7 @@ export const C_CATEGORIES: TokenCategory[] = [
   },
   {
     id: 'coop',
-    label: '④ 협동 콜사인',
+    label: '🤝 신호',
     color: '#C792EA',
     tokens: [
       { id: 'COOP_OK', category: 'coop', glyph: '✔', label: '준비 완료', sub: 'OK / 작동 가능', color: '#52EFBF' },
@@ -156,18 +156,48 @@ export function renderTokenPillHtml(
 export function renderRadioTargetHtml(pkt: Pick<RadioPacket, 'targetRoleId' | 'targetName'>): string {
   if (pkt.targetRoleId && ROLES[pkt.targetRoleId]) {
     const meta = ROLES[pkt.targetRoleId];
-    return `<span class="s-tok-target" style="--rc:${meta.color}">→ ${meta.badge} ${escapeTokenText(pkt.targetName || meta.name)}</span>`;
+    return `<span class="s-target" style="--rc:${meta.color}">▸ ${meta.badge} ${escapeTokenText(pkt.targetName || meta.name)}</span>`;
   }
-  return `<span class="s-tok-target all">→ 전체</span>`;
+  return `<span class="s-target all">▸ 전체</span>`;
 }
 
 export function renderRadioContentHtml(
   pkt: Pick<RadioPacket, 'tokenIds' | 'note'>,
   slots?: Partial<Record<RoleId, { nickname?: string }>>
 ): string {
-  const pills = pkt.tokenIds.map((id) => renderTokenPillHtml(id, slots)).filter(Boolean).join(' + ');
-  const noteHtml = pkt.note ? `<span class="signal-bot-note">${escapeTokenText(pkt.note)}</span>` : '';
-  return `${pills}${noteHtml}`;
+  const pills = pkt.tokenIds.map((id) => renderTokenPillHtml(id, slots)).filter(Boolean).join('');
+  if (pkt.note) {
+    const pillsRow = pills ? `<div class="signal-pills compact">${pills}</div>` : '';
+    return `<div class="signal-bot-note">${escapeTokenText(pkt.note)}</div>${pillsRow}`;
+  }
+  return pills ? `<div class="signal-pills">${pills}</div>` : '';
+}
+
+export function renderRadioBannerContentHtml(
+  pkt: Pick<RadioPacket, 'tokenIds' | 'note'>,
+  slots?: Partial<Record<RoleId, { nickname?: string }>>
+): string {
+  if (pkt.note) {
+    return `<span class="banner-note">${escapeTokenText(pkt.note)}</span>`;
+  }
+  const pills = pkt.tokenIds.map((id) => renderTokenPillHtml(id, slots)).filter(Boolean).join('');
+  return pills ? `<span class="signal-pills">${pills}</span>` : '';
+}
+
+export function renderRadioPinContentHtml(
+  pkt: Pick<RadioPacket, 'tokenIds' | 'note'>,
+  slots?: Partial<Record<RoleId, { nickname?: string }>>
+): string {
+  if (pkt.note) {
+    const clipped = pkt.note.length > 28 ? `${pkt.note.slice(0, 28)}…` : pkt.note;
+    return `<span class="pin-note" title="${escapeTokenText(pkt.note)}">${escapeTokenText(clipped)}</span>`;
+  }
+  const pills = pkt.tokenIds
+    .slice(0, 3)
+    .map((id) => renderTokenPillHtml(id, slots))
+    .filter(Boolean)
+    .join('');
+  return `<span class="signal-pills compact">${pills}</span>`;
 }
 
 export function formatRadioPlainText(pkt: RadioPacket): string {

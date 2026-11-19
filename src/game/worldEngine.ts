@@ -288,7 +288,7 @@ export class WorldEngine {
       return;
     }
 
-    this.callbacks.onStatusToast('가까운 문·계단 또는 퍼즐 오브젝트에 조금 더 다가가세요.', 'info');
+    this.callbacks.onStatusToast('👣 조금 더 가까이 가 봐요!', 'info');
   }
 
   async transitionViaPortal(slot: CharacterSlot, portal: MapPortal) {
@@ -356,7 +356,7 @@ export class WorldEngine {
       );
     }
     soundEngine.playClick();
-    this.callbacks.onStatusToast('동료들을 현재 위치로 집합시켰습니다.', 'mint');
+    this.callbacks.onStatusToast('🧲 친구들이 모였어요!', 'mint');
   }
 
   private checkSceneEntry(floor: FloorKey, scene: string) {
@@ -524,7 +524,7 @@ export class WorldEngine {
         this.session.solvePuzzle(
           16,
           { pads: [true, true, true, true], beamReachedAtrium: true, hereSent: true },
-          '16/16 대관식 엔딩 달성! 4인의 빛이 반원 홀 여신상에 모였습니다!'
+          '👑 16/16 성공! 4명이 모두 모였어요!'
         );
         soundEngine.playCoronation();
         this.callbacks.onCoronationTriggered();
@@ -879,12 +879,12 @@ export class WorldEngine {
       const [sx, sy] = toScreen(950, 378);
       const statusTxt =
         priorDone < 15
-          ? `1~3막 선행 복원 필요 (${priorDone}/15) · 먼저 모든 전시실 복구`
+          ? `🧩 먼저 퍼즐을 다 풀어요 (${priorDone}/15)`
           : !p16.beamReachedAtrium
-            ? '2F 기획전시실 프리즘 광선 대기 중'
+            ? '🌈 기획전시실에서 빛을 기다려요'
             : !p16.hereSent
-              ? '광선 도착! 린 [집결 호출 HERE] 발신 대기'
-              : `대관식 집결 발판 ${padsCnt} / 4 (4인 동시 착지!)`;
+              ? '✨ 빛 도착! 린이 📍 모여라 보내기'
+              : `👣 발판 ${padsCnt} / 4 · 모두 올라서요!`;
       ctx.font = '800 13px "Noto Sans KR", sans-serif';
       const w = ctx.measureText(statusTxt).width + 20;
       ctx.fillStyle = 'rgba(13, 19, 27, 0.92)';
