@@ -40,6 +40,7 @@ export function createInitialPuzzleStates() {
     15: { ox: 96, oy: -48, rot: 270 },
     16: {
       prisms: [0, 45, 45],
+      mountUnlocked: false,
       beamReachedAtrium: false,
       hereSent: false,
       pads: [false, false, false, false],
@@ -291,20 +292,40 @@ export function attachWsRoomHub(httpServer, { destroyUnmatched = false } = {}) {
       }
 
       if (msg.type === 'send_radio') {
-        const { roleId, tokenIds } = msg;
-        if (!ROLE_ORDER.includes(roleId) || !Array.isArray(tokenIds) || tokenIds.length === 0) return;
+        const { roleId, tokenIds, targetRoleId, note } = msg;
+        if (!ROLE_ORDER.includes(roleId) || !Array.isArray(tokenIds)) return;
+        const cleanTokens = tokenIds
+          .map((t) => {
+            const s = String(t || '').trim();
+            if (s.startsWith('VAL:')) {
+              const num = s.slice(4).replace(/[^0-9.\-/]/g, '').slice(0, 10);
+              return num ? `VAL:${num}` : '';
+            }
+            return s;
+          })
+          .filter(Boolean)
+          .slice(0, 8);
+        const cleanNote = note ? String(note).trim().slice(0, 160) : null;
+        if (cleanTokens.length === 0 && !cleanNote) return;
+        const resolvedTarget = targetRoleId && ROLE_ORDER.includes(targetRoleId) ? targetRoleId : null;
+        const resolvedTargetName = resolvedTarget
+          ? room.slots[resolvedTarget]?.nickname || DEFAULT_NAMES[resolvedTarget]
+          : null;
         const now = Date.now();
         const entry = {
           id: 'R' + now + '_' + (++room.radioSeq),
           seq: room.radioSeq,
           roleId,
           senderName: room.slots[roleId]?.nickname || DEFAULT_NAMES[roleId],
-          tokenIds: tokenIds.slice(0, 2),
+          targetRoleId: resolvedTarget,
+          targetName: resolvedTargetName,
+          tokenIds: cleanTokens,
+          note: cleanNote,
           ts: now,
           expiresAt: now + 12000,
         };
         room.radioLog = [entry, ...room.radioLog].slice(0, 40);
-        if (tokenIds.includes('COOP_HERE') && room.puzzleStates[16]?.beamReachedAtrium) {
+        if (cleanTokens.includes('COOP_HERE') && room.puzzleStates[16]?.beamReachedAtrium) {
           room.puzzleStates[16].hereSent = true;
         }
         broadcastRoom(room, {

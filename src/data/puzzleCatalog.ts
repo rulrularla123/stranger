@@ -1,4 +1,4 @@
-import type { MapPortal, PuzzleDef, RoomState } from '../types/stranger.ts';
+import type { MapObject, MapPortal, PuzzleDef, RoleId, RoomState } from '../types/stranger.ts';
 
 export interface DifficultyConfig {
   showTargetHints: boolean;
@@ -158,6 +158,15 @@ export function getPortalLockReason(room: RoomState, portal: MapPortal): string 
   return null;
 }
 
+export function getObjectOwnerRole(obj: MapObject, p?: PuzzleDef): RoleId | 'all' {
+  if (['atrium-statue', 'atrium-bust-l', 'atrium-bust-r'].includes(obj.id)) return 'all';
+  if (obj.role?.includes('서하린')) return 'doyun';
+  if (obj.role?.includes('이안')) return 'maria';
+  if (obj.role?.includes('(린)') || obj.role?.includes('네비게이터')) return 'lin';
+  if (obj.role?.includes('카이')) return 'aisha';
+  return p?.mainRole || 'doyun';
+}
+
 export const MAIN_OPERATOR_OBJECT_IDS = new Set([
   'hall-compass-dial',
   'life-table-center',
@@ -185,7 +194,6 @@ export const MAIN_OPERATOR_OBJECT_IDS = new Set([
   'reading-table',
   'reading-blueprint-e',
   'special-table',
-  'special-boat-nw',
 ]);
 
 export const PUZZLES: PuzzleDef[] = [
@@ -200,6 +208,7 @@ export const PUZZLES: PuzzleDef[] = [
     arch: '동심원 4방위 베젤 링 회전 정렬',
     mainRole: 'lin',
     helperRoles: ['maria'],
+    helperSummaryByRole: { maria: '개관 방명록 문양 번역' },
     focusObj: 'hall-compass-dial',
     answerTokens: [
       ['DIR_N', 'SYM_SUN'],
@@ -219,11 +228,28 @@ export const PUZZLES: PuzzleDef[] = [
         <p class="clue-note">린에게 <code>[북 ↑]+[태양 ☀]</code>, <code>[남 ↓]+[파도 🌊]</code> 무전을 보내 나침반 내·외륜을 정렬하게 하세요.</p>
       </div>
     `,
+    roleClues: {
+      maria: {
+        title: '이안 · 안내 데스크 개관 방명록 번역',
+        bodyHtml: `
+          <div class="clue-card">
+            <p class="clue-lead">📜 <strong>안내 데스크 개관 방명록 (hall-reception)</strong> 스페인어/타갈로그어 기록:</p>
+            <div class="clue-grid-4">
+              <div class="clue-chip"><span>↑ 북 (0°)</span><strong style="color:#E6C886">☀ 태양 · 생활사</strong></div>
+              <div class="clue-chip"><span>→ 동 (90°)</span><strong style="color:#91A8FF">★ 별 · 역사 연표</strong></div>
+              <div class="clue-chip"><span>↓ 남 (180°)</span><strong style="color:#7CD8FF">🌊 파도 · 도시</strong></div>
+              <div class="clue-chip"><span>← 서 (270°)</span><strong style="color:#D49B6A">⛰ 산맥 · 공예</strong></div>
+            </div>
+            <p class="clue-note"><strong>[C] 무전 휠</strong>로 린에게 <code>[북 ↑]+[태양 ☀]</code>, <code>[남 ↓]+[파도 🌊]</code> 조합을 보내주세요.</p>
+          </div>
+        `,
+      },
+    },
     objectRoleClues: {
       'floor-guide': {
         roleId: 'lin',
         title: '린 · 박물관 층별 방위 배선표',
-        bodyHtml: `<div class="clue-card"><p>🧭 북쪽 계단은 <strong>2F 반원 홀</strong>, 동북쪽 계단은 <strong>B1 지하 설비구역</strong>으로 이어집니다. 먼저 중앙 나침반(<code>hall-compass-dial</code>)의 황동 베젤을 <strong>0° 기준</strong>으로 정렬해 1F 4개 전시관을 개방하세요.</p></div>`,
+        bodyHtml: `<div class="clue-card"><p>🧭 북쪽 계단은 <strong>2F 반원 홀</strong>, 동북쪽 계단은 <strong>B1 지하 설비구역</strong>으로 이어집니다. 이안에게 방명록 방위 단서를 무전 받아 중앙 나침반(<code>hall-compass-dial</code>)의 황동 베젤을 정렬하세요.</p></div>`,
       },
     },
   },
@@ -238,6 +264,7 @@ export const PUZZLES: PuzzleDef[] = [
     arch: '전통 가옥 3단 단면 층위 드래그 슬롯',
     mainRole: 'aisha',
     helperRoles: ['maria'],
+    helperSummaryByRole: { maria: '타갈로그어 층위 주석 번역' },
     focusObj: 'life-table-center',
     answerTokens: [
       ['NUM_1', 'SYM_SUN'],
@@ -256,6 +283,22 @@ export const PUZZLES: PuzzleDef[] = [
         <p class="clue-note">카이에게 <code>[1번]+[태양 ☀]</code>, <code>[3번]+[산맥 ⛰]</code> 무전을 보내세요. (등유 램프는 미끼)</p>
       </div>
     `,
+    roleClues: {
+      maria: {
+        title: '이안 · 서가 타갈로그어 생활 주석 번역',
+        bodyHtml: `
+          <div class="clue-card">
+            <p class="clue-lead">📜 <strong>서가 타갈로그어 주석 (life-side-shelf-w)</strong> 번역 결과:</p>
+            <ul class="clue-list">
+              <li><strong>① Bubong (지붕 다락 · ☀ 태양)</strong> → <em>"습기를 피해 말린 곡식 단지를 보관"</em></li>
+              <li><strong>② Sala (대나무 마루 · 🌊 파도)</strong> → <em>"바람이 통하는 대나무 직조 바구니"</em></li>
+              <li><strong>③ Silong (고상 기둥 아래 · ⛰ 산맥)</strong> → <em>"단단한 땅 위에 돌절구를 설치"</em></li>
+            </ul>
+            <p class="clue-note"><strong>[C] 무전 휠</strong>로 카이에게 각 층과 유물 문양을 알려주세요. (등유 램프는 미끼)</p>
+          </div>
+        `,
+      },
+    },
   },
   {
     id: 3,
@@ -268,6 +311,7 @@ export const PUZZLES: PuzzleDef[] = [
     arch: '360° 원통 턴테이블 회전 + 영혼의 배 뚜껑 수평 틸트',
     mainRole: 'aisha',
     helperRoles: ['doyun'],
+    helperSummaryByRole: { doyun: '받침 기어 각도 실측' },
     focusObj: 'life-case-nw',
     answerTokens: [['ACT_ROT', 'SYM_WAVE']],
     clueTitle: '서하린 · 진열장 하단 받침 기어 실측',
@@ -276,9 +320,21 @@ export const PUZZLES: PuzzleDef[] = [
       <div class="clue-card">
         <p class="clue-lead">⚙ <strong>수직 진열장 받침 기어 실측 (life-vitrine-ne)</strong>:</p>
         <p>몸체의 나선 파도 음각 홈은 정확히 <strong>180° 반대 방향</strong>에 파여 있습니다. 턴테이블을 <strong>180°</strong>까지 돌리고, 뚜껑 위 <strong>영혼의 배 기울기를 0°(수평)</strong>로 맞춘 뒤 결합 클램프를 누르세요.</p>
-        <p class="clue-note">카이에게 <code>[회전 ↻]+[파도 🌊]</code> 무전을 보내세요.</p>
+        <p class="clue-note">카이에게 <code>[회전 ↻]+[파도 🌊]+[180]+[0]</code> 무전을 보내세요.</p>
       </div>
     `,
+    roleClues: {
+      doyun: {
+        title: '서하린 · 진열장 하단 받침 기어 실측',
+        bodyHtml: `
+          <div class="clue-card">
+            <p class="clue-lead">⚙ <strong>수직 진열장 받침 기어 실측 (life-vitrine-ne)</strong>:</p>
+            <p>몸체의 나선 파도 음각 홈은 정확히 <strong>180° 반대 방향</strong>에 파여 있으며, 뚜껑 위 영혼의 배는 <strong>기울기 0°(수평)</strong>에서 맞물립니다.</p>
+            <p class="clue-note"><strong>[C] 무전 휠</strong>의 숫자 기능으로 카이에게 <code>180</code>과 <code>0</code>을 전달하세요!</p>
+          </div>
+        `,
+      },
+    },
   },
   {
     id: 4,
@@ -291,6 +347,7 @@ export const PUZZLES: PuzzleDef[] = [
     arch: '2D 고지도 해협 핀 × 타임라인 SVG 크로스 결선',
     mainRole: 'maria',
     helperRoles: ['lin'],
+    helperSummaryByRole: { lin: '군도 고지도 해협 측량' },
     focusObj: 'time-table-center',
     answerTokens: [
       ['NUM_2', 'DIR_W'],
@@ -309,6 +366,22 @@ export const PUZZLES: PuzzleDef[] = [
         <p class="clue-note">이안에게 <code>[2번]+[서 ←]</code>, <code>[3번]+[북 ↑]</code> 무전을 보내세요.</p>
       </div>
     `,
+    roleClues: {
+      lin: {
+        title: '린 · 북측 군도 고지도 해협 측량',
+        bodyHtml: `
+          <div class="clue-card">
+            <p class="clue-lead">🧭 <strong>필리핀 군도 고지도 좌표 측량 (time-wall-art)</strong>:</p>
+            <ul class="clue-list">
+              <li><strong>① 1521 막탄 항해</strong> ↔ <code>비사야 해협 (동남 해역)</code></li>
+              <li><strong>② 1898 말롤로스 헌법</strong> ↔ <code>말롤로스 성당 (서 ← 루손 만)</code></li>
+              <li><strong>③ 1946 공화국 독립</strong> ↔ <code>마닐라 북부 광장 (북 ↑ 내륙)</code></li>
+            </ul>
+            <p class="clue-note"><strong>[C] 무전 휠</strong>로 이안에게 연도 순서와 방위(<code>[2번]+[서 ←]</code>, <code>[3번]+[북 ↑]</code>)를 알려주세요.</p>
+          </div>
+        `,
+      },
+    },
   },
   {
     id: 5,
@@ -321,6 +394,7 @@ export const PUZZLES: PuzzleDef[] = [
     arch: '3단 종광 페달 개구 토글 + 3색 북 왕복 직조',
     mainRole: 'doyun',
     helperRoles: ['aisha'],
+    helperSummaryByRole: { aisha: '직물 루페 씨실 배색 관측' },
     focusObj: 'craft-table-center',
     answerTokens: [['SYM_SUN', 'SYM_VOLT'], ['SYM_WAVE']],
     clueTitle: '카이 · 직조 벽면 직물 루페 확대 관측',
@@ -329,9 +403,21 @@ export const PUZZLES: PuzzleDef[] = [
       <div class="clue-card">
         <p class="clue-lead">🔍 <strong>직물 패턴 확대 루페 (craft-wall-art / craft-basket-nw)</strong>:</p>
         <p>위에서 아래로 전통 이푸가오 배색 순서: <strong>1줄 [☀ 황금 실] → 2줄 [⚡ 진홍 실] → 3줄 [🌊 청록 실]</strong>.</p>
-        <p class="clue-note">서하린에게 <code>[태양 ☀]+[열기 ⚡]</code>, <code>[파도 🌊]</code> 무전을 보내세요. 각 페달(1~3)을 밟아 날실 틈을 연 뒤 맞는 색 북을 통과시키면 됩니다.</p>
+        <p class="clue-note">서하린에게 <code>[1번]+[☀]+[2번]+[⚡]+[3번]+[🌊]</code> 순서대로 무전을 보내주세요.</p>
       </div>
     `,
+    roleClues: {
+      aisha: {
+        title: '카이 · 직조 벽면 직물 루페 확대 관측',
+        bodyHtml: `
+          <div class="clue-card">
+            <p class="clue-lead">🔍 <strong>직물 패턴 확대 루페 (craft-wall-art / craft-basket-nw)</strong>:</p>
+            <p>위에서 아래로 전통 이푸가오 씨실 배색 순서: <strong>1줄 [☀ 황금 실] → 2줄 [⚡ 진홍 실] → 3줄 [🌊 청록 실]</strong>.</p>
+            <p class="clue-note"><strong>[C] 무전 휠</strong>로 서하린에게 1→2→3줄 색상 순서를 조합해 발신하세요!</p>
+          </div>
+        `,
+      },
+    },
   },
   {
     id: 6,
@@ -344,6 +430,7 @@ export const PUZZLES: PuzzleDef[] = [
     arch: '선로 분기 레버 3종 + 광학 뷰파인더 조준',
     mainRole: 'lin',
     helperRoles: ['maria'],
+    helperSummaryByRole: { maria: '스페인어 전차 노선표 판독' },
     focusObj: 'city-table-center',
     answerTokens: [['NUM_2', 'DIR_E']],
     clueTitle: '이안 · 구 스페인어 전차 노선 푯말 판독',
@@ -355,6 +442,18 @@ export const PUZZLES: PuzzleDef[] = [
         <p class="clue-note">린에게 <code>[2번]+[동 →]</code> 무전을 보내세요.</p>
       </div>
     `,
+    roleClues: {
+      maria: {
+        title: '이안 · 구 스페인어 전차 노선 푯말 판독',
+        bodyHtml: `
+          <div class="clue-card">
+            <p class="clue-lead">📜 <strong>1910 전차 노선표 번역 (city-wall-art / city-cabinet-nw)</strong>:</p>
+            <p><em>"Puente de España 침수! 모든 트램은 <strong>2번 비논도 우회선 (S1=B, S2=B, S3=A)</strong>을 거쳐 <strong>동쪽(→) 파시그강 도개교</strong>로 진입하라."</em></p>
+            <p class="clue-note"><strong>[C] 무전 휠</strong>로 린에게 우회 노선(<code>2번</code>)과 방위(<code>동 →</code>)를 보내세요.</p>
+          </div>
+        `,
+      },
+    },
   },
   {
     id: 7,
@@ -367,6 +466,7 @@ export const PUZZLES: PuzzleDef[] = [
     arch: '연동 유량 밸브 핸드휠 (3구역 60 PSI 평형)',
     mainRole: 'doyun',
     helperRoles: ['lin'],
+    helperSummaryByRole: { lin: '배관 계통도 밸브 비율 측량' },
     focusObj: 'maint-pipe-header-1',
     answerTokens: [
       ['NUM_1', 'SYM_VOLT'],
@@ -376,15 +476,31 @@ export const PUZZLES: PuzzleDef[] = [
     clueSummary: '1번=25% 감압 · 2번=50% 유지 · 3번=100% 개방 → 모두 60 PSI',
     clueHtml: `
       <div class="clue-card">
-        <p class="clue-lead">🧭 <strong>B1 배관 계통도 설계 기준 (maint-conduit-1)</strong>:</p>
+        <p class="clue-lead">🧭 <strong>B1 배관 계통도 설계 기준 (maint-conduit-1/2)</strong>:</p>
         <ul class="clue-list">
-          <li><strong>1번 구역 (과압 ⚡)</strong>: 밸브를 <strong>25%</strong>로 감압</li>
-          <li><strong>2번 구역 (중간)</strong>: 밸브를 <strong>50%</strong>로 유지</li>
-          <li><strong>3번 구역 (유량 부족 → 안전 🛡)</strong>: 밸브를 <strong>100%</strong> 완전 개방</li>
+          <li><strong>1번 구역 (과압 ⚡)</strong>: 밸브 <strong>25%</strong></li>
+          <li><strong>2번 구역 (중간)</strong>: 밸브 <strong>50%</strong></li>
+          <li><strong>3번 구역 (안전 🛡)</strong>: 밸브 <strong>100%</strong></li>
         </ul>
-        <p class="clue-note">세 압력계가 모두 녹색 대역(55~65 PSI, 정중앙 60 PSI)에 들어오면 배수가 시작됩니다. 서하린에게 <code>[1번]+[열기 ⚡]</code>, <code>[3번]+[안정 🛡]</code>을 발신하세요.</p>
+        <p class="clue-note">서하린에게 숫자 기능으로 <code>25 / 50 / 100</code>을 조합해 발신하세요!</p>
       </div>
     `,
+    roleClues: {
+      lin: {
+        title: '린 · B1 배관 계통도 밸브 비율 측량',
+        bodyHtml: `
+          <div class="clue-card">
+            <p class="clue-lead">🧭 <strong>B1 배관 계통도 설계 기준 (maint-conduit-1/2)</strong>:</p>
+            <ul class="clue-list">
+              <li><strong>1번 밸브 (과압 ⚡)</strong> → <strong>25%</strong></li>
+              <li><strong>2번 밸브</strong> → <strong>50%</strong></li>
+              <li><strong>3번 밸브 (안정 🛡)</strong> → <strong>100%</strong></li>
+            </ul>
+            <p class="clue-note"><strong>[C] 무전 휠</strong>에서 <code>[1번] + [25] + [2번] + [50] + [3번] + [100]</code> 처럼 한 번에 조합해 서하린에게 보내보세요!</p>
+          </div>
+        `,
+      },
+    },
   },
   {
     id: 8,
@@ -397,20 +513,34 @@ export const PUZZLES: PuzzleDef[] = [
     arch: '실시간 압력 안전대역 유지 + 듀얼 RPM 위상 동기화',
     mainRole: 'doyun',
     helperRoles: ['aisha'],
+    helperSummaryByRole: { aisha: '관제 콘솔 센서 경보 판독' },
     focusObj: 'safety-pump',
     answerTokens: [
       ['SYM_VOLT', 'DIR_S'],
       ['NUM_2', 'SYM_SAFE'],
     ],
     clueTitle: '카이 · 방재 관제 콘솔 센서 경보 판독',
-    clueSummary: '보일러 압력 70~90 PSI 감압 + 1·2호기 1150~1250 RPM(오차 ±30 이내)',
+    clueSummary: '보일러 압력 70~90 PSI 감압 + 1·2호기 1150~1250 RPM 동기화',
     clueHtml: `
       <div class="clue-card">
         <p class="clue-lead">🔍 <strong>방재 콘솔 센서 로그 (safety-console)</strong>:</p>
-        <p>보일러 과압(<strong>⚡ 145 PSI → 남 ↓ 70~90 PSI</strong>로 증기 배출)을 먼저 해결한 뒤, <strong>1·2호기 순환 펌프를 모두 1200 RPM 부근(1150~1250, 차이 ±30 이내)</strong>으로 동기화해 잠그세요.</p>
-        <p class="clue-note">서하린에게 <code>[열기 ⚡]+[남 ↓]</code>, <code>[2번]+[안정 🛡]</code> 무전을 보내세요.</p>
+        <p>보일러 과압을 <strong>70~90 PSI</strong>로 낮춘 뒤, <strong>1·2호기 순환 펌프를 모두 1200 RPM(1150~1250)</strong>으로 동기화해 잠그세요.</p>
+        <p class="clue-note">서하린에게 <code>80</code> (PSI)와 <code>1200</code> (RPM)을 무전으로 전달하세요.</p>
       </div>
     `,
+    roleClues: {
+      aisha: {
+        title: '카이 · 방재 관제 콘솔 센서 경보 판독',
+        bodyHtml: `
+          <div class="clue-card">
+            <p class="clue-lead">🔍 <strong>방재 콘솔 센서 로그 (safety-console)</strong>:</p>
+            <p>① 보일러 증기 압력 안전 대역: <strong>70 ~ 90 PSI</strong> (권장 <code>80</code>)<br/>
+            ② 복식 순환 펌프 목표 회전수: <strong>1150 ~ 1250 RPM</strong> (정격 <code>1200</code>)</p>
+            <p class="clue-note"><strong>[C] 무전 휠</strong>의 숫자로 서하린에게 목표 압력(<code>70/90</code>)과 회전수(<code>1200</code>)를 알려주세요.</p>
+          </div>
+        `,
+      },
+    },
   },
   {
     id: 9,
@@ -423,25 +553,42 @@ export const PUZZLES: PuzzleDef[] = [
     arch: '디젤 예열/크랭크 + 3베이 버스바 인터록 매트릭스',
     mainRole: 'doyun',
     helperRoles: ['lin', 'aisha'],
+    helperSummaryByRole: { lin: 'UPS 단락 모선 점검', aisha: '60Hz 예열 코일 계측' },
     focusObj: 'power-switchgear',
     answerTokens: [['NUM_3', 'COOP_SWAP'], ['COOP_OK']],
-    clueTitle: '린 & 카이 · UPS 침수 점검표 + 60Hz 예열 계측',
-    clueSummary: '예열 100%→크랭크 기동 → Bus 1·2 OFF, Bus 3(예비) ON → 주 차단기 ON',
-    clueHtml: `
-      <div class="clue-card">
-        <p class="clue-lead">🧭🔍 <strong>UPS 침수 점검표 (power-ups-e1) &amp; 주파수 계측 (power-conduit)</strong>:</p>
-        <ul class="clue-list">
-          <li><strong>린 측량</strong>: <strong>1·2번 배터리 모선은 침수 단락!</strong> 반드시 <strong>OFF</strong>하고 <strong>3번 예비 우회 모선(⇄)</strong>만 켜세요.</li>
-          <li><strong>카이 센서</strong>: 발전기 코일을 <strong>100% 예열</strong>하고 크랭크를 기동하면 <code>60Hz ✔ 준비 완료</code>가 됩니다.</li>
-        </ul>
-        <p class="clue-note">클리어 시 <strong>1F·2F·B1 박물관 전체 비상 조명이 정식 조명으로 복구</strong>됩니다!</p>
-      </div>
-    `,
+    clueTitle: '린 & 카이 · UPS 점검표 + 60Hz 예열 계측',
+    clueSummary: 'Bus 1·2 OFF, Bus 3(예비) ON + 발전기 100% 예열 후 크랭크(60Hz)',
+    clueHtml: `<div class="clue-card"><p>린은 UPS 모선 단락을, 카이는 60Hz 예열 코일을 각자의 장치에서 확인해 서하린에게 무전합니다.</p></div>`,
+    roleClues: {
+      lin: {
+        title: '린 · UPS 침수 단락 점검표 (동측 랙)',
+        bodyHtml: `
+          <div class="clue-card">
+            <p class="clue-lead">🧭 <strong>UPS 배터리 랙 침수 점검 결과 (power-ups-e1/e2)</strong>:</p>
+            <ul class="clue-list">
+              <li><strong>1번·2번 고압 모선</strong>: 침수 단락 상태 — 반드시 <strong>OFF(차단)</strong> 유지!</li>
+              <li><strong>3번 예비 우회 모선(⇄)</strong>: 정상 — <strong>3번만 ON(투입)</strong> 해야 과전류 트립이 발생하지 않습니다.</li>
+            </ul>
+            <p class="clue-note"><strong>[C] 무전 휠</strong>로 서하린에게 <code>[3번] + [반전 ⇄]</code>을 발신하세요.</p>
+          </div>
+        `,
+      },
+      aisha: {
+        title: '카이 · 배선 계측 제어함 (60Hz 코일 센서)',
+        bodyHtml: `
+          <div class="clue-card">
+            <p class="clue-lead">🔍 <strong>발전기 예열 코일 센서 판독 (power-conduit)</strong>:</p>
+            <p>비상 디젤 발전기는 예열 스위치를 꾹 눌러 <strong>예열 100% 도달 후 크랭크 기동</strong>을 해야 <strong>60Hz 정격 출력</strong>이 안정됩니다.</p>
+            <p class="clue-note"><strong>[C] 무전 휠</strong>로 서하린에게 <code>[60] + [준비 완료 ✔]</code>를 발신하세요.</p>
+          </div>
+        `,
+      },
+    },
     objectRoleClues: {
       'power-conduit': {
         roleId: 'aisha',
         title: '카이 · 배선 계측 제어함 (60Hz 코일 센서)',
-        bodyHtml: `<div class="clue-card"><p>🔍 예열 코일 온도 <strong>100% 도달 후 크랭크</strong>를 돌리면 <strong>60Hz 정격 출력</strong>이 안정됩니다. 서하린에게 <code>[준비 완료 ✔]</code> 신호를 보내세요.</p></div>`,
+        bodyHtml: `<div class="clue-card"><p>🔍 예열 코일 <strong>100% 도달 후 크랭크 기동</strong> → <strong>60Hz 정격 출력</strong>이 안정됩니다. 서하린에게 <code>[60] + [준비 완료 ✔]</code>를 보내세요.</p></div>`,
       },
     },
   },
@@ -456,33 +603,50 @@ export const PUZZLES: PuzzleDef[] = [
     arch: '이슬점 온습도 캘리브레이션 + 침수 회피 2축 크레인',
     mainRole: 'lin',
     helperRoles: ['aisha', 'doyun'],
+    helperSummaryByRole: { aisha: '제습 공조(안개 제거) & 침수 지도', doyun: '1번 방수 크레이트 걸쇠 체결' },
     focusObj: 'rescue-table-c',
     answerTokens: [
       ['SYM_WAVE', 'DIR_N'],
       ['NUM_1', 'SYM_SAFE'],
     ],
-    clueTitle: '카이 & 서하린 · 이슬점 45%/18°C & 방수 크레이트 체결',
-    clueSummary: '45% RH / 18°C 설정 → 크레인 (1,3) 상자 집어 침수 (2,2)(3,2)(2,3) 피해 (4,1) 선반 안착',
-    clueHtml: `
-      <div class="clue-card">
-        <p class="clue-lead">🔍⚙ <strong>제습 공조(rescue-dehumid-nw) &amp; 방수 걸쇠(rescue-crate-sw1)</strong>:</p>
-        <ul class="clue-list">
-          <li><strong>카이</strong>: 공조 기준 <strong>45% RH / 18°C</strong> 설정 후 북측 안전 경로 확인 (<code>[파도 🌊]+[북 ↑]</code>).</li>
-          <li><strong>서하린</strong>: <code>(1,3)</code> 1번 방수 상자 걸쇠 체결 완료 (<code>[1번]+[안정 🛡]</code>).</li>
-        </ul>
-        <p class="clue-note">린은 물웅덩이 <code>(2,2),(3,2),(2,3)</code>을 피해 북동측 스틸 선반 <strong>(4,1)</strong>에 상자를 내려놓으세요.</p>
-      </div>
-    `,
+    clueTitle: '카이 & 서하린 · 제습 공조 + 크레이트 걸쇠',
+    clueSummary: '45% RH / 18°C 설정 + 1번 걸쇠 체결 → 침수 회피 후 (4,1) 선반 안착',
+    clueHtml: `<div class="clue-card"><p>카이는 제습 공조(안개·침수 좌표), 서하린은 방수 걸쇠 체결을 각자 수행한 뒤 린에게 무전을 보냅니다.</p></div>`,
+    roleClues: {
+      aisha: {
+        title: '카이 · 제습 공조 유닛 (이슬점 조절 & 침수 지도)',
+        bodyHtml: `
+          <div class="clue-card">
+            <p class="clue-lead">🔍 <strong>수장고 제습 공조 기준 (rescue-dehumid-nw)</strong>:</p>
+            <ul class="clue-list">
+              <li>권장 보관 이슬점: <strong>45% RH / 18°C</strong> (아래 패널에서 직접 맞추면 수장고 안개가 걷힙니다!)</li>
+              <li>침수 물웅덩이 좌표: <code>(2,2), (3,2), (2,3)</code> — 반드시 <strong>북쪽 안전 통로(y=1)</strong>로 우회해 <code>(4,1)</code> 선반에 내려놓아야 합니다.</li>
+            </ul>
+            <p class="clue-note">공조 설정 후 린에게 <code>[파도 🌊] + [45/18] + [북 ↑]</code>을 발신하세요.</p>
+          </div>
+        `,
+      },
+      doyun: {
+        title: '서하린 · 방수 크레이트 걸쇠 & 인양 번호 점검',
+        bodyHtml: `
+          <div class="clue-card">
+            <p class="clue-lead">⚙ <strong>방수 수장 크레이트 체결 (rescue-crate-sw1/2)</strong>:</p>
+            <p>보조 크레이트 2개 중 인양 대상은 <code>(1,3)</code> 위치의 <strong>1번 방수 크레이트</strong>입니다. 아래 버튼으로 안전 걸쇠를 체결한 뒤 린에게 알려주세요.</p>
+            <p class="clue-note">체결 완료 후 린에게 <code>[1번] + [안정 🛡]</code>을 발신하세요.</p>
+          </div>
+        `,
+      },
+    },
     objectRoleClues: {
       'rescue-crate-sw1': {
         roleId: 'doyun',
         title: '서하린 · 1번 방수 크레이트 걸쇠 점검',
-        bodyHtml: `<div class="clue-card"><p>⚙ 크레이트 잠금 걸쇠와 중량 중심이 <strong>안전(🛡)</strong> 상태로 체결 준비되었습니다. 아래 버튼으로 걸쇠를 체결한 뒤 린에게 <code>[1번]+[안정 🛡]</code>을 발신하세요.</p></div>`,
+        bodyHtml: `<div class="clue-card"><p>⚙ 인양 대상은 <code>(1,3)</code> <strong>1번 크레이트</strong>입니다. 아래 버튼으로 걸쇠를 체결한 뒤 린에게 <code>[1번]+[안정 🛡]</code>을 발신하세요.</p></div>`,
       },
       'rescue-crate-sw2': {
         roleId: 'doyun',
         title: '서하린 · 2번 보조 크레이트 & 걸쇠 점검',
-        bodyHtml: `<div class="clue-card"><p>⚙ 보조 방수 크레이트 중량 표식 확인 완료: 인양 대상은 <strong>1번 크레이트(1,3)</strong>입니다. 걸쇠를 체결하고 린에게 <code>[1번]+[안정 🛡]</code>을 발신하세요.</p></div>`,
+        bodyHtml: `<div class="clue-card"><p>⚙ 보조 표식 확인 완료: 인양 대상은 <code>(1,3)</code> <strong>1번 크레이트</strong>입니다. 걸쇠를 체결하고 린에게 <code>[1번]+[안정 🛡]</code>을 발신하세요.</p></div>`,
       },
     },
   },
@@ -497,33 +661,47 @@ export const PUZZLES: PuzzleDef[] = [
     arch: '고대 음절 문자(Kudlit) 2중 동심원 디코더 휠',
     mainRole: 'maria',
     helperRoles: ['aisha', 'doyun'],
+    helperSummaryByRole: { aisha: 'UV 모음점(Kudlit) 판독', doyun: '바이바이인 활자 목판 대조' },
     focusObj: 'archive-table',
     answerTokens: [
       ['SYM_STAR', 'ACT_ROT'],
       ['NUM_3', 'SYM_SUN'],
     ],
-    clueTitle: '카이 & 서하린 · UV 모음점(Kudlit) & 목판 기준 각도',
-    clueSummary: '3음절 모두 무점(기본 a) · 암호어: KA(ᜃ) - LA(ᜎ) - YA(ᜌ) [KALAYAAN]',
-    clueHtml: `
-      <div class="clue-card">
-        <p class="clue-lead">🔍⚙ <strong>헌장 액자 UV 스캔(archive-paint) &amp; 목판 각도(archive-long-nw)</strong>:</p>
-        <ul class="clue-list">
-          <li><strong>카이(UV)</strong>: 3개 음절 모두 위/아래 점(Kudlit)이 지워진 <strong>무점(기본 모음 a)</strong> 형태입니다.</li>
-          <li><strong>서하린(목판)</strong>: 키워드는 자유(<em>Kalayaan</em>)의 앞 세 음절 <strong>KA (ᜃ) - LA (ᜎ) - YA (ᜌ)</strong> 입니다.</li>
-        </ul>
-        <p class="clue-note">이안에게 <code>[별자리 ★]+[회전 ↻]</code>, <code>[3번]+[태양 ☀]</code>을 발신하세요.</p>
-      </div>
-    `,
+    clueTitle: '카이 & 서하린 · UV 모음점 & 목판 음절',
+    clueSummary: 'UV: 3음절 모두 무점(기본 a) + 목판: KA(ᜃ) - LA(ᜎ) - YA(ᜌ)',
+    clueHtml: `<div class="clue-card"><p>카이는 UV 모음점(Kudlit) 여부를, 서하린은 활자 목판의 자음 순서를 각자 판독해 이안에게 보냅니다.</p></div>`,
+    roleClues: {
+      aisha: {
+        title: '카이 · 헌장 액자 UV 모음점(Kudlit) 스캔',
+        bodyHtml: `
+          <div class="clue-card">
+            <p class="clue-lead">🔍 <strong>헌장 액자 자외선 루페 스캔 (archive-paint)</strong>:</p>
+            <p>3개 음절 인장 모두 위/아래 모음점(<em>Kudlit</em>) 흔적이 전혀 없는 <strong>무점(기본 모음 a)</strong> 형태입니다! (위 점·아래 점 금지)</p>
+            <p class="clue-note"><strong>[C] 무전 휠</strong>로 이안에게 <code>[별자리 ★]+[기준(0)]+[회전 ↻]</code>을 보내 무점 상태를 알리세요.</p>
+          </div>
+        `,
+      },
+      doyun: {
+        title: '서하린 · 바이바이인 활자 대조 목판 판독',
+        bodyHtml: `
+          <div class="clue-card">
+            <p class="clue-lead">⚙ <strong>활자 대조 목판 (archive-long-nw/ne)</strong>:</p>
+            <p>카티푸난 비밀 키워드는 자유(<em>Kalayaan</em>)의 앞 세 글자 <strong>① ᜃ (K) → ② ᜎ (L) → ③ ᜌ (Y)</strong>입니다.</p>
+            <p class="clue-note"><strong>[C] 무전 휠</strong>로 이안에게 <code>[3번]+[태양 ☀]</code>과 음절 순서(K-L-Y)를 발신하세요.</p>
+          </div>
+        `,
+      },
+    },
     objectRoleClues: {
       'archive-long-nw': {
         roleId: 'doyun',
         title: '서하린 · 바이바이인 활자 대조 목판 (북서)',
-        bodyHtml: `<div class="clue-card"><p>⚙ 목판 기준 각인: 3번째 인장은 <strong>태양(☀) = YA(ᜌ)</strong>, 전체 단어는 <strong>KA - LA - YA (자유)</strong>입니다. <code>[3번]+[태양 ☀]</code>을 발신하세요.</p></div>`,
+        bodyHtml: `<div class="clue-card"><p>⚙ 목판 기준 각인: 1번 <strong>ᜃ (K)</strong> · 2번 <strong>ᜎ (L)</strong> · 3번 <strong>ᜌ (Y) · 태양(☀)</strong> — 전체 단어는 자유(<em>Kalayaan</em>)의 앞 3음절입니다. <code>[3번]+[태양 ☀]</code>을 발신하세요.</p></div>`,
       },
       'archive-long-ne': {
         roleId: 'doyun',
         title: '서하린 · 바이바이인 활자 대조 목판 (북동)',
-        bodyHtml: `<div class="clue-card"><p>⚙ 북동 목판 대조표: 모음점이 없는 기본 자음은 <strong>-a</strong> 발음입니다. <code>KA - LA - YA</code> 모두 <strong>무점(기본 a)</strong>입니다.</p></div>`,
+        bodyHtml: `<div class="clue-card"><p>⚙ 북동 목판 대조표: 자유(<em>Kalayaan</em>)의 앞 세 자음은 <strong>① ᜃ (K) - ② ᜎ (L) - ③ ᜌ (Y)</strong>입니다. (모음점은 카이가 UV로 판독합니다.)</p></div>`,
       },
     },
   },
@@ -538,6 +716,7 @@ export const PUZZLES: PuzzleDef[] = [
     arch: 'XY 마이크로필름 초점 스캐너 + 4열 천공 카드 타공',
     mainRole: 'maria',
     helperRoles: ['lin'],
+    helperSummaryByRole: { lin: '마이크로필름 XY 초점 스캔' },
     focusObj: 'archive-cabinet-ne',
     answerTokens: [
       ['NUM_2', 'SYM_STAR'],
@@ -548,10 +727,22 @@ export const PUZZLES: PuzzleDef[] = [
     clueHtml: `
       <div class="clue-card">
         <p class="clue-lead">🧭 <strong>마이크로필름 리더기 (archive-side-desk-e) 측량</strong>:</p>
-        <p>리더기의 초점을 <strong>X=60, Y=40</strong> 부근으로 맞추면 <strong>COL 2 [★ 별자리] · COL 4 [🌊 파도]</strong> 천공 좌표가 선명하게 드러납니다.</p>
-        <p class="clue-note">이안에게 <code>[2번]+[별자리 ★]</code>, <code>[4번]+[파도 🌊]</code> 무전을 보내고 2열과 4열만 타공하세요.</p>
+        <p>아래 스캐너의 X·Y 초점을 <strong>X=60, Y=40</strong> 부근으로 맞춰 선명하게 읽힌 천공 좌표를 이안에게 전달하세요.</p>
+        <p class="clue-note">초점을 맞춘 뒤 이안에게 <code>[2번]+[별자리 ★]+[4번]+[파도 🌊]</code>를 발신하세요.</p>
       </div>
     `,
+    roleClues: {
+      lin: {
+        title: '린 · 마이크로필름 리더기 XY 초점 측량',
+        bodyHtml: `
+          <div class="clue-card">
+            <p class="clue-lead">🧭 <strong>마이크로필름 리더기 (archive-side-desk-e) 측량</strong>:</p>
+            <p>아래 스캐너 슬라이더를 <strong>X=60, Y=40</strong> 부근으로 조절하면 흐릿한 필름 속 목표 천공 코드가 선명히 보입니다.</p>
+            <p class="clue-note">초점을 맞춘 뒤 <strong>[C] 무전 휠</strong>로 이안에게 읽힌 열·문양 조합을 보내주세요!</p>
+          </div>
+        `,
+      },
+    },
   },
   {
     id: 13,
@@ -564,28 +755,45 @@ export const PUZZLES: PuzzleDef[] = [
     arch: '스포이드 pH 7.0 적정 + 초음파 브러시 세척',
     mainRole: 'aisha',
     helperRoles: ['maria', 'doyun'],
+    helperSummaryByRole: { maria: '스페인어 시약 배합표 번역', doyun: '시약 공급 안전 밸브 개방' },
     focusObj: 'preserve-lab-c',
     answerTokens: [
       ['SYM_WAVE', 'NUM_2'],
       ['SYM_SUN', 'NUM_1'],
     ],
-    clueTitle: '이안 & 서하린 · 스페인어 화학 노트 & 시약 밸브 개방',
-    clueSummary: '청록 시약(🌊) 2방울 + 호박 시약(☀) 1방울 = pH 7.0 + 부식층 90% 이상 세척',
-    clueHtml: `
-      <div class="clue-card">
-        <p class="clue-lead">📜⚙ <strong>보존 공정 노트(preserve-wall-chart) &amp; 약품함(preserve-cabinet-1)</strong>:</p>
-        <ul class="clue-list">
-          <li><strong>이안 번역</strong>: <em>"청록 염화물(🌊) <strong>2방울</strong> + 중화 호박산(☀) <strong>1방울</strong> = 정확히 <strong>pH 7.0</strong>"</em></li>
-          <li><strong>서하린 밸브</strong>: 북서측 약품 보관장 시약 공급 밸브를 열어 스포이드를 사용 가능하게 합니다.</li>
-        </ul>
-        <p class="clue-note">카이에게 <code>[파도 🌊]+[2번]</code>, <code>[태양 ☀]+[1번]</code>을 발신하세요.</p>
-      </div>
-    `,
+    clueTitle: '이안 & 서하린 · 화학 노트 + 시약 밸브',
+    clueSummary: '청록(🌊) 2방울 + 호박(☀) 1방울 = pH 7.0 + 시약 밸브 개방',
+    clueHtml: `<div class="clue-card"><p>이안은 시약 배합 비율을 번역하고, 서하린은 약품 보관장에서 안전 밸브를 개방합니다.</p></div>`,
+    roleClues: {
+      maria: {
+        title: '이안 · 스페인어 보존 공정 화학 노트 번역',
+        bodyHtml: `
+          <div class="clue-card">
+            <p class="clue-lead">📜 <strong>보존 공정 기록 번역 (preserve-wall-chart)</strong>:</p>
+            <ul class="clue-list">
+              <li><strong>pH 7.0 중화 배합</strong>: <code>청록 염화물(🌊) 2방울</code> + <code>중화 호박산(☀) 1방울</code> + <code>투명 시약 0방울</code></li>
+              <li><strong>초음파 세척</strong>: 중화 후 브러시로 부식층 <strong>90% 이상</strong> 세척</li>
+            </ul>
+            <p class="clue-note"><strong>[C] 무전 휠</strong>로 카이에게 <code>[파도 🌊]+[2번]+[태양 ☀]+[1번]</code>을 발신하세요.</p>
+          </div>
+        `,
+      },
+      doyun: {
+        title: '서하린 · 약품 보관장 시약 공급 안전 밸브',
+        bodyHtml: `
+          <div class="clue-card">
+            <p class="clue-lead">⚙ <strong>약품 보관장 안전 차단 밸브 (preserve-cabinet-1/2)</strong>:</p>
+            <p>청동 유물 작업대의 스포이드 공급 라인 안전 밸브가 잠겨 있습니다. 아래 버튼을 눌러 밸브를 개방해야 카이가 시약 적정을 진행할 수 있습니다.</p>
+            <p class="clue-note">개방 후 카이에게 <code>[준비 완료 ✔]</code> 무전을 보내주세요.</p>
+          </div>
+        `,
+      },
+    },
     objectRoleClues: {
       'preserve-cabinet-1': {
         roleId: 'doyun',
         title: '서하린 · 약품 보관장 1 시약 공급 밸브',
-        bodyHtml: `<div class="clue-card"><p>⚙ 청록·호박·투명 시약 공급 라인 안전 밸브를 개방하면 카이가 작업대에서 적정·세척할 수 있습니다. (배합: 🌊×2 + ☀×1 + 투명 0방울)</p></div>`,
+        bodyHtml: `<div class="clue-card"><p>⚙ 아래 버튼으로 청록·호박·투명 시약 공급 라인 안전 밸브를 개방하세요. 개방 후 카이에게 <code>[준비 완료 ✔]</code>를 발신합니다.</p></div>`,
       },
       'preserve-cabinet-2': {
         roleId: 'doyun',
@@ -605,17 +813,30 @@ export const PUZZLES: PuzzleDef[] = [
     arch: '4모서리 대각선 장력 평형 + 밀랍 인장 파편 2초 압착',
     mainRole: 'aisha',
     helperRoles: ['doyun'],
+    helperSummaryByRole: { doyun: '4점 도르래 이완 순서 점검' },
     focusObj: 'preserve-bench-r',
     answerTokens: [['NUM_1', 'COOP_SWAP'], ['SYM_SAFE']],
     clueTitle: '서하린 · 기증 상자 도르래 과부하 순서 점검',
-    clueSummary: '대각선 ①→③ 먼저 0% 이완 후 ②→④ 이완 → 밀랍 3조각 0° 정렬 → 2초 압착',
+    clueSummary: '대각선 ①→③ 먼저 0% 이완 후 ②→④ 이완 → 밀랍 3조각 0° → 2초 압착',
     clueHtml: `
       <div class="clue-card">
-        <p class="clue-lead">⚙ <strong>기증 상자 도르래 걸쇠 점검 (preserve-crate-sw)</strong>:</p>
-        <p>장력이 걸린 4모서리 도르래는 반드시 <strong>#1(좌상)과 대각선 반대편 #3(우하)을 먼저 0%로 푼 다음</strong> #2·#4를 풀어야 유물이 뒤틀리지 않습니다! 상자 개봉 후 밀랍 3조각을 <strong>0°</strong>로 맞춰 2초간 누르세요.</p>
-        <p class="clue-note">카이에게 <code>[1번]+[반전 ⇄]</code>, <code>[안정 🛡]</code> 무전을 보내세요.</p>
+        <p class="clue-lead">⚙ <strong>기증 상자 도르래 걸쇠 점검 (preserve-crate-sw/se)</strong>:</p>
+        <p>장력이 걸린 4모서리 도르래는 반드시 <strong>#1(좌상)과 대각선 반대편 #3(우하)을 먼저 0%로 푼 다음</strong> #2·#4를 풀어야 유물이 뒤틀리지 않습니다! 상자 개봉 후 밀랍 3조각을 <strong>0°</strong>로 맞춰 끝까지 압착하세요.</p>
+        <p class="clue-note">카이에게 <code>[1번]+[반전 ⇄]+[3번]+[안정 🛡]</code> 무전을 보내세요.</p>
       </div>
     `,
+    roleClues: {
+      doyun: {
+        title: '서하린 · 기증 상자 도르래 과부하 순서 점검',
+        bodyHtml: `
+          <div class="clue-card">
+            <p class="clue-lead">⚙ <strong>기증 상자 도르래 걸쇠 점검 (preserve-crate-sw/se)</strong>:</p>
+            <p>장력이 걸린 4모서리 도르래는 반드시 <strong>#1(좌상)과 대각선 반대편 #3(우하)을 먼저 0%로 푼 다음</strong> #2·#4를 풀어야 상자가 뒤틀리지 않습니다! 이후 밀랍 3조각은 모두 <code>0°</code>로 맞춰 압착합니다.</p>
+            <p class="clue-note"><strong>[C] 무전 휠</strong>로 카이에게 <code>[1번]+[3번]+[반전 ⇄]+[0]</code> 조합을 보내주세요.</p>
+          </div>
+        `,
+      },
+    },
   },
   {
     id: 15,
@@ -628,6 +849,7 @@ export const PUZZLES: PuzzleDef[] = [
     arch: '반투명 트레이싱지 X·Y 이동 및 90° 회전 정밀 포개기',
     mainRole: 'maria',
     helperRoles: ['lin'],
+    helperSummaryByRole: { lin: '성곽 종탑·광장 축선 측량' },
     focusObj: 'reading-table',
     answerTokens: [['DIR_W', 'ACT_ROT']],
     clueTitle: '린 · 인트라무로스 성벽 종탑·광장 축선 측량',
@@ -635,15 +857,27 @@ export const PUZZLES: PuzzleDef[] = [
     clueHtml: `
       <div class="clue-card">
         <p class="clue-lead">🧭 <strong>사료화 축선 측량 결과 (reading-wall-art-c)</strong>:</p>
-        <p>반투명 도면이 동쪽으로 치우치고 270° 돌아가 있습니다. 도면을 <strong>서쪽(←) 중앙 원점</strong>으로 끌어다 놓고 <strong>시계 방향 90° 회전(↻ → 0°)</strong>시켜 <em>Puerta Real · Baluarte · 종탑</em> 3개 앵커를 모두 민트색으로 밝히세요.</p>
-        <p class="clue-note">이안에게 <code>[서 ←]+[회전 ↻]</code> 무전을 보내세요.</p>
+        <p>반투명 도면이 동쪽으로 치우치고 270° 돌아가 있습니다. 도면을 <strong>서쪽(←) 중앙 원점</strong>으로 끌어다 놓고 <strong>시계 방향 90° 회전(↻ → 0°)</strong>시켜 3개 앵커를 모두 민트색으로 밝히세요.</p>
+        <p class="clue-note">이안에게 <code>[서 ←]+[회전 ↻]+[0]</code> 무전을 보내세요.</p>
       </div>
     `,
+    roleClues: {
+      lin: {
+        title: '린 · 인트라무로스 성벽 종탑·광장 축선 측량',
+        bodyHtml: `
+          <div class="clue-card">
+            <p class="clue-lead">🧭 <strong>사료화 축선 측량 결과 (reading-wall-art-c)</strong>:</p>
+            <p>현재 트레이싱 도면은 동쪽으로 밀리고 270° 틀어져 있습니다. <strong>서쪽(←) 중앙 원점</strong>으로 당기고 <strong>시계 90° 회전(목표 0°)</strong>해야 3개 기준 핀이 일치합니다.</p>
+            <p class="clue-note"><strong>[C] 무전 휠</strong>로 이안에게 <code>[서 ←]+[회전 ↻]+[0]</code>을 발신하세요.</p>
+          </div>
+        `,
+      },
+    },
     objectRoleClues: {
       'reading-side-desk-w': {
         roleId: 'maria',
         title: '이안 · 고서 지명 색인 대조표',
-        bodyHtml: `<div class="clue-card"><p>📜 옛 스페인어 성곽 지명 3곳 식별 완료: <strong>성벽 종탑(좌상)</strong> · <strong>Puerta Real(우상)</strong> · <strong>Baluarte(하단)</strong>. 린의 방위/회전 신호(<code>[서 ←]+[회전 ↻]</code>)에 맞춰 열람대 트레이싱지를 겹치세요.</p></div>`,
+        bodyHtml: `<div class="clue-card"><p>📜 옛 스페인어 성곽 지명 3곳 식별 완료: <strong>성벽 종탑(좌상)</strong> · <strong>Puerta Real(우상)</strong> · <strong>Baluarte(하단)</strong>. 린의 축선 측량 무전에 맞춰 열람대 트레이싱지를 겹치세요.</p></div>`,
       },
     },
   },
@@ -658,24 +892,39 @@ export const PUZZLES: PuzzleDef[] = [
     arch: '1부: 3프리즘 광학 굴절 모달 + 2부: 모달 없는 인게임 필드 4/4 집결',
     mainRole: 'lin',
     helperRoles: ['maria', 'doyun'],
+    helperSummaryByRole: { maria: '고대 항로 비문(M1·M2)', doyun: '프리즘 거치대 잠금 해제(M3)' },
     focusObj: 'special-table',
     answerTokens: [['DIR_E', 'ACT_ROT'], ['COOP_HERE']],
-    clueTitle: '이안 & 서하린 · 고대 항로 비문 + 2부 현장 4/4 집결 절차',
-    clueSummary: '1부: M1=45°, M2=135°, M3=90° → 2부: 린 [집결 호출 HERE] + 2F 반원 홀 발판 4/4 동시 착지',
-    clueHtml: `
-      <div class="clue-card">
-        <p class="clue-lead">📜⚙ <strong>피날레 2단계 절차 (special-wall-art → atrium)</strong>:</p>
-        <ol class="clue-list">
-          <li><strong>1부 (기획전시실 광학 모달)</strong>: 3면 프리즘을 <strong>M1=45°, M2=135°, M3=90°</strong>로 맞춰 태양 광선을 서쪽 <code>2F · 반원 홀</code> 동상으로 쏩니다.</li>
-          <li><strong>2부 (모달 없는 인게임 필드 집결)</strong>: 린이 C-Menu 2.0으로 <code>[📍 집결 호출 HERE]</code>를 발신한 뒤, <strong>서하린·이안·린·카이 4명 전원</strong>이 <code>2F · 반원 홀</code> 바닥 발판(<code>gather-1~4</code>) 위에 동시에 올라서면 <strong>4/4 대관식 엔딩</strong>이 즉시 시작됩니다!</li>
-        </ol>
-      </div>
-    `,
+    clueTitle: '이안 & 서하린 · 항로 비문 + 거치대 잠금 해제',
+    clueSummary: '1부: 거치대 잠금 해제 + M1=45°, M2=135°, M3=90° → 2부: 4/4 집결',
+    clueHtml: `<div class="clue-card"><p>이안은 항로 비문 각도를 해독하고, 서하린은 목선 거치대 잠금을 해제해 린에게 보냅니다.</p></div>`,
+    roleClues: {
+      maria: {
+        title: '이안 · 고대 항로 비문 해독 (1·2번 프리즘 각도)',
+        bodyHtml: `
+          <div class="clue-card">
+            <p class="clue-lead">📜 <strong>해양 교류 벽화 비문 번역 (special-wall-art)</strong>:</p>
+            <p>태양 광선이 서쪽 아치문을 향해 꺾이려면 앞선 2개의 프리즘이 <strong>M1 = 45°</strong>, <strong>M2 = 135°</strong>로 교차 굴절되어야 합니다. (마지막 3번 각도는 서하린이 보유)</p>
+            <p class="clue-note"><strong>[C] 무전 휠</strong>로 린에게 <code>[동 →]+[회전 ↻]+[45/135]</code>를 발신하세요.</p>
+          </div>
+        `,
+      },
+      doyun: {
+        title: '서하린 · 1차 목선 진열장 프리즘 거치대 잠금 해제 (3번 프리즘 각인)',
+        bodyHtml: `
+          <div class="clue-card">
+            <p class="clue-lead">⚙ <strong>목선 진열장 프리즘 거치대 (special-boat-nw)</strong>:</p>
+            <p>중앙 전시대(<code>special-table</code>)의 프리즘 베어링이 잠겨 있습니다. 아래 버튼으로 거치대 잠금을 해제해야 린이 프리즘을 회전할 수 있습니다. 또한 거치대 금속 명판에 최종 반사 각인 <strong>M3 = 90°</strong>가 새겨져 있습니다.</p>
+            <p class="clue-note">잠금 해제 후 린에게 <code>[준비 완료 ✔] + [3번] + [90]</code>을 발신하세요.</p>
+          </div>
+        `,
+      },
+    },
     objectRoleClues: {
       'special-boat-nw': {
         roleId: 'doyun',
         title: '서하린 · 1차 목선 진열장 프리즘 거치대',
-        bodyHtml: `<div class="clue-card"><p>⚙ 거치대 회전 베어링 잠금을 해제했습니다. 중앙 전시대(<code>special-table</code>)에서 <strong>M1=45°, M2=135°, M3=90°</strong>로 광선을 굴절시키세요.</p></div>`,
+        bodyHtml: `<div class="clue-card"><p>⚙ 아래 버튼으로 중앙 전시대 프리즘 회전 베어링 잠금을 해제하세요. 거치대 명판에는 최종 반사 각도 <strong>M3 = 90°</strong>가 각인되어 있습니다.</p></div>`,
       },
     },
   },

@@ -9,7 +9,12 @@ import type {
   RoleId,
   RoomState,
 } from './types/stranger.ts';
-import { ROLE_ORDER, ROLES, renderTokenPillHtml } from './data/cMenuTokens.ts';
+import {
+  ROLE_ORDER,
+  ROLES,
+  renderRadioContentHtml,
+  renderRadioTargetHtml,
+} from './data/cMenuTokens.ts';
 import { PUZZLES, ROOM_INTROS } from './data/puzzleCatalog.ts';
 import { soundEngine } from './audio/soundEngine.ts';
 import { SessionClient } from './net/sessionClient.ts';
@@ -51,7 +56,7 @@ class StrangerApp {
   private roomIntroKey = '1F:hall';
   private checklistExpanded = true;
   private showCoronation = false;
-  private logExpanded = false;
+  private logExpanded = true;
 
   private cleanupScreenAnim: (() => void) | null = null;
   private world: WorldEngine | null = null;
@@ -100,7 +105,7 @@ class StrangerApp {
       getMyRole: () => this.session.getMyRole(),
       switchRole: (r: RoleId) => this.switchRole(r),
       teleport: (f: FloorKey, s: string, x: number, y: number) => this.world?.teleportActiveRole(f, s, x, y),
-      openPuzzle: (pid: number, tab: 'main' | 'clue' = 'main') => this.taskModal?.openPuzzleDirect(pid, tab),
+      openPuzzle: (pid: number) => this.taskModal?.openPuzzleDirect(pid),
       summonAll: () => this.world?.summonAllTeammatesToActive(),
     };
   }
@@ -396,6 +401,15 @@ class StrangerApp {
             <div class="hud-checklist" id="hud-checklist" style="display:${this.checklistExpanded ? 'flex' : 'none'}"></div>
           </div>
           <div class="hud-box hud-role-banner" id="hud-role-box"></div>
+          <div class="signal-log-box ${this.logExpanded ? 'expanded' : ''}" id="hud-log-box">
+            <div class="signal-log-bar">
+              <button class="signal-log-head" id="hud-log-toggle">📡 팀 무전 채팅 (${this.logExpanded ? '▴' : '▾'})</button>
+              <button class="hud-chk-toggle" id="hud-log-send" title="C-Menu 2.0 조합 무전 보내기">+ 보내기 (C)</button>
+            </div>
+            <div class="signal-log-list" id="hud-log-list">
+              <span style="color:#8597a6">수신된 무전이 없습니다. [C]로 신호를 보내보세요.</span>
+            </div>
+          </div>
         </div>
 
         <div class="hud-top-center">
@@ -428,15 +442,6 @@ class StrangerApp {
           <button class="s-btn" data-pad-key="ArrowLeft">←</button>
           <button class="s-btn" data-pad-key="ArrowDown">↓</button>
           <button class="s-btn" data-pad-key="ArrowRight">→</button>
-        </div>
-
-        <div class="hud-bottom-right">
-          <div class="signal-log-box" id="hud-log-box">
-            <button class="signal-log-head" id="hud-log-toggle">📡 무전 기록 · 클릭해 펼치기</button>
-            <div class="signal-log-list" id="hud-log-list">
-              <span style="color:#8597a6">수신된 무전이 없습니다. [C]로 신호를 보내보세요.</span>
-            </div>
-          </div>
         </div>
       </div>
     `;
@@ -506,8 +511,9 @@ class StrangerApp {
       this.refreshHud();
     });
     this.taskModal = new TaskModal(this.root, this.session, this.mapData, {
-      onOpenCMenu: () => this.cMenu?.toggle(true),
-      onRequestBotClue: (pid) => this.bots?.requestBotClueForPuzzle(pid),
+      onOpenCMenu: (targetRoleId) => this.cMenu?.openWithTarget(targetRoleId ?? null),
+      onRequestBotHelp: (pid, helperRole) => this.bots?.requestBotHelpForPuzzle(pid, helperRole),
+      onSwitchRole: (roleId) => this.switchRole(roleId),
       onJumpToAtrium: () => this.world?.teleportActiveRole('2F', 'atrium', 950, 560),
     });
 
@@ -528,7 +534,10 @@ class StrangerApp {
     this.root.querySelector('#hud-log-toggle')?.addEventListener('click', () => {
       this.logExpanded = !this.logExpanded;
       this.root.querySelector('#hud-log-box')?.classList.toggle('expanded', this.logExpanded);
+      const toggleEl = this.root.querySelector('#hud-log-toggle');
+      if (toggleEl) toggleEl.textContent = `📡 팀 무전 채팅 (${this.logExpanded ? '▴' : '▾'})`;
     });
+    this.root.querySelector('#hud-log-send')?.addEventListener('click', () => this.cMenu?.toggle(true));
     this.root.querySelector('#hud-chk-toggle')?.addEventListener('click', () => {
       this.checklistExpanded = !this.checklistExpanded;
       const list = this.root.querySelector<HTMLElement>('#hud-checklist');
@@ -652,6 +661,7 @@ class StrangerApp {
       this.showRadioBanner(pkt);
       this.refreshSignalLog(room);
       this.taskModal?.refreshPinnedRadios();
+      this.bots?.onRadioDirectedAtBot(pkt);
       return;
     }
 
@@ -744,9 +754,30 @@ class StrangerApp {
     const roleBox = this.root.querySelector<HTMLElement>('#hud-role-box');
     if (roleBox) {
       roleBox.style.borderLeftColor = rMeta.color;
+      let roomAssignLine = '';
+      if (slot) {
+        const roomUnsolved = PUZZLES.filter(
+          (pz) => pz.floor === slot.floor && pz.room === slot.scene && !room.solvedPids.includes(pz.id)
+        );
+        const myMain = roomUnsolved.find((pz) => pz.mainRole === myRole);
+        const myHelper = roomUnsolved.find((pz) => pz.helperRoles.includes(myRole));
+        if (myMain) {
+          roomAssignLine = `<div class="hud-role-assign" style="color:${rMeta.color}">📍 이 방 담당: ★ ${myMain.code} 주도 조작</div>`;
+        } else if (myHelper) {
+          const sum = myHelper.helperSummaryByRole?.[myRole] || '단서·보조';
+          roomAssignLine = `<div class="hud-role-assign" style="color:${rMeta.color}">📍 이 방 담당: 👁 ${myHelper.code} ${sum} (${ROLES[myHelper.mainRole].name} 지원)</div>`;
+        } else if (roomUnsolved.length > 0) {
+          roomAssignLine = `<div class="hud-role-assign" style="color:#9BB0BE">📍 이 방: ${roomUnsolved[0].code} 동료 구역 (무전 협동)</div>`;
+        } else if (slot.scene === 'atrium') {
+          roomAssignLine = `<div class="hud-role-assign" style="color:#52EFBF">📍 반원 홀: 4인 대관식 집결 광장</div>`;
+        } else {
+          roomAssignLine = `<div class="hud-role-assign" style="color:#52EFBF">📍 이 방 복원 완료 ✔</div>`;
+        }
+      }
       roleBox.innerHTML = `
         <div style="font-size:13px;font-weight:900;color:${rMeta.color}">${rMeta.badge} ${rMeta.name} · ${rMeta.title}</div>
         <div style="font-size:11px;color:#b8c7d4;margin-top:2px">${rMeta.passiveName}: ${rMeta.passiveDesc}</div>
+        ${roomAssignLine}
       `;
     }
 
@@ -786,7 +817,7 @@ class StrangerApp {
     const list = this.root.querySelector('#hud-log-list');
     if (!list) return;
     if (room.radioLog.length === 0) {
-      list.innerHTML = `<span style="color:#8597a6">수신된 무전이 없습니다. [C]로 신호를 보내보세요.</span>`;
+      list.innerHTML = `<span style="color:#8597a6">수신된 무전이 없습니다. [C]로 조합 무전을 보내보세요.</span>`;
       return;
     }
     list.innerHTML = room.radioLog
@@ -794,8 +825,11 @@ class StrangerApp {
       .map((pkt) => {
         const rm = ROLES[pkt.roleId];
         return `<div class="signal-log-item">
-          <strong style="color:${rm.color}">${pkt.senderName}:</strong>
-          ${pkt.tokenIds.map((id) => renderTokenPillHtml(id)).join(' + ')}
+          <div class="signal-log-meta">
+            <strong style="color:${rm.color}">${rm.badge} ${pkt.senderName}</strong>
+            ${renderRadioTargetHtml(pkt)}
+          </div>
+          <div class="signal-log-content">${renderRadioContentHtml(pkt, room.slots)}</div>
         </div>`;
       })
       .join('');
@@ -804,13 +838,14 @@ class StrangerApp {
   private showRadioBanner(pkt: RadioPacket) {
     if (!this.radioBannerEl) return;
     const rm = ROLES[pkt.roleId];
+    const room = this.session.getRoom();
     this.radioBannerEl.style.display = 'flex';
     this.radioBannerEl.style.borderColor = rm.color;
     this.radioBannerEl.innerHTML = `
       <span>📡</span>
-      <strong style="color:${rm.color}">${pkt.senderName} (${rm.shortRole})</strong>
-      <span>→</span>
-      ${pkt.tokenIds.map((id) => renderTokenPillHtml(id)).join(' + ')}
+      <strong style="color:${rm.color}">${rm.badge} ${pkt.senderName}</strong>
+      ${renderRadioTargetHtml(pkt)}
+      ${renderRadioContentHtml(pkt, room?.slots)}
     `;
     if (this.radioBannerTimer) window.clearTimeout(this.radioBannerTimer);
     this.radioBannerTimer = window.setTimeout(() => {

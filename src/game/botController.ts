@@ -1,6 +1,6 @@
-import type { MapJson, RoleId } from '../types/stranger.ts';
-import { ROLE_ORDER } from '../data/cMenuTokens.ts';
-import { PUZZLES_BY_ID } from '../data/puzzleCatalog.ts';
+import type { MapJson, RadioPacket, RoleId } from '../types/stranger.ts';
+import { ROLES, ROLE_ORDER } from '../data/cMenuTokens.ts';
+import { PUZZLES_BY_ID, getObjectOwnerRole } from '../data/puzzleCatalog.ts';
 import type { SessionClient } from '../net/sessionClient.ts';
 import type { WorldEngine } from './worldEngine.ts';
 
@@ -11,6 +11,136 @@ const GATHER_TARGETS: Record<RoleId, [number, number]> = {
   aisha: [1004, 725],
 };
 
+interface BotHelpScript {
+  tokens: string[];
+  note: string;
+  statePatch?: Record<string, unknown>;
+}
+
+const BOT_HELPER_SCRIPTS: Record<number, Partial<Record<RoleId, BotHelpScript>>> = {
+  1: {
+    maria: {
+      tokens: ['DIR_N', 'SYM_SUN', 'DIR_E', 'SYM_STAR', 'DIR_S', 'SYM_WAVE', 'DIR_W', 'SYM_MTN'],
+      note: '방명록 해독: 북=☀생활, 동=★역사, 남=🌊도시, 서=⛰공예 (모두 0° 기준)',
+    },
+  },
+  2: {
+    maria: {
+      tokens: ['NUM_1', 'SYM_SUN', 'NUM_2', 'SYM_WAVE', 'NUM_3', 'SYM_MTN'],
+      note: '1다락=곡식단지, 2마루=바구니, 3기둥=돌절구 (등유 램프는 미끼)',
+    },
+  },
+  3: {
+    doyun: {
+      tokens: ['ACT_ROT', 'VAL:180', 'NUM_0', 'VAL:0'],
+      note: '기어 실측: 턴테이블 180°, 영혼의 배 뚜껑 기울기 0°로 맞추세요',
+    },
+  },
+  4: {
+    lin: {
+      tokens: ['NUM_1', 'SYM_WAVE', 'NUM_2', 'DIR_W', 'NUM_3', 'DIR_N'],
+      note: '해협 측량: 1521=비사야, 1898=말롤로스(서←), 1946=마닐라 북부(북↑)',
+    },
+  },
+  5: {
+    aisha: {
+      tokens: ['NUM_1', 'SYM_SUN', 'NUM_2', 'SYM_VOLT', 'NUM_3', 'SYM_WAVE'],
+      note: '직물 루페: 1줄 황금(☀) → 2줄 진홍(⚡) → 3줄 청록(🌊) 순서입니다',
+    },
+  },
+  6: {
+    maria: {
+      tokens: ['NUM_2', 'DIR_E'],
+      note: '노선표 판독: 2번 비논도 우회(S1=B, S2=B, S3=A) → 동쪽(→) 도개교',
+    },
+  },
+  7: {
+    lin: {
+      tokens: ['NUM_1', 'VAL:25', 'NUM_2', 'VAL:50', 'NUM_3', 'VAL:100'],
+      note: '배관 계통도: 1번=25%, 2번=50%, 3번=100% 개방 시 60 PSI 평형!',
+    },
+  },
+  8: {
+    aisha: {
+      tokens: ['SYM_VOLT', 'VAL:70-90', 'NUM_2', 'VAL:1200'],
+      note: '센서 경보: 보일러 70~90 PSI로 감압 후 1·2호기 1200 RPM 동기화하세요',
+    },
+  },
+  9: {
+    lin: {
+      tokens: ['NUM_3', 'COOP_SWAP'],
+      note: 'UPS 단락 점검: Bus 1·2 OFF, 3번 예비 우회 모선만 ON 하세요',
+    },
+    aisha: {
+      tokens: ['VAL:60', 'COOP_OK'],
+      note: '코일 센서: 발전기 100% 예열 후 크랭크 기동(60Hz) 하세요',
+    },
+  },
+  10: {
+    aisha: {
+      tokens: ['SYM_WAVE', 'VAL:45/18', 'DIR_N'],
+      note: '제습(45%/18°C) 완료! 침수 (2,2)(3,2)(2,3) 피해 북쪽 우회 → (4,1)',
+      statePatch: { rh: 45, temp: 18 },
+    },
+    doyun: {
+      tokens: ['NUM_1', 'VAL:1/3', 'SYM_SAFE'],
+      note: '(1,3) 1번 방수 크레이트 걸쇠 체결 완료! 크레인으로 인양하세요',
+      statePatch: { crateLatch: true },
+    },
+  },
+  11: {
+    aisha: {
+      tokens: ['SYM_STAR', 'NUM_0', 'ACT_ROT'],
+      note: 'UV 스캔: 3개 음절 모두 모음점 없는 무점(기본 모음 a)입니다',
+    },
+    doyun: {
+      tokens: ['NUM_1', 'NUM_2', 'NUM_3', 'SYM_SUN'],
+      note: '목판 판독: 자유(Kalayaan) 앞 세 자음은 KA(ᜃ) - LA(ᜎ) - YA(ᜌ)',
+    },
+  },
+  12: {
+    lin: {
+      tokens: ['NUM_2', 'SYM_STAR', 'NUM_4', 'SYM_WAVE'],
+      note: '마이크로필름 초점(60,40) 맞춤! 2열 ★별자리, 4열 🌊파도 타공하세요',
+      statePatch: { fx: 60, fy: 40 },
+    },
+  },
+  13: {
+    maria: {
+      tokens: ['SYM_WAVE', 'VAL:2', 'SYM_SUN', 'VAL:1', 'VAL:7.0'],
+      note: '화학 노트: 청록 2방울 + 호박 1방울 + 투명 0방울 = pH 7.0, 세척 90%+',
+    },
+    doyun: {
+      tokens: ['COOP_OK'],
+      note: '약품 보관장 시약 공급 안전 밸브 개방 완료! 스포이드 사용 가능합니다',
+      statePatch: { valveOpen: true },
+    },
+  },
+  14: {
+    doyun: {
+      tokens: ['NUM_1', 'NUM_3', 'COOP_SWAP', 'VAL:0'],
+      note: '도르래 순서: 대각선 #1(좌상)·#3(우하) 먼저 0% 풀고 #2·#4! 밀랍 0° 압착',
+    },
+  },
+  15: {
+    lin: {
+      tokens: ['DIR_W', 'ACT_ROT', 'VAL:0'],
+      note: '축선 측량: 서쪽(←) 원점 이동 + 시계 90° 회전(0°)으로 3점 일치',
+    },
+  },
+  16: {
+    maria: {
+      tokens: ['DIR_E', 'ACT_ROT', 'VAL:45/135'],
+      note: '항로 비문: 프리즘 M1=45°, M2=135°로 맞추세요 (M3는 서하린 확인)',
+    },
+    doyun: {
+      tokens: ['COOP_OK', 'NUM_3', 'VAL:90'],
+      note: '거치대 베어링 잠금 해제 완료! 마지막 프리즘 각인 M3=90° 입니다',
+      statePatch: { mountUnlocked: true },
+    },
+  },
+};
+
 export class BotController {
   private session: SessionClient;
   private world: WorldEngine;
@@ -18,6 +148,7 @@ export class BotController {
   private timerId: number | null = null;
   private sentClueFor = new Set<string>();
   private patrolAngles: Record<RoleId, number> = { doyun: 0, maria: 1.5, lin: 3.1, aisha: 4.7 };
+  private roomEnterTicks = new Map<string, number>();
 
   constructor(session: SessionClient, world: WorldEngine, mapData: MapJson) {
     this.session = session;
@@ -37,20 +168,108 @@ export class BotController {
     }
   }
 
-  requestBotClueForPuzzle(pid: number) {
+  private executeBotHelp(pid: number, helperRole: RoleId): boolean {
+    const room = this.session.getRoom();
+    const pDef = PUZZLES_BY_ID[pid];
+    if (!room || !pDef) return false;
+    const slot = room.slots[helperRole];
+    if (!slot || !slot.isBot || slot.ownerClientId) return false;
+
+    const script = BOT_HELPER_SCRIPTS[pid]?.[helperRole];
+    if (!script) return false;
+
+    if (script.statePatch) {
+      this.session.patchPuzzle(pid, script.statePatch);
+    }
+    this.session.sendRadio(helperRole, script.tokens, {
+      targetRoleId: pDef.mainRole,
+      note: script.note,
+    });
+    return true;
+  }
+
+  requestBotHelpForPuzzle(pid: number, helperRole?: RoleId) {
     const room = this.session.getRoom();
     const pDef = PUZZLES_BY_ID[pid];
     if (!room || !pDef) return;
-    const helper = pDef.helperRoles.find((r) => room.slots[r]?.isBot) || pDef.helperRoles[0];
-    if (!helper) return;
-    for (const pkt of pDef.answerTokens) {
-      this.session.sendRadio(helper, pkt);
+    const candidates = helperRole ? [helperRole] : pDef.helperRoles;
+    for (const r of candidates) {
+      if (this.executeBotHelp(pid, r)) {
+        this.sentClueFor.add(`${pDef.code}:${r}`);
+        if (helperRole) break;
+      }
     }
+  }
+
+  onRadioDirectedAtBot(pkt: RadioPacket) {
+    const room = this.session.getRoom();
+    if (!room || room.phase !== 'playing') return;
+    if (room.hostClientId !== this.session.getClientId()) return;
+
+    const senderSlot = room.slots[pkt.roleId];
+    if (!senderSlot || senderSlot.isBot) return;
+
+    const botTargets = new Set<RoleId>();
+    if (pkt.targetRoleId && pkt.targetRoleId !== pkt.roleId) {
+      botTargets.add(pkt.targetRoleId);
+    }
+    for (const tid of pkt.tokenIds) {
+      if (tid.startsWith('ROLE:')) {
+        const rid = tid.slice(5) as RoleId;
+        if (ROLE_ORDER.includes(rid) && rid !== pkt.roleId) botTargets.add(rid);
+      }
+    }
+    if (botTargets.size === 0) return;
+
+    for (const botRole of botTargets) {
+      const slot = room.slots[botRole];
+      if (!slot || !slot.isBot || slot.ownerClientId) continue;
+
+      // Prefer an unsolved puzzle in the sender's current room where this bot is a helper
+      const roomPuzzle = Object.values(PUZZLES_BY_ID).find(
+        (p) =>
+          p.floor === senderSlot.floor &&
+          p.room === senderSlot.scene &&
+          !room.solvedPids.includes(p.id) &&
+          p.helperRoles.includes(botRole)
+      );
+
+      window.setTimeout(() => {
+        if (roomPuzzle) {
+          this.executeBotHelp(roomPuzzle.id, botRole);
+          this.sentClueFor.add(`${roomPuzzle.code}:${botRole}`);
+        } else {
+          // Inform the player if this bot has an unsolved puzzle elsewhere
+          const nextElsewhere = Object.values(PUZZLES_BY_ID).find(
+            (p) => !room.solvedPids.includes(p.id) && p.helperRoles.includes(botRole)
+          );
+          const note = nextElsewhere
+            ? `${ROLES[botRole].name}: 이 방엔 제 단서가 없어요. ${nextElsewhere.roomLabel}(${nextElsewhere.code})에서 도울 수 있습니다!`
+            : `${ROLES[botRole].name}: 지금 맡을 단서 작업이 모두 완료되었습니다!`;
+          this.session.sendRadio(botRole, ['COOP_OK'], {
+            targetRoleId: pkt.roleId,
+            note,
+          });
+        }
+      }, 450);
+    }
+  }
+
+  private getBotObjectTarget(pid: number, botRole: RoleId): [number, number] | null {
+    const pDef = PUZZLES_BY_ID[pid];
+    if (!pDef) return null;
+    const fl = this.mapData.floors[pDef.floor];
+    if (!fl) return null;
+    const obj = fl.objects.find((o) => o.puzzles?.includes(pid) && getObjectOwnerRole(o, pDef) === botRole);
+    if (!obj) return null;
+    if (obj.interact) return obj.interact;
+    return [obj.x + obj.width / 2, obj.y + obj.height + 8];
   }
 
   private tick() {
     const room = this.session.getRoom();
     if (!room || room.phase !== 'playing') return;
+    if (room.hostClientId !== this.session.getClientId()) return;
 
     const activeRole = this.session.getMyRole();
     const activeSlot = room.slots[activeRole];
@@ -59,7 +278,11 @@ export class BotController {
     const p16 = (room.puzzleStates[16] || {}) as { beamReachedAtrium?: boolean; hereSent?: boolean };
     const isP16GatherPhase = Boolean(p16.beamReachedAtrium && p16.hereSent && !room.solvedPids.includes(16));
 
-    // Only simulate bots on host/local client (when slot.isBot && !slot.ownerClientId)
+    // Identify unsolved puzzles in the active player's current room
+    const roomPuzzles = Object.values(PUZZLES_BY_ID).filter(
+      (p) => p.floor === activeSlot.floor && p.room === activeSlot.scene && !room.solvedPids.includes(p.id)
+    );
+
     for (const r of ROLE_ORDER) {
       if (r === activeRole) continue;
       const slot = room.slots[r];
@@ -86,11 +309,11 @@ export class BotController {
         continue;
       }
 
-      // Gently follow player to the same room if player lingers in a room, and stay walkable
+      // Gently teleport bot to active player's room if separated
       if (slot.floor !== activeSlot.floor || slot.scene !== activeSlot.scene) {
         const fl = this.mapData.floors[activeSlot.floor];
         const nearScene = fl?.scenes[activeSlot.scene];
-        if (nearScene && Math.random() < 0.25) {
+        if (nearScene && Math.random() < 0.35) {
           const offsets: [number, number][] = [
             [-20, 10],
             [20, 10],
@@ -98,10 +321,10 @@ export class BotController {
             [14, 18],
           ];
           const [ox, oy] = offsets[ROLE_ORDER.indexOf(r)];
-          const tx = this.world.canMove(activeSlot.floor, activeSlot.x + ox, activeSlot.y + oy)
+          const tx = this.world.canMove(activeSlot.floor, activeSlot.x + ox, activeSlot.y + oy, activeSlot.x, activeSlot.y)
             ? activeSlot.x + ox
             : activeSlot.x;
-          const ty = this.world.canMove(activeSlot.floor, tx, activeSlot.y + oy)
+          const ty = this.world.canMove(activeSlot.floor, tx, activeSlot.y + oy, activeSlot.x, activeSlot.y)
             ? activeSlot.y + oy
             : activeSlot.y;
           this.session.moveSlot(r, {
@@ -112,54 +335,66 @@ export class BotController {
             dir: 'down',
             moving: false,
           });
+          this.roomEnterTicks.set(`${r}:${activeSlot.floor}:${activeSlot.scene}`, 0);
         }
         continue;
       }
 
-      // Idle stroll around active player
-      this.patrolAngles[r] += 0.35;
-      const idx = ROLE_ORDER.indexOf(r);
-      const targetX = activeSlot.x + Math.cos(this.patrolAngles[r] + idx) * 26;
-      const targetY = activeSlot.y + Math.sin(this.patrolAngles[r] + idx) * 20;
+      // Check if this bot has an unsolved helper task in the current room
+      const helperPuzzle = roomPuzzles.find((p) => p.helperRoles.includes(r));
+      const roomKey = `${r}:${activeSlot.floor}:${activeSlot.scene}`;
+      const ticksHere = (this.roomEnterTicks.get(roomKey) || 0) + 1;
+      this.roomEnterTicks.set(roomKey, ticksHere);
+
+      let targetX: number;
+      let targetY: number;
+      let objDist = Infinity;
+
+      if (helperPuzzle && !this.sentClueFor.has(`${helperPuzzle.code}:${r}`)) {
+        const pt = this.getBotObjectTarget(helperPuzzle.id, r);
+        if (pt) {
+          targetX = pt[0];
+          targetY = pt[1];
+          objDist = Math.hypot(targetX - slot.x, targetY - slot.y);
+          // Once near its clue/device (or after ~1.6s in the room), inspect it & radio the info!
+          if (objDist <= 38 || ticksHere >= 6) {
+            this.sentClueFor.add(`${helperPuzzle.code}:${r}`);
+            this.executeBotHelp(helperPuzzle.id, r);
+          }
+        } else {
+          this.sentClueFor.add(`${helperPuzzle.code}:${r}`);
+          this.executeBotHelp(helperPuzzle.id, r);
+          targetX = activeSlot.x;
+          targetY = activeSlot.y;
+        }
+      } else {
+        // Gentle patrol around active player
+        this.patrolAngles[r] += 0.35;
+        const idx = ROLE_ORDER.indexOf(r);
+        targetX = activeSlot.x + Math.cos(this.patrolAngles[r] + idx) * 26;
+        targetY = activeSlot.y + Math.sin(this.patrolAngles[r] + idx) * 20;
+      }
+
       const dx = targetX - slot.x;
       const dy = targetY - slot.y;
       const dist = Math.hypot(dx, dy);
       if (dist > 14) {
-        const step = Math.min(8, dist);
+        const step = Math.min(12, dist);
         const nx = slot.x + (dx / dist) * step;
         const ny = slot.y + (dy / dist) * step;
-        if (this.world.canMove(slot.floor, nx, ny)) {
+        let movedX = slot.x;
+        let movedY = slot.y;
+        if (this.world.canMove(slot.floor, nx, slot.y, slot.x, slot.y)) movedX = nx;
+        if (this.world.canMove(slot.floor, movedX, ny, slot.x, slot.y)) movedY = ny;
+
+        if (Math.hypot(movedX - slot.x, movedY - slot.y) > 0.5) {
           const dir = Math.abs(dx) > Math.abs(dy) ? (dx < 0 ? 'left' : 'right') : dy < 0 ? 'up' : 'down';
-          this.session.moveSlot(r, { floor: slot.floor, scene: slot.scene, x: nx, y: ny, dir, moving: true });
+          this.session.moveSlot(r, { floor: slot.floor, scene: slot.scene, x: movedX, y: movedY, dir, moving: true });
         } else if (slot.moving) {
           this.session.moveSlot(r, { floor: slot.floor, scene: slot.scene, x: slot.x, y: slot.y, dir: slot.dir, moving: false });
         }
       } else if (slot.moving) {
         this.session.moveSlot(r, { floor: slot.floor, scene: slot.scene, x: slot.x, y: slot.y, dir: slot.dir, moving: false });
-      }
-    }
-
-    // Automatically broadcast helpful bot clue once when the player enters a puzzle room for the first time
-    for (const p of Object.values(PUZZLES_BY_ID)) {
-      if (
-        p.floor === activeSlot.floor &&
-        p.room === activeSlot.scene &&
-        !room.solvedPids.includes(p.id) &&
-        !this.sentClueFor.has(p.code)
-      ) {
-        const botHelper = p.helperRoles.find((hr) => room.slots[hr]?.isBot && hr !== activeRole);
-        if (botHelper) {
-          this.sentClueFor.add(p.code);
-          const firstPkt = p.answerTokens[0];
-          if (firstPkt) {
-            window.setTimeout(() => {
-              const cur = this.session.getRoom();
-              if (cur && cur.phase === 'playing' && !cur.solvedPids.includes(p.id)) {
-                this.session.sendRadio(botHelper, firstPkt);
-              }
-            }, 900);
-          }
-        }
       }
     }
   }

@@ -11,8 +11,8 @@ import type {
   RoleId,
   RoomState,
 } from '../types/stranger.ts';
-import { ROLE_ORDER, ROLES, TOKENS_BY_ID } from '../data/cMenuTokens.ts';
-import { PUZZLES_BY_ID, getPortalLockReason } from '../data/puzzleCatalog.ts';
+import { ROLE_ORDER, ROLES, formatRadioPlainText } from '../data/cMenuTokens.ts';
+import { PUZZLES_BY_ID, getObjectOwnerRole, getPortalLockReason } from '../data/puzzleCatalog.ts';
 import { soundEngine } from '../audio/soundEngine.ts';
 import type { SessionClient } from '../net/sessionClient.ts';
 
@@ -168,14 +168,9 @@ export class WorldEngine {
   }
 
   onRadioReceived(pkt: RadioPacket) {
-    const label = pkt.tokenIds
-      .map((id) => {
-        const t = TOKENS_BY_ID[id];
-        return t ? `${t.glyph} ${t.label}` : id;
-      })
-      .join(' + ');
+    const label = formatRadioPlainText(pkt);
     this.speechBubbles[pkt.roleId] = {
-      text: label,
+      text: label.length > 42 ? label.slice(0, 41) + '…' : label,
       color: ROLES[pkt.roleId].color,
       until: Date.now() + 6500,
     };
@@ -457,7 +452,11 @@ export class WorldEngine {
     } else if (nearObj) {
       const pid = nearObj.puzzles?.[0];
       const tag = pid ? `P${String(pid).padStart(2, '0')} ` : '';
-      nextPrompt = `[E] ${tag}${nearObj.name}`;
+      const pDef = pid ? PUZZLES_BY_ID[pid] : undefined;
+      const owner = getObjectOwnerRole(nearObj, pDef);
+      const myRoleNow = this.session.getMyRole();
+      const ownerHint = owner !== 'all' && owner !== myRoleNow ? ` (${ROLES[owner].name} 담당)` : '';
+      nextPrompt = `[E] ${tag}${nearObj.name}${ownerHint}`;
     }
     if (nextPrompt !== this.lastPrompt) {
       this.lastPrompt = nextPrompt;
@@ -812,30 +811,56 @@ export class WorldEngine {
     // 2. Role-specific exploration passive HUD overlays on puzzle objects + interact markers!
     for (const obj of roomObjs) {
       const pid = obj.puzzles?.[0];
+      const pDef = pid ? PUZZLES_BY_ID[pid] : undefined;
       const solved = pid ? room.solvedPids.includes(pid) : false;
       const isNear = nearObj?.id === obj.id;
       const [ox, oy] = toScreen(obj.x + obj.width / 2, obj.y);
+      const owner = getObjectOwnerRole(obj, pDef);
+      const isMine = owner === activeRole || owner === 'all';
 
       // Role passive highlight!
       if (pid) {
-        this.drawRolePassiveOverlay(ctx, activeRole, obj, room, toScreen, solved);
+        this.drawRolePassiveOverlay(ctx, activeRole, activeSlot, obj, room, toScreen, solved);
       }
 
-      // Floating P01..P16 badge / [E] prompt
+      // Floating P01..P16 badge / ownership marker / [E] prompt
       if (pid) {
-        const badgeText = isNear
-          ? `[E] P${String(pid).padStart(2, '0')} · 열기`
-          : solved
-            ? `✔ P${String(pid).padStart(2, '0')}`
-            : `P${String(pid).padStart(2, '0')}`;
+        const pCode = `P${String(pid).padStart(2, '0')}`;
+        const badgeText = solved
+          ? `✔ ${pCode}`
+          : isNear
+            ? isMine
+              ? `[E] ${pCode} · 내 담당 ★`
+              : `[E] ${pCode} · ${ROLES[owner as RoleId].name} 담당`
+            : isMine
+              ? `★ ${pCode}`
+              : `${ROLES[owner as RoleId].badge} ${ROLES[owner as RoleId].name}`;
         ctx.font = '800 11px ui-monospace, "Noto Sans KR", monospace';
         const bw = ctx.measureText(badgeText).width + 12;
         const py = Math.max(18, oy - 12);
-        ctx.fillStyle = solved ? 'rgba(15, 56, 36, 0.92)' : isNear ? 'rgba(65, 44, 12, 0.95)' : 'rgba(14, 22, 30, 0.85)';
-        ctx.strokeStyle = solved ? '#52EFBF' : isNear ? '#FFD86B' : 'rgba(82, 239, 191, 0.6)';
-        ctx.lineWidth = isNear ? 2 : 1.2;
+        ctx.fillStyle = solved
+          ? 'rgba(15, 56, 36, 0.92)'
+          : isNear
+            ? 'rgba(65, 44, 12, 0.95)'
+            : isMine
+              ? 'rgba(14, 24, 34, 0.9)'
+              : 'rgba(18, 22, 28, 0.72)';
+        ctx.strokeStyle = solved
+          ? '#52EFBF'
+          : isNear
+            ? '#FFD86B'
+            : isMine
+              ? ROLES[activeRole].color
+              : 'rgba(130, 148, 165, 0.45)';
+        ctx.lineWidth = isNear || isMine ? 2 : 1;
         this.roundRect(ctx, ox - bw / 2, py - 10, bw, 20, 5, true, true);
-        ctx.fillStyle = solved ? '#52EFBF' : isNear ? '#FFE89E' : '#9CEFD7';
+        ctx.fillStyle = solved
+          ? '#52EFBF'
+          : isNear
+            ? '#FFE89E'
+            : isMine
+              ? ROLES[activeRole].color
+              : '#9AA7B4';
         ctx.textAlign = 'center';
         ctx.textBaseline = 'middle';
         ctx.fillText(badgeText, ox, py);
@@ -909,6 +934,7 @@ export class WorldEngine {
   private drawRolePassiveOverlay(
     ctx: CanvasRenderingContext2D,
     role: RoleId,
+    activeSlot: CharacterSlot,
     obj: MapObject,
     room: RoomState,
     toScreen: (x: number, y: number) => [number, number],
@@ -918,110 +944,150 @@ export class WorldEngine {
     const pid = obj.puzzles[0];
     const pDef = PUZZLES_BY_ID[pid];
     if (!pDef) return;
+    const owner = getObjectOwnerRole(obj, pDef);
     const [cx, cy] = toScreen(obj.x + obj.width / 2, obj.y + obj.height / 2);
     const [x0, y0] = toScreen(obj.x, obj.y);
     const w = obj.width * SCALE_X;
     const h = obj.height * SCALE_X;
 
+    // Non-owned objects: draw only a subtle lock hint when close — never show another role's passive vision
+    if (owner !== role) {
+      if (owner !== 'all') {
+        const dist = Math.hypot(activeSlot.x - (obj.x + obj.width / 2), activeSlot.y - (obj.y + obj.height / 2));
+        if (dist <= 105) {
+          ctx.save();
+          ctx.font = '700 10px "Noto Sans KR", sans-serif';
+          const tag = `🔒 ${ROLES[owner].name} 담당`;
+          const tw = ctx.measureText(tag).width + 10;
+          ctx.fillStyle = 'rgba(13, 18, 25, 0.85)';
+          ctx.strokeStyle = 'rgba(148, 163, 184, 0.45)';
+          ctx.lineWidth = 1;
+          this.roundRect(ctx, cx - tw / 2, y0 + h + 4, tw, 17, 4, true, true);
+          ctx.fillStyle = '#9FB0C0';
+          ctx.textAlign = 'center';
+          ctx.textBaseline = 'middle';
+          ctx.fillText(tag, cx, y0 + h + 12.5);
+          ctx.restore();
+        }
+      }
+      return;
+    }
+
     if (role === 'doyun') {
-      // Brass gear highlight on mechanical / main operator objects or Ha-rin clue targets
-      const isMech =
-        pDef.mainRole === 'doyun' ||
-        (obj.role && (obj.role.includes('서하린') || obj.role.includes('밸브') || obj.role.includes('로프') || obj.role.includes('배전')));
-      if (isMech) {
-        ctx.save();
-        ctx.strokeStyle = 'rgba(255, 184, 107, 0.85)';
-        ctx.lineWidth = 2;
-        ctx.setLineDash([6, 4]);
-        ctx.strokeRect(x0 - 4, y0 - 4, w + 8, h + 8);
-        ctx.translate(x0 + w - 4, y0 + 6);
-        ctx.rotate(this.animClock * 1.4);
-        ctx.setLineDash([]);
-        ctx.fillStyle = '#FFB86B';
-        ctx.font = 'bold 14px sans-serif';
-        ctx.textAlign = 'center';
-        ctx.textBaseline = 'middle';
-        ctx.fillText('⚙', 0, 0);
-        ctx.restore();
-      }
+      // Brass gear highlight strictly on Ha-rin's mechanical objects
+      ctx.save();
+      ctx.strokeStyle = 'rgba(255, 184, 107, 0.88)';
+      ctx.lineWidth = 2;
+      ctx.setLineDash([6, 4]);
+      ctx.strokeRect(x0 - 4, y0 - 4, w + 8, h + 8);
+      ctx.save();
+      ctx.translate(x0 + w - 4, y0 + 6);
+      ctx.rotate(this.animClock * 1.6);
+      ctx.setLineDash([]);
+      ctx.fillStyle = '#FFB86B';
+      ctx.font = 'bold 14px sans-serif';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText('⚙', 0, 0);
+      ctx.restore();
+      const note = '⚙ 기계 조작/점검';
+      ctx.font = '800 10px "Noto Sans KR", sans-serif';
+      const nw = ctx.measureText(note).width + 10;
+      ctx.fillStyle = 'rgba(42, 27, 14, 0.92)';
+      ctx.strokeStyle = '#FFB86B';
+      ctx.lineWidth = 1.2;
+      ctx.setLineDash([]);
+      this.roundRect(ctx, cx - nw / 2, y0 + h + 4, nw, 18, 4, true, true);
+      ctx.fillStyle = '#FFD39E';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText(note, cx, y0 + h + 13);
+      ctx.restore();
     } else if (role === 'maria') {
-      // Parchment translation overlay tags on documents, charts, plaques, timelines
-      const isDoc =
-        pDef.mainRole === 'maria' ||
-        (obj.role && (obj.role.includes('이안') || obj.role.includes('번역') || obj.role.includes('사료') || obj.role.includes('방명록')));
-      if (isDoc) {
-        ctx.save();
-        ctx.strokeStyle = 'rgba(230, 200, 134, 0.85)';
-        ctx.lineWidth = 2;
-        ctx.strokeRect(x0 - 3, y0 - 3, w + 6, h + 6);
-        ctx.font = '800 10px "Noto Sans KR", sans-serif';
-        const note = '📜 사료 번역 가능';
-        const nw = ctx.measureText(note).width + 10;
-        ctx.fillStyle = 'rgba(42, 33, 18, 0.92)';
-        ctx.strokeStyle = '#E6C886';
-        ctx.lineWidth = 1.2;
-        this.roundRect(ctx, cx - nw / 2, y0 + h + 4, nw, 18, 4, true, true);
-        ctx.fillStyle = '#FFE7A8';
-        ctx.textAlign = 'center';
-        ctx.textBaseline = 'middle';
-        ctx.fillText(note, cx, y0 + h + 13);
-        ctx.restore();
-      }
+      // Parchment translation overlay strictly on Ian's document/timeline objects
+      ctx.save();
+      ctx.strokeStyle = 'rgba(230, 200, 134, 0.88)';
+      ctx.lineWidth = 2;
+      ctx.strokeRect(x0 - 3, y0 - 3, w + 6, h + 6);
+      ctx.font = '800 10px "Noto Sans KR", sans-serif';
+      const note = '📜 사료 번역·해독';
+      const nw = ctx.measureText(note).width + 10;
+      ctx.fillStyle = 'rgba(42, 33, 18, 0.92)';
+      ctx.strokeStyle = '#E6C886';
+      ctx.lineWidth = 1.2;
+      this.roundRect(ctx, cx - nw / 2, y0 + h + 4, nw, 18, 4, true, true);
+      ctx.fillStyle = '#FFE7A8';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText(note, cx, y0 + h + 13);
+      ctx.restore();
     } else if (role === 'lin') {
-      // Spatial bearing lines, pipe headers, tram/optical vectors & exact coords
-      const isNav = pDef.mainRole === 'lin' || (obj.role && (obj.role.includes('(린)') || obj.role.includes('네비게이터')));
-      if (isNav) {
-        ctx.save();
-        ctx.strokeStyle = 'rgba(82, 239, 191, 0.72)';
-        ctx.lineWidth = 1.5;
-        ctx.setLineDash([5, 4]);
-        ctx.strokeRect(x0 - 4, y0 - 4, w + 8, h + 8);
-        ctx.beginPath();
-        ctx.moveTo(cx - 22, cy);
-        ctx.lineTo(cx + 22, cy);
-        ctx.moveTo(cx, cy - 22);
-        ctx.lineTo(cx, cy + 22);
-        ctx.stroke();
-        ctx.font = '700 10px ui-monospace, monospace';
-        ctx.fillStyle = '#52EFBF';
-        ctx.textAlign = 'center';
-        ctx.fillText(`(${obj.x},${obj.y})`, cx, y0 + h + 12);
-        ctx.restore();
-      }
+      // Spatial bearing vector line from Lin to target + surveying crosshair + exact coords
+      const [px, py] = toScreen(activeSlot.x, activeSlot.y - 8);
+      ctx.save();
+      ctx.strokeStyle = 'rgba(82, 239, 191, 0.36)';
+      ctx.lineWidth = 1.4;
+      ctx.setLineDash([4, 4]);
+      ctx.beginPath();
+      ctx.moveTo(px, py);
+      ctx.lineTo(cx, cy);
+      ctx.stroke();
+
+      ctx.strokeStyle = 'rgba(82, 239, 191, 0.82)';
+      ctx.lineWidth = 1.6;
+      ctx.setLineDash([5, 4]);
+      ctx.strokeRect(x0 - 4, y0 - 4, w + 8, h + 8);
+      ctx.beginPath();
+      ctx.moveTo(cx - 20, cy);
+      ctx.lineTo(cx + 20, cy);
+      ctx.moveTo(cx, cy - 20);
+      ctx.lineTo(cx, cy + 20);
+      ctx.stroke();
+
+      ctx.setLineDash([]);
+      const coordLbl = `🧭 (${obj.x},${obj.y})`;
+      ctx.font = '800 10px ui-monospace, monospace';
+      const cw = ctx.measureText(coordLbl).width + 10;
+      ctx.fillStyle = 'rgba(10, 32, 26, 0.92)';
+      ctx.strokeStyle = '#52EFBF';
+      ctx.lineWidth = 1.2;
+      this.roundRect(ctx, cx - cw / 2, y0 + h + 4, cw, 18, 4, true, true);
+      ctx.fillStyle = '#52EFBF';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText(coordLbl, cx, y0 + h + 13);
+      ctx.restore();
     } else if (role === 'aisha') {
-      // Magnifying loupe reticle & live sensor readout (UV / Thermal / PSI / RH / pH)
-      const isObs = pDef.mainRole === 'aisha' || (obj.role && obj.role.includes('카이'));
-      if (isObs) {
-        ctx.save();
-        ctx.strokeStyle = '#7CD8FF';
-        ctx.lineWidth = 2;
-        ctx.beginPath();
-        ctx.arc(cx, cy, Math.max(18, Math.min(w, h) * 0.45), 0, Math.PI * 2);
-        ctx.stroke();
-        const tagMap: Record<number, string> = {
-          2: '🔍 단면 루페',
-          3: '🔍 나선 음각 180°',
-          5: '🔍 황금→진홍→청록',
-          8: `🔍 ${String((room.puzzleStates[8] as { boilerPsi?: number })?.boilerPsi ?? 145)} PSI`,
-          9: '🔍 예열 60Hz 센서',
-          10: `🔍 ${String((room.puzzleStates[10] as { rh?: number })?.rh ?? 72)}% RH`,
-          11: '🔍 UV Kudlit 스캔',
-          13: '🔍 pH 적정 · 초음파',
-          14: '🔍 밀랍 · 도르래',
-        };
-        const sensorLabel = tagMap[pid] || '🔍 정밀 관측';
-        ctx.font = '800 10px "Noto Sans KR", sans-serif';
-        const sw = ctx.measureText(sensorLabel).width + 10;
-        ctx.fillStyle = 'rgba(10, 28, 40, 0.92)';
-        ctx.strokeStyle = '#7CD8FF';
-        ctx.lineWidth = 1.2;
-        this.roundRect(ctx, cx - sw / 2, y0 + h + 4, sw, 18, 4, true, true);
-        ctx.fillStyle = '#9FE6FF';
-        ctx.textAlign = 'center';
-        ctx.textBaseline = 'middle';
-        ctx.fillText(sensorLabel, cx, y0 + h + 13);
-        ctx.restore();
-      }
+      // Magnifying loupe reticle & live sensor readout strictly on Kai's objects
+      ctx.save();
+      ctx.strokeStyle = '#7CD8FF';
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.arc(cx, cy, Math.max(18, Math.min(w, h) * 0.45), 0, Math.PI * 2);
+      ctx.stroke();
+      const tagMap: Record<number, string> = {
+        2: '🔍 단면 루페',
+        3: '🔍 턴테이블 · 뚜껑',
+        5: '🔍 직조 씨실 루페',
+        8: `🔍 ${String((room.puzzleStates[8] as { boilerPsi?: number })?.boilerPsi ?? 145)} PSI`,
+        9: '🔍 예열 60Hz 센서',
+        10: `🔍 ${String((room.puzzleStates[10] as { rh?: number })?.rh ?? 72)}% RH`,
+        11: '🔍 UV Kudlit 스캔',
+        13: '🔍 pH 적정 · 초음파',
+        14: '🔍 밀랍 · 도르래',
+      };
+      const sensorLabel = tagMap[pid] || '🔍 정밀 관측';
+      ctx.font = '800 10px "Noto Sans KR", sans-serif';
+      const sw = ctx.measureText(sensorLabel).width + 10;
+      ctx.fillStyle = 'rgba(10, 28, 40, 0.92)';
+      ctx.strokeStyle = '#7CD8FF';
+      ctx.lineWidth = 1.2;
+      this.roundRect(ctx, cx - sw / 2, y0 + h + 4, sw, 18, 4, true, true);
+      ctx.fillStyle = '#9FE6FF';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText(sensorLabel, cx, y0 + h + 13);
+      ctx.restore();
     }
   }
 

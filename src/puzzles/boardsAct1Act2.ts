@@ -923,7 +923,6 @@ function boardP10(stage: HTMLElement, s: Record<string, unknown>, h: BoardHelper
   const dewOk = rh === 45 && temp === 18;
   const puddles = new Set(['2,2', '3,2', '2,3']);
   const targetKey = '4,1';
-  const hint = h.difficulty.showTargetHints;
 
   let cells = '';
   for (let y = 1; y <= 4; y++) {
@@ -933,8 +932,21 @@ function boardP10(stage: HTMLElement, s: Record<string, unknown>, h: BoardHelper
       const isTarget = key === targetKey;
       const isCrane = crane[0] === x && crane[1] === y;
       const isCrate = cratePos[0] === x && cratePos[1] === y;
-      cells += `<div class="au-cell ${isPud ? 'puddle' : ''} ${isTarget ? 'rack' : ''}">
-        ${isCrane ? `<span style="color:#FFD86B">${holding ? '🏗📦' : '🏗'}</span>` : isCrate ? '📦' : isPud ? '🌊' : isTarget ? '선반' : `${x},${y}`}
+      const mistCell = !dewOk && !isCrane && !isCrate && !isTarget;
+      cells += `<div class="au-cell ${dewOk && isPud ? 'puddle' : ''} ${isTarget ? 'rack' : ''}">
+        ${
+          isCrane
+            ? `<span style="color:#FFD86B">${holding ? '🏗📦' : '🏗'}</span>`
+            : isCrate
+              ? '📦'
+              : isTarget
+                ? '선반'
+                : mistCell
+                  ? '🌫'
+                  : isPud
+                    ? '🌊'
+                    : `${x},${y}`
+        }
       </div>`;
     }
   }
@@ -942,27 +954,32 @@ function boardP10(stage: HTMLElement, s: Record<string, unknown>, h: BoardHelper
   stage.innerHTML = `
     <div class="au-board p-grid-1-auto">
       <div class="p-stack">
-        <div class="p-card ${dewOk ? 'ok' : ''}">
-          <div style="font:800 13px sans-serif;color:${dewOk ? '#52EFBF' : '#7CD8FF'}">① 카이 · 제습 공조 ${dewOk ? '✔ 안개 제거됨' : hint ? '(목표 45% RH / 18°C)' : '(적정 이슬점 필요)'}</div>
-          <div class="p-row" style="margin-top:6px">
-            <button class="s-btn" id="p10-rhd">-9% RH</button><strong class="p-mono">${rh}% RH</strong><button class="s-btn" id="p10-rhu">+9%</button>
+        <div class="p-card ${dewOk ? 'ok' : 'warn'}">
+          <div style="font:800 13px sans-serif;color:${dewOk ? '#52EFBF' : '#7CD8FF'}">
+            ① 🔍 카이 · 제습 공조: ${dewOk ? '안정화 완료 ✔ (안개 제거됨)' : '도움 필요 🔒'}
           </div>
-          <div class="p-row" style="margin-top:6px">
-            <button class="s-btn" id="p10-td">-2°C</button><strong class="p-mono">${temp}°C</strong><button class="s-btn" id="p10-tu">+2°C</button>
-          </div>
+          <p style="margin:5px 0 0;font-size:12px;color:#C8D6E2">
+            ${
+              dewOk
+                ? '수장고 습기 안개가 걷혀 침수 물웅덩이 위치가 보입니다. 안전 경로로 상자를 옮기세요.'
+                : '카이가 항온·제습 공조기(rescue-dehumid-nw)를 조절해 수장고 안개를 걷어줘야 합니다.'
+            }
+          </p>
         </div>
         <div class="p-card ${crateLatch ? 'ok' : 'warn'}">
-          <div class="p-row-between">
-            <span style="font:800 12px sans-serif;color:#FFB86B">② 서하린 · 1번 방수 크레이트 걸쇠: ${crateLatch ? '체결 완료 ✔' : '미체결 🔒'}</span>
-            ${
-              h.soloMode && !crateLatch
-                ? '<button class="s-btn amber" id="p10-latch-btn" style="padding:4px 9px;font-size:11px">⚙ 걸쇠 체결</button>'
-                : ''
-            }
+          <div style="font:800 13px sans-serif;color:${crateLatch ? '#52EFBF' : '#FFB86B'}">
+            ② ⚙ 서하린 · 방수 크레이트 걸쇠: ${crateLatch ? '체결 완료 ✔ (인양 가능)' : '도움 필요 🔒'}
           </div>
+          <p style="margin:5px 0 0;font-size:12px;color:#C8D6E2">
+            ${
+              crateLatch
+                ? '인양 대상 1번 방수 크레이트의 걸쇠가 체결되었습니다.'
+                : '서하린이 방수 크레이트(rescue-crate-sw1/2) 걸쇠를 체결하고 무전을 보내야 합니다.'
+            }
+          </p>
         </div>
         <div class="p-stack">
-          <div style="font:800 12px sans-serif;color:#52EFBF">③ 린 · 2축 호이스트 크레인 조작 ((1,3) 📦 → (4,1) 선반)</div>
+          <div style="font:800 12px sans-serif;color:#52EFBF">③ 🧭 린 · 2축 호이스트 크레인 조작 (📦 → (4,1) 선반)</div>
           <div class="p-row">
             <button class="s-btn" data-mv="-1,0">◀</button>
             <button class="s-btn" data-mv="0,-1">▲</button>
@@ -976,38 +993,17 @@ function boardP10(stage: HTMLElement, s: Record<string, unknown>, h: BoardHelper
     </div>
   `;
 
-  stage.querySelector<HTMLElement>('#p10-rhd')!.onclick = () => {
-    soundEngine.playClick();
-    h.patchState(10, { rh: Math.max(36, rh - 9) });
-    h.rerender();
-  };
-  stage.querySelector<HTMLElement>('#p10-rhu')!.onclick = () => {
-    soundEngine.playClick();
-    h.patchState(10, { rh: Math.min(81, rh + 9) });
-    h.rerender();
-  };
-  stage.querySelector<HTMLElement>('#p10-td')!.onclick = () => {
-    soundEngine.playClick();
-    h.patchState(10, { temp: Math.max(14, temp - 2) });
-    h.rerender();
-  };
-  stage.querySelector<HTMLElement>('#p10-tu')!.onclick = () => {
-    soundEngine.playClick();
-    h.patchState(10, { temp: Math.min(28, temp + 2) });
-    h.rerender();
-  };
-  stage.querySelector<HTMLElement>('#p10-latch-btn')?.addEventListener('click', () => {
-    soundEngine.playClick();
-    h.patchState(10, { crateLatch: true });
-    h.rerender();
-  });
   stage.querySelectorAll<HTMLElement>('[data-mv]').forEach((b) => {
     b.onclick = () => {
       const [dx, dy] = (b.dataset.mv || '0,0').split(',').map(Number);
       const nx = Math.max(0, Math.min(4, crane[0] + dx));
       const ny = Math.max(1, Math.min(4, crane[1] + dy));
       if (holding && puddles.has(`${nx},${ny}`)) {
-        h.setErr('침수 물웅덩이 구역 위로는 상자를 지날 수 없습니다! 북쪽 우회 경로로 이동하세요.');
+        h.setErr(
+          dewOk
+            ? '침수 물웅덩이 구역 위로는 상자를 지날 수 없습니다! 우회 경로로 이동하세요.'
+            : '짙은 안개 속 침수 물웅덩이에 가로막혔습니다! 카이가 안개를 걷어내야 경로가 보입니다.'
+        );
         return;
       }
       soundEngine.playClick();
@@ -1031,10 +1027,10 @@ function boardP10(stage: HTMLElement, s: Record<string, unknown>, h: BoardHelper
     } else {
       h.patchState(10, { holding: false });
       if (dewOk && cratePos[0] === 4 && cratePos[1] === 1) {
-        h.solve(10, { rh, temp, crateLatch, crane, cratePos: [4, 1], holding: false }, '제습 45%/18°C 안정화 및 스틸 선반(4,1) 방수 상자 안전 안착 완료!');
+        h.solve(10, { rh, temp, crateLatch, crane, cratePos: [4, 1], holding: false }, '제습 안정화 및 스틸 선반(4,1) 방수 상자 안전 안착 완료!');
       } else {
         h.rerender();
-        if (!dewOk) h.setErr('제습 공조(카이 단서 기준) 설정을 맞춘 뒤 선반에 내려놓으세요!');
+        if (!dewOk) h.setErr('먼저 카이가 제습 공조(안개 제거)를 완료한 뒤 선반(4,1)에 내려놓으세요!');
       }
     }
   };

@@ -1,4 +1,4 @@
-import type { RoleId, RoleMeta, TokenCategory, TokenDef } from '../types/stranger.ts';
+import type { RadioPacket, RoleId, RoleMeta, TokenCategory, TokenDef } from '../types/stranger.ts';
 
 export const ROLE_ORDER: RoleId[] = ['doyun', 'maria', 'lin', 'aisha'];
 
@@ -104,11 +104,85 @@ export const TOKENS_BY_ID: Record<string, TokenDef> = Object.fromEntries(
   C_CATEGORIES.flatMap((c) => c.tokens).map((t) => [t.id, t])
 );
 
-export function renderTokenPillHtml(tokenId: string): string {
+export function escapeTokenText(s: string): string {
+  return s
+    .replaceAll('&', '&amp;')
+    .replaceAll('<', '&lt;')
+    .replaceAll('>', '&gt;')
+    .replaceAll('"', '&quot;');
+}
+
+export function sanitizeRadioNumber(raw: string): string {
+  return raw.replace(/[^0-9.\-/]/g, '').slice(0, 10);
+}
+
+export function renderTokenPillHtml(
+  tokenId: string,
+  slots?: Partial<Record<RoleId, { nickname?: string }>>
+): string {
+  if (tokenId.startsWith('VAL:')) {
+    const clean = sanitizeRadioNumber(tokenId.slice(4));
+    if (!clean) return '';
+    return `<span class="s-tok s-tok-num">
+      <span class="s-tok-glyph">🔢</span>
+      <span class="s-tok-label">${escapeTokenText(clean)}</span>
+    </span>`;
+  }
+  if (tokenId.startsWith('ROLE:')) {
+    const target = tokenId.slice(5);
+    if (target === 'all') {
+      return `<span class="s-tok s-tok-role" style="--tok-color:#9bb0be">
+        <span class="s-tok-glyph">📢</span>
+        <span class="s-tok-label">@전체</span>
+      </span>`;
+    }
+    const rm = ROLES[target as RoleId];
+    if (rm) {
+      const nick = slots?.[rm.id]?.nickname || rm.name;
+      return `<span class="s-tok s-tok-role" style="--tok-color:${rm.color}">
+        <span class="s-tok-glyph">${rm.badge}</span>
+        <span class="s-tok-label">@${escapeTokenText(nick)}</span>
+      </span>`;
+    }
+  }
   const tok = TOKENS_BY_ID[tokenId];
-  if (!tok) return `<span class="s-tok">${tokenId}</span>`;
+  if (!tok) return `<span class="s-tok">${escapeTokenText(tokenId)}</span>`;
   return `<span class="s-tok" style="--tok-color:${tok.color}">
     <span class="s-tok-glyph">${tok.glyph}</span>
     <span class="s-tok-label">${tok.label}</span>
   </span>`;
+}
+
+export function renderRadioTargetHtml(pkt: Pick<RadioPacket, 'targetRoleId' | 'targetName'>): string {
+  if (pkt.targetRoleId && ROLES[pkt.targetRoleId]) {
+    const meta = ROLES[pkt.targetRoleId];
+    return `<span class="s-tok-target" style="--rc:${meta.color}">→ ${meta.badge} ${escapeTokenText(pkt.targetName || meta.name)}</span>`;
+  }
+  return `<span class="s-tok-target all">→ 전체</span>`;
+}
+
+export function renderRadioContentHtml(
+  pkt: Pick<RadioPacket, 'tokenIds' | 'note'>,
+  slots?: Partial<Record<RoleId, { nickname?: string }>>
+): string {
+  const pills = pkt.tokenIds.map((id) => renderTokenPillHtml(id, slots)).filter(Boolean).join(' + ');
+  const noteHtml = pkt.note ? `<span class="signal-bot-note">${escapeTokenText(pkt.note)}</span>` : '';
+  return `${pills}${noteHtml}`;
+}
+
+export function formatRadioPlainText(pkt: RadioPacket): string {
+  const prefix = pkt.targetRoleId && ROLES[pkt.targetRoleId] ? `@${pkt.targetName || ROLES[pkt.targetRoleId].name} ` : '';
+  const body = pkt.tokenIds
+    .map((id) => {
+      if (id.startsWith('VAL:')) return `#${sanitizeRadioNumber(id.slice(4))}`;
+      if (id.startsWith('ROLE:')) {
+        const rid = id.slice(5);
+        return rid === 'all' ? '@전체' : `@${ROLES[rid as RoleId]?.name || rid}`;
+      }
+      const t = TOKENS_BY_ID[id];
+      return t ? `${t.glyph}${t.label}` : id;
+    })
+    .join(' ');
+  const suffix = pkt.note ? ` · ${pkt.note}` : '';
+  return `${prefix}${body}${suffix}`.trim();
 }

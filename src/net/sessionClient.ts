@@ -8,7 +8,7 @@ import type {
   RoomState,
   TransportMode,
 } from '../types/stranger.ts';
-import { ROLE_ORDER, ROLES } from '../data/cMenuTokens.ts';
+import { ROLE_ORDER, ROLES, sanitizeRadioNumber } from '../data/cMenuTokens.ts';
 import {
   getSupabaseClient,
   isSupabaseConfigured,
@@ -75,6 +75,7 @@ export function createInitialPuzzleStatesClient(): Record<number, Record<string,
     15: { ox: 96, oy: -48, rot: 270 },
     16: {
       prisms: [0, 45, 45],
+      mountUnlocked: false,
       beamReachedAtrium: false,
       hereSent: false,
       pads: [false, false, false, false],
@@ -648,9 +649,14 @@ export class SessionClient {
             room.slots[assignedRole].nickname = trimmedNick || ROLES[assignedRole].name;
           }
 
+          const humanCount = ROLE_ORDER.filter((r) => Boolean(room.slots[r]?.ownerClientId)).length;
+          if (humanCount >= 2) {
+            room.soloSwitchEnabled = false;
+          }
+
           const { error: updErr } = await sb
             .from('rooms')
-            .update({ slots: room.slots })
+            .update({ slots: room.slots, solo_switch_enabled: room.soloSwitchEnabled })
             .eq('code', code);
           if (updErr) {
             return { ok: false, error: '방 슬롯 갱신에 실패했습니다. 잠시 후 다시 시도하세요.' };
@@ -805,9 +811,32 @@ export class SessionClient {
     }
   }
 
-  sendRadio(roleId: RoleId, tokenIds: string[]): RadioPacket | null {
-    if (!this.room || tokenIds.length === 0) return null;
-    if (this.transportMode === 'ws' && this.sendWs({ type: 'send_radio', roleId, tokenIds })) {
+  sendRadio(
+    roleId: RoleId,
+    tokenIds: string[],
+    opts?: { targetRoleId?: RoleId | null; note?: string | null }
+  ): RadioPacket | null {
+    if (!this.room) return null;
+    const cleanTokens = tokenIds
+      .map((t) => {
+        if (t.startsWith('VAL:')) {
+          const num = sanitizeRadioNumber(t.slice(4));
+          return num ? `VAL:${num}` : '';
+        }
+        return String(t || '').trim();
+      })
+      .filter(Boolean)
+      .slice(0, 8);
+    const cleanNote = opts?.note ? String(opts.note).trim().slice(0, 160) : null;
+    if (cleanTokens.length === 0 && !cleanNote) return null;
+
+    const targetRoleId = opts?.targetRoleId && ROLE_ORDER.includes(opts.targetRoleId) ? opts.targetRoleId : null;
+    const targetName = targetRoleId ? this.room.slots[targetRoleId]?.nickname || ROLES[targetRoleId].name : null;
+
+    if (
+      this.transportMode === 'ws' &&
+      this.sendWs({ type: 'send_radio', roleId, tokenIds: cleanTokens, targetRoleId, note: cleanNote })
+    ) {
       return null;
     }
 
@@ -817,7 +846,10 @@ export class SessionClient {
       seq: this.radioSeq,
       roleId,
       senderName: this.room.slots[roleId]?.nickname || ROLES[roleId].name,
-      tokenIds: tokenIds.slice(0, 2),
+      targetRoleId,
+      targetName,
+      tokenIds: cleanTokens,
+      note: cleanNote,
       ts: now,
       expiresAt: now + 12000,
     };

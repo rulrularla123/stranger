@@ -1,27 +1,24 @@
 import type { MapJson, MapObject, PuzzleDef, RoleId, RoomState } from '../types/stranger.ts';
-import { ROLES, renderTokenPillHtml } from '../data/cMenuTokens.ts';
-import { MAIN_OPERATOR_OBJECT_IDS, PUZZLES_BY_ID, getDifficultyConfig } from '../data/puzzleCatalog.ts';
+import {
+  ROLES,
+  renderRadioContentHtml,
+  renderRadioTargetHtml,
+} from '../data/cMenuTokens.ts';
+import {
+  PUZZLES_BY_ID,
+  getDifficultyConfig,
+  getObjectOwnerRole,
+} from '../data/puzzleCatalog.ts';
 import { soundEngine } from '../audio/soundEngine.ts';
 import type { SessionClient } from '../net/sessionClient.ts';
 import { renderAct1Act2Board, type BoardHelpers } from './boardsAct1Act2.ts';
 import { renderAct3Act4Board } from './boardsAct3Act4.ts';
 
 export interface TaskModalHost {
-  onOpenCMenu: () => void;
-  onRequestBotClue: (pid: number) => void;
+  onOpenCMenu: (targetRoleId?: RoleId | null) => void;
+  onRequestBotHelp: (pid: number, helperRole: RoleId) => void;
+  onSwitchRole: (roleId: RoleId) => void;
   onJumpToAtrium: () => void;
-}
-
-function canAccessMain(p: PuzzleDef, myRole: RoleId, soloMode: boolean): boolean {
-  if (soloMode) return true;
-  if (myRole === p.mainRole) return true;
-  if (p.id === 16 && myRole === 'doyun') return true;
-  return false;
-}
-
-function canAccessClue(p: PuzzleDef, myRole: RoleId, soloMode: boolean): boolean {
-  if (soloMode) return true;
-  return myRole !== p.mainRole;
 }
 
 export class TaskModal {
@@ -32,7 +29,6 @@ export class TaskModal {
   private open = false;
   private pid = 1;
   private currentObj: MapObject | null = null;
-  private viewMode: 'main' | 'clue' | 'coords' = 'main';
   private feedback: { msg: string; kind: '' | 'err' | 'ok' } = { msg: '', kind: '' };
   private cleanups: (() => void)[] = [];
   private shouldShake = false;
@@ -74,45 +70,14 @@ export class TaskModal {
     this.pid = pid;
     this.currentObj = obj;
     this.feedback = { msg: '', kind: '' };
-
-    const pDef = PUZZLES_BY_ID[pid];
-    const room = this.session.getRoom();
-    const myRole = this.session.getMyRole();
-    const soloMode = Boolean(room?.soloSwitchEnabled ?? true);
-    const allowMain = pDef ? canAccessMain(pDef, myRole, soloMode) : true;
-    const allowClue = pDef ? canAccessClue(pDef, myRole, soloMode) : true;
-    const isMainObj = MAIN_OPERATOR_OBJECT_IDS.has(obj.id);
-
-    if (!allowMain && allowClue) {
-      this.viewMode = 'clue';
-    } else if (!allowClue && allowMain) {
-      this.viewMode = 'main';
-    } else if (isMainObj || myRole === pDef?.mainRole) {
-      this.viewMode = 'main';
-    } else {
-      this.viewMode = 'clue';
-    }
-
     this.open = true;
     this.root.classList.add('open');
     this.render();
   }
 
-  openPuzzleDirect(pid: number, tab: 'main' | 'clue' = 'main') {
-    const pDef = PUZZLES_BY_ID[pid];
-    const room = this.session.getRoom();
-    const myRole = this.session.getMyRole();
-    const soloMode = Boolean(room?.soloSwitchEnabled ?? true);
-
+  openPuzzleDirect(pid: number) {
     this.pid = pid;
     this.currentObj = null;
-    if (pDef && !canAccessMain(pDef, myRole, soloMode) && tab === 'main') {
-      this.viewMode = 'clue';
-    } else if (pDef && !canAccessClue(pDef, myRole, soloMode) && tab === 'clue') {
-      this.viewMode = 'main';
-    } else {
-      this.viewMode = tab;
-    }
     this.feedback = { msg: '', kind: '' };
     this.open = true;
     this.root.classList.add('open');
@@ -146,7 +111,7 @@ export class TaskModal {
       ? pinnedRadios
           .map(
             (pkt) =>
-              `<span class="au-pin-item"><strong style="color:${ROLES[pkt.roleId].color}">${pkt.senderName}:</strong>${pkt.tokenIds.map((id) => renderTokenPillHtml(id)).join('+')}</span>`
+              `<span class="au-pin-item"><strong style="color:${ROLES[pkt.roleId].color}">${pkt.senderName}</strong> ${renderRadioTargetHtml(pkt)} ${renderRadioContentHtml(pkt, room.slots)}</span>`
           )
           .join('<span class="au-pin-sep">|</span>')
       : '<span class="au-pin-empty">수신 무전 없음 · [C] 무전 휠로 단서 교환</span>';
@@ -206,21 +171,25 @@ export class TaskModal {
     if (!room || !p) return;
 
     const myRole = this.session.getMyRole();
-    const soloMode = Boolean(room.soloSwitchEnabled);
-    const allowMain = canAccessMain(p, myRole, soloMode);
-    const allowClue = canAccessClue(p, myRole, soloMode);
-
-    if (this.viewMode === 'main' && !allowMain) this.viewMode = 'clue';
-    if (this.viewMode === 'clue' && !allowClue) this.viewMode = 'main';
-
+    const myMeta = ROLES[myRole];
     const rMain = ROLES[p.mainRole];
+    const soloMode = Boolean(room.soloSwitchEnabled);
     const isSolved = room.solvedPids.includes(p.id);
     const totalSolved = room.solvedPids.length;
     const pct = Math.round((totalSolved / 16) * 100);
     const pinHtml = this.buildPinHtml(room);
-    const objs = this.getPuzzleObjects(p.id);
     const shakeNow = this.shouldShake;
     this.shouldShake = false;
+
+    const ownerRole: RoleId | 'all' = this.currentObj ? getObjectOwnerRole(this.currentObj, p) : myRole;
+
+    const helpersHtml = p.helperRoles
+      .map((hr) => {
+        const rm = ROLES[hr];
+        const summary = p.helperSummaryByRole?.[hr] || '단서 지원';
+        return `<span class="au-coop-chip" style="border-color:${rm.color};color:${rm.color}">${rm.badge} ${rm.name} <small>(${summary})</small></span>`;
+      })
+      .join(' ');
 
     this.root.innerHTML = `
       <div class="au-modal ${shakeNow ? 'au-shake' : ''}" role="dialog" aria-modal="true" aria-label="${p.code} ${p.title}">
@@ -244,17 +213,13 @@ export class TaskModal {
             <button class="au-close-x" id="au-close-btn" title="닫기 (ESC)">✕</button>
           </div>
         </div>
-        <div class="au-modal-sub">
-          <div class="au-view-tabs">
-            <button class="au-vtab ${this.viewMode === 'main' ? 'active' : ''}" data-vmode="main" ${
-              allowMain ? '' : `disabled title="주도 조작은 ${rMain.name} 전용"`
-            }>${allowMain ? '★' : '🔒'} 주도 조작 (${rMain.name})</button>
-            <button class="au-vtab ${this.viewMode === 'clue' ? 'active' : ''}" data-vmode="clue" ${
-              allowClue ? '' : 'disabled title="단서 역할 전용 — [C] 무전으로 받으세요"'
-            }>${allowClue ? '👁' : '🔒'} 단서·보조 (${p.helperRoles.map((hr) => ROLES[hr].name).join('+')})</button>
-            <button class="au-vtab ${this.viewMode === 'coords' ? 'active' : ''}" data-vmode="coords">📐 연동 오브젝트 (${objs.length})</button>
+        <div class="au-modal-sub au-coop-bar">
+          <div class="au-coop-left">
+            <span class="au-coop-chip" style="border-color:${rMain.color};color:${rMain.color}">★ 주도: ${rMain.badge} ${rMain.name}</span>
+            <span style="font-size:12px;color:#9BB0BE">🤝 도움 필요:</span>
+            ${helpersHtml}
           </div>
-          <div class="au-arch-note">아키타입: <strong>${p.arch}</strong></div>
+          <div class="au-coop-me" style="color:${myMeta.color}">내 역할: <strong>${myMeta.badge} ${myMeta.name}</strong></div>
         </div>
         <div class="au-body">
           <div id="au-stage-area"></div>
@@ -265,185 +230,358 @@ export class TaskModal {
     `;
 
     this.root.querySelector('#au-close-btn')?.addEventListener('click', () => this.close());
-    this.root.querySelector('#au-open-cmenu')?.addEventListener('click', () => this.host.onOpenCMenu());
-    this.root.querySelectorAll<HTMLButtonElement>('[data-vmode]').forEach((btn) => {
+    this.root.querySelector('#au-open-cmenu')?.addEventListener('click', () => this.host.onOpenCMenu(null));
+
+    const stage = this.root.querySelector<HTMLElement>('#au-stage-area')!;
+
+    if (ownerRole === 'all') {
+      this.renderAtriumGatherStatus(stage, room);
+      return;
+    }
+
+    if (this.currentObj && ownerRole !== myRole) {
+      this.renderOtherRoleLockedView(stage, room, p, this.currentObj, ownerRole, myRole, soloMode);
+      return;
+    }
+
+    if (myRole === p.mainRole) {
+      this.renderMainOperatorView(stage, room, p, isSolved);
+      return;
+    }
+
+    if (p.helperRoles.includes(myRole)) {
+      this.renderMyHelperView(stage, room, p, myRole);
+      return;
+    }
+
+    this.renderUninvolvedRoleView(stage, p);
+  }
+
+  private renderOtherRoleLockedView(
+    stage: HTMLElement,
+    room: RoomState,
+    p: PuzzleDef,
+    obj: MapObject,
+    ownerRole: RoleId,
+    myRole: RoleId,
+    soloMode: boolean
+  ) {
+    const ownerMeta = ROLES[ownerRole];
+    const rMain = ROLES[p.mainRole];
+    const ownerIsBot = Boolean(room.slots[ownerRole]?.isBot && !room.slots[ownerRole]?.ownerClientId);
+    const canAskBot = ownerIsBot && p.helperRoles.includes(ownerRole);
+
+    const myObjects = this.getPuzzleObjects(p.id).filter((o) => getObjectOwnerRole(o, p) === myRole);
+    const myAssignHtml =
+      myRole === p.mainRole || p.helperRoles.includes(myRole)
+        ? myObjects.length
+          ? `<div class="au-my-pointer">💡 내 역할(<strong>${ROLES[myRole].badge} ${ROLES[myRole].name}</strong>) 담당 위치: <strong>${myObjects.map((o) => o.name).join(', ')}</strong></div>`
+          : `<div class="au-my-pointer">💡 <strong>${ROLES[myRole].name}</strong> 역할로 이 퍼즐에 참여합니다.</div>`
+        : `<div class="au-my-pointer">ℹ 이 구역 퍼즐은 ${rMain.name} 주도 · ${p.helperRoles.map((hr) => ROLES[hr].name).join(' + ')} 협동 구역입니다.</div>`;
+
+    stage.innerHTML = `
+      <div class="au-board au-locked-role-card">
+        <div class="au-locked-title" style="color:${ownerMeta.color}">
+          🔒 ${ownerMeta.badge} ${ownerMeta.name} (${ownerMeta.shortRole}) 전용 장치
+        </div>
+        <p class="au-locked-desc">
+          <strong>${obj.name}</strong>은(는) <strong>${ownerMeta.name}</strong>만 열람/조작할 수 있습니다.<br/>
+          서로 다른 단서와 장치를 맡고 있으므로 무전으로 소통하며 진행하세요!
+        </p>
+        <div class="au-locked-need">
+          <div>★ <strong>주도 조작</strong>: <span style="color:${rMain.color}">${rMain.badge} ${rMain.name}</span></div>
+          <div>🤝 <strong>도움이 필요한 동료</strong>: ${p.helperRoles
+            .map((hr) => {
+              const rm = ROLES[hr];
+              const summary = p.helperSummaryByRole?.[hr] || '단서 지원';
+              return `<span style="color:${rm.color}">${rm.badge} ${rm.name} (${summary})</span>`;
+            })
+            .join(' · ')}</div>
+        </div>
+        ${myAssignHtml}
+        <div class="p-row" style="margin-top:10px">
+          <button class="s-btn primary" id="au-lock-radio">📡 ${ownerMeta.name}에게 무전 보내기</button>
+          ${canAskBot ? `<button class="s-btn amber" id="au-lock-bot">🤖 AI ${ownerMeta.name}에게 협동 요청</button>` : ''}
+          ${soloMode ? `<button class="s-btn" id="au-lock-switch">🔄 ${ownerMeta.name}(으)로 캐릭터 전환</button>` : ''}
+        </div>
+      </div>
+    `;
+
+    stage.querySelector('#au-lock-radio')?.addEventListener('click', () => {
+      this.close();
+      this.host.onOpenCMenu(ownerRole);
+    });
+    stage.querySelector('#au-lock-bot')?.addEventListener('click', () => {
+      soundEngine.playRadio();
+      this.host.onRequestBotHelp(p.id, ownerRole);
+      this.feedback = { msg: `AI ${ownerMeta.name}에게 협동을 요청했습니다. 좌상단 무전 채팅을 확인하세요!`, kind: 'ok' };
+      this.render();
+    });
+    stage.querySelector('#au-lock-switch')?.addEventListener('click', () => {
+      this.host.onSwitchRole(ownerRole);
+      this.render();
+    });
+  }
+
+  private renderMainOperatorView(stage: HTMLElement, room: RoomState, p: PuzzleDef, isSolved: boolean) {
+    const s = (room.puzzleStates[this.pid] || {}) as Record<string, unknown>;
+    const helpers = this.createHelpers(room, this.session.getMyRole());
+
+    const helperBannerWrap = document.createElement('div');
+    helperBannerWrap.className = 'au-helper-banner';
+    const helperChips = p.helperRoles
+      .map((hr) => {
+        const rm = ROLES[hr];
+        const summary = p.helperSummaryByRole?.[hr] || '단서 지원';
+        const isBot = Boolean(room.slots[hr]?.isBot && !room.slots[hr]?.ownerClientId);
+        return `<div class="au-helper-pill" style="border-color:${rm.color}">
+          <span style="color:${rm.color};font-weight:800">${rm.badge} ${rm.name}</span>
+          <span style="color:#C8D6E2">${summary}</span>
+          <button class="s-btn" data-req-radio="${hr}" style="padding:3px 8px;font-size:11px">📡 무전</button>
+          ${isBot && !isSolved ? `<button class="s-btn amber" data-req-bot="${hr}" style="padding:3px 8px;font-size:11px">🤖 AI 요청</button>` : ''}
+        </div>`;
+      })
+      .join('');
+
+    helperBannerWrap.innerHTML = `
+      <div style="font:800 12px sans-serif;color:#9BB0BE;margin-bottom:6px">🤝 도움이 필요한 동료 (누구에게 무엇을 요청해야 하는지 확인 후 무전으로 소통하세요)</div>
+      <div class="au-helper-pill-list">${helperChips}</div>
+    `;
+
+    const boardHost = document.createElement('div');
+    stage.innerHTML = '';
+    stage.appendChild(helperBannerWrap);
+    stage.appendChild(boardHost);
+
+    helperBannerWrap.querySelectorAll<HTMLElement>('[data-req-radio]').forEach((btn) => {
       btn.onclick = () => {
-        if (btn.disabled) return;
-        const mode = btn.dataset.vmode as 'main' | 'clue' | 'coords';
-        if (mode === 'main' && !allowMain) return;
-        if (mode === 'clue' && !allowClue) return;
-        soundEngine.playClick();
-        this.viewMode = mode;
+        const hr = btn.dataset.reqRadio as RoleId;
+        this.close();
+        this.host.onOpenCMenu(hr);
+      };
+    });
+    helperBannerWrap.querySelectorAll<HTMLElement>('[data-req-bot]').forEach((btn) => {
+      btn.onclick = () => {
+        const hr = btn.dataset.reqBot as RoleId;
+        soundEngine.playRadio();
+        this.host.onRequestBotHelp(p.id, hr);
+        this.feedback = { msg: `AI ${ROLES[hr].name}에게 협동 및 무전 안내를 요청했습니다!`, kind: 'ok' };
         this.render();
       };
     });
 
-    const stage = this.root.querySelector<HTMLElement>('#au-stage-area')!;
-    if (this.viewMode === 'clue') {
-      this.renderClueView(stage, room, p.id);
-    } else if (this.viewMode === 'coords') {
-      this.renderCoordsView(stage, objs);
-    } else {
-      this.renderMainBoard(stage, room);
+    const handled =
+      renderAct1Act2Board(this.pid, boardHost, p, s, helpers) ||
+      renderAct3Act4Board(this.pid, boardHost, p, s, helpers, {
+        sendHere: () => {
+          this.session.sendRadio('lin', ['COOP_HERE']);
+          soundEngine.playRadio();
+        },
+        gotoAtrium: () => this.host.onJumpToAtrium(),
+        closeModal: () => this.close(),
+      });
+
+    if (!handled) {
+      boardHost.innerHTML = `<div class="au-board">퍼즐 보드를 찾을 수 없습니다.</div>`;
     }
   }
 
-  private renderClueView(stage: HTMLElement, room: RoomState, pid: number) {
-    const p = PUZZLES_BY_ID[pid];
+  private renderMyHelperView(stage: HTMLElement, room: RoomState, p: PuzzleDef, myRole: RoleId) {
     const objId = this.currentObj?.id || '';
-    const objClue = objId ? p.objectRoleClues?.[objId] : undefined;
-    const helpers = p.helperRoles.map((r) => ROLES[r]);
+    const rawObjClue = objId ? p.objectRoleClues?.[objId] : undefined;
+    const objClue = rawObjClue && rawObjClue.roleId === myRole ? rawObjClue : undefined;
+    const roleClue = objClue || p.roleClues?.[myRole];
+    const myMeta = ROLES[myRole];
     const mainR = ROLES[p.mainRole];
-    const myRole = this.session.getMyRole();
-    const soloMode = Boolean(room.soloSwitchEnabled);
     const h = this.createHelpers(room, myRole);
 
     stage.innerHTML = `
       <div class="au-board p-stack">
         <div class="p-row-between">
           <div>
-            <span style="font:800 13px sans-serif;color:${objClue ? ROLES[objClue.roleId].color : helpers[0].color}">
-              ${objClue ? ROLES[objClue.roleId].badge + ' ' + ROLES[objClue.roleId].name : helpers.map((hr) => hr.badge + ' ' + hr.name).join(' · ')} 전용 단서 뷰
+            <span style="font:800 13px sans-serif;color:${myMeta.color}">
+              ${myMeta.badge} ${myMeta.name} (${myMeta.shortRole}) 전용 단서 · 보조 조작
             </span>
-            <div style="font:800 16px sans-serif;margin-top:2px">${objClue ? objClue.title : p.clueTitle}</div>
+            <div style="font:800 16px sans-serif;margin-top:2px">${roleClue?.title || `${myMeta.name} 담당 단서`}</div>
           </div>
-          <div class="p-row">
-            <button class="s-btn primary" id="au-send-clue">📡 권장 무전 패킷 발신</button>
-            <button class="s-btn" id="au-open-wheel">🎛 C-Menu 휠로 직접 조합</button>
-          </div>
+          <button class="s-btn primary" id="au-send-to-main">📡 ${mainR.name}에게 무전 보내기</button>
         </div>
-        ${objClue ? objClue.bodyHtml : p.clueHtml}
+        ${roleClue?.bodyHtml || `<div class="clue-card"><p>무전으로 ${mainR.name}에게 정보를 전달하세요.</p></div>`}
         <div id="au-helper-interactive"></div>
-        <div class="p-row" style="margin-top:4px">
-          <span style="font-size:12px;color:#9BB0BE">권장 전달 패킷 (${mainR.name}에게):</span>
-          ${p.answerTokens.map((pkt) => pkt.map((tid) => renderTokenPillHtml(tid)).join(' + ')).join(' <span style="color:#667">/</span> ')}
-        </div>
       </div>
     `;
 
     const helperMount = stage.querySelector<HTMLElement>('#au-helper-interactive')!;
-    this.mountHelperControls(helperMount, room, pid, objId, myRole, soloMode, h);
+    this.mountHelperControls(helperMount, room, p.id, myRole, h);
 
-    stage.querySelector<HTMLElement>('#au-send-clue')!.onclick = () => {
-      const senderRole: RoleId = objClue?.roleId || p.helperRoles[0] || this.session.getMyRole();
-      for (const pkt of p.answerTokens) {
-        this.session.sendRadio(senderRole, pkt);
-      }
-      soundEngine.playRadio();
-      this.feedback = { msg: '단서 무전 패킷을 상단 공유 배너(12초)와 모달 우측 상단에 고정 발신했습니다!', kind: 'ok' };
-      this.render();
+    stage.querySelector('#au-send-to-main')?.addEventListener('click', () => {
+      this.close();
+      this.host.onOpenCMenu(p.mainRole);
+    });
+  }
+
+  private renderUninvolvedRoleView(stage: HTMLElement, p: PuzzleDef) {
+    const rMain = ROLES[p.mainRole];
+    stage.innerHTML = `
+      <div class="au-board au-locked-role-card">
+        <div class="au-locked-title" style="color:${rMain.color}">🤝 협동 구역 안내</div>
+        <p class="au-locked-desc">
+          이 구역 퍼즐(${p.code})은 <strong>${rMain.name}</strong> 주도 · <strong>${p.helperRoles.map((hr) => ROLES[hr].name).join(' + ')}</strong> 협동으로 진행됩니다.
+        </p>
+        <div class="p-row">
+          <button class="s-btn primary" id="au-uninv-radio">📡 ${rMain.name}에게 무전 보내기</button>
+        </div>
+      </div>
+    `;
+    stage.querySelector('#au-uninv-radio')?.addEventListener('click', () => {
+      this.close();
+      this.host.onOpenCMenu(p.mainRole);
+    });
+  }
+
+  private renderAtriumGatherStatus(stage: HTMLElement, room: RoomState) {
+    const priorDone = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15].filter((id) =>
+      room.solvedPids.includes(id)
+    ).length;
+    const p16 = (room.puzzleStates[16] || {}) as {
+      beamReachedAtrium?: boolean;
+      hereSent?: boolean;
+      pads?: boolean[];
     };
-    stage.querySelector<HTMLElement>('#au-open-wheel')!.onclick = () => {
-      this.host.onOpenCMenu();
-    };
+    const pads = p16.pads || [false, false, false, false];
+    stage.innerHTML = `
+      <div class="au-board p-stack">
+        <div class="p-card ${priorDone === 15 ? 'ok' : 'warn'}">
+          <strong>선행 1~3막 복원: ${priorDone} / 15</strong> ·
+          <strong>기획전시실 광선: ${p16.beamReachedAtrium ? '도착 ✔' : '미도착 🔒'}</strong> ·
+          <strong>린 [집결 호출 HERE]: ${p16.hereSent ? '발신됨 ✔' : '대기 🔒'}</strong>
+        </div>
+        <div class="p-grid-4">
+          ${(['doyun', 'maria', 'lin', 'aisha'] as const)
+            .map((rid, i) => {
+              const rr = ROLES[rid];
+              return `<div class="p-pad-chip ${pads[i] ? 'active' : ''}" style="border-color:${rr.color}">
+                <span>${rr.badge} ${rr.name}</span>
+                <small>${pads[i] ? '✔ 발판 착지' : `gather-${i + 1}`}</small>
+              </div>`;
+            })
+            .join('')}
+        </div>
+        <p class="clue-note">P01~P15 완료 → 기획전시실(2F special) 프리즘 광선 연결 → 린이 <code>[집결 호출 HERE]</code> 발신 → 반원 홀 4개 발판(gather-1~4) 동시 착지 시 대관식 엔딩이 시작됩니다!</p>
+      </div>
+    `;
   }
 
   private mountHelperControls(
     mount: HTMLElement,
     room: RoomState,
     pid: number,
-    objId: string,
     myRole: RoleId,
-    soloMode: boolean,
     h: BoardHelpers
   ) {
     const s = (room.puzzleStates[pid] || {}) as Record<string, unknown>;
 
-    if (pid === 10) {
+    if (pid === 10 && myRole === 'aisha') {
       const rh = Number(s.rh ?? 72);
       const temp = Number(s.temp ?? 24);
-      const latch = Boolean(s.crateLatch);
-      const showDew = soloMode || myRole === 'aisha' || objId === 'rescue-dehumid-nw';
-      const showLatch = soloMode || myRole === 'doyun' || objId === 'rescue-crate-sw1' || objId === 'rescue-crate-sw2';
-      const blocks: string[] = [];
-
-      if (showDew) {
-        blocks.push(`
-          <div class="p-card ${rh === 45 && temp === 18 ? 'ok' : ''}">
-            <div style="font:800 13px sans-serif;color:#7CD8FF">🔍 카이 · 제습 공조 조절 ${rh === 45 && temp === 18 ? '✔ 안정화' : '(목표 45% RH / 18°C)'}</div>
-            <div class="p-row" style="margin-top:6px">
-              <button class="s-btn" id="hc-p10-rhd">-9% RH</button><strong class="p-mono">${rh}% RH</strong><button class="s-btn" id="hc-p10-rhu">+9%</button>
-              <button class="s-btn" id="hc-p10-td">-2°C</button><strong class="p-mono">${temp}°C</strong><button class="s-btn" id="hc-p10-tu">+2°C</button>
-            </div>
+      mount.innerHTML = `
+        <div class="p-card ${rh === 45 && temp === 18 ? 'ok' : ''}">
+          <div style="font:800 13px sans-serif;color:#7CD8FF">🔍 카이 · 제습 공조 조절 ${rh === 45 && temp === 18 ? '✔ 안정화 (수장고 안개 제거됨!)' : '(목표 45% RH / 18°C)'}</div>
+          <div class="p-row" style="margin-top:6px">
+            <button class="s-btn" id="hc-p10-rhd">-9% RH</button><strong class="p-mono">${rh}% RH</strong><button class="s-btn" id="hc-p10-rhu">+9%</button>
+            <button class="s-btn" id="hc-p10-td">-2°C</button><strong class="p-mono">${temp}°C</strong><button class="s-btn" id="hc-p10-tu">+2°C</button>
           </div>
-        `);
-      }
-      if (showLatch) {
-        blocks.push(`
-          <div class="p-card ${latch ? 'ok' : 'warn'}">
-            <div class="p-row-between">
-              <span style="font:800 13px sans-serif;color:#FFB86B">⚙ 서하린 · 1번 방수 크레이트 걸쇠 상태: ${latch ? '체결 완료 ✔' : '미체결'}</span>
-              <button class="s-btn ${latch ? 'primary' : 'amber'}" id="hc-p10-latch" ${latch ? 'disabled' : ''}>${latch ? '✔ 체결됨' : '🔒 걸쇠 체결하기'}</button>
-            </div>
-          </div>
-        `);
-      }
-
-      if (blocks.length > 0) {
-        mount.innerHTML = `<div class="p-stack">${blocks.join('')}</div>`;
-        mount.querySelector('#hc-p10-rhd')?.addEventListener('click', () => {
-          soundEngine.playClick();
-          h.patchState(10, { rh: Math.max(36, rh - 9) });
-          h.rerender();
-        });
-        mount.querySelector('#hc-p10-rhu')?.addEventListener('click', () => {
-          soundEngine.playClick();
-          h.patchState(10, { rh: Math.min(81, rh + 9) });
-          h.rerender();
-        });
-        mount.querySelector('#hc-p10-td')?.addEventListener('click', () => {
-          soundEngine.playClick();
-          h.patchState(10, { temp: Math.max(14, temp - 2) });
-          h.rerender();
-        });
-        mount.querySelector('#hc-p10-tu')?.addEventListener('click', () => {
-          soundEngine.playClick();
-          h.patchState(10, { temp: Math.min(28, temp + 2) });
-          h.rerender();
-        });
-        mount.querySelector('#hc-p10-latch')?.addEventListener('click', () => {
-          soundEngine.playClick();
-          h.patchState(10, { crateLatch: true });
-          h.setInfo('서하린: 1번 방수 크레이트 걸쇠 체결 완료! 이제 린이 크레인으로 상자를 인양할 수 있습니다.');
-        });
-      }
+        </div>
+      `;
+      mount.querySelector('#hc-p10-rhd')?.addEventListener('click', () => {
+        soundEngine.playClick();
+        h.patchState(10, { rh: Math.max(36, rh - 9) });
+        h.rerender();
+      });
+      mount.querySelector('#hc-p10-rhu')?.addEventListener('click', () => {
+        soundEngine.playClick();
+        h.patchState(10, { rh: Math.min(81, rh + 9) });
+        h.rerender();
+      });
+      mount.querySelector('#hc-p10-td')?.addEventListener('click', () => {
+        soundEngine.playClick();
+        h.patchState(10, { temp: Math.max(14, temp - 2) });
+        h.rerender();
+      });
+      mount.querySelector('#hc-p10-tu')?.addEventListener('click', () => {
+        soundEngine.playClick();
+        h.patchState(10, { temp: Math.min(28, temp + 2) });
+        h.rerender();
+      });
       return;
     }
 
-    if (pid === 12 && (soloMode || myRole === 'lin' || objId === 'archive-side-desk-e')) {
-      const fx = Number(s.fx ?? 15);
-      const fy = Number(s.fy ?? 85);
+    if (pid === 10 && myRole === 'doyun') {
+      const latch = Boolean(s.crateLatch);
+      mount.innerHTML = `
+        <div class="p-card ${latch ? 'ok' : 'warn'}">
+          <div class="p-row-between">
+            <span style="font:800 13px sans-serif;color:#FFB86B">⚙ 서하린 · 1번 방수 크레이트 걸쇠 상태: ${latch ? '체결 완료 ✔' : '미체결'}</span>
+            <button class="s-btn ${latch ? 'primary' : 'amber'}" id="hc-p10-latch" ${latch ? 'disabled' : ''}>${latch ? '✔ 체결됨' : '🔒 걸쇠 체결하기'}</button>
+          </div>
+        </div>
+      `;
+      mount.querySelector('#hc-p10-latch')?.addEventListener('click', () => {
+        soundEngine.playClick();
+        h.patchState(10, { crateLatch: true });
+        h.setInfo('서하린: 1번 방수 크레이트 걸쇠 체결 완료! 린에게 무전으로 알려주세요.');
+      });
+      return;
+    }
+
+    if (pid === 12 && myRole === 'lin') {
+      let fx = Number(s.fx ?? 15);
+      let fy = Number(s.fy ?? 85);
       const dist = Math.abs(fx - 60) + Math.abs(fy - 40);
       const blur = Math.min(8, Math.round(dist / 7));
       const sharp = dist <= 12;
 
       mount.innerHTML = `
-        <div class="p-card ${sharp ? 'ok' : ''}">
-          <div style="font:800 13px sans-serif;color:#52EFBF;margin-bottom:6px">🧭 린 · 마이크로필름 XY 스캐너 (X:${fx}, Y:${fy}) ${sharp ? '✔ 초점 일치!' : ''}</div>
-          <div style="background:#061210;border:2px solid #2A3F3A;padding:10px;border-radius:6px;text-align:center;filter:blur(${blur}px);transition:filter .1s">
+        <div class="p-card ${sharp ? 'ok' : ''}" id="hc-p12-card">
+          <div id="hc-p12-lbl" style="font:800 13px sans-serif;color:#52EFBF;margin-bottom:6px">🧭 린 · 마이크로필름 XY 스캐너 (X:${fx}, Y:${fy}) ${sharp ? '✔ 초점 일치!' : ''}</div>
+          <div id="hc-p12-film" style="background:#061210;border:2px solid #2A3F3A;padding:10px;border-radius:6px;text-align:center;filter:blur(${blur}px);transition:filter .1s">
             <div style="font:900 12px monospace;color:#52EFBF">TARGET PUNCH CODE</div>
             <div style="font:900 16px monospace;color:#FFD86B;margin-top:3px">2열 [★ 별자리] · 4열 [🌊 파도]</div>
           </div>
           <div class="p-grid-2" style="margin-top:8px">
-            <label style="font-size:11px">X 초점: <input type="range" min="0" max="100" step="5" value="${fx}" id="hc-p12-fx" style="width:100%"/></label>
-            <label style="font-size:11px">Y 초점: <input type="range" min="0" max="100" step="5" value="${fy}" id="hc-p12-fy" style="width:100%"/></label>
+            <label style="font-size:11px">X 초점 (목표 60): <input type="range" min="0" max="100" step="5" value="${fx}" id="hc-p12-fx" style="width:100%"/></label>
+            <label style="font-size:11px">Y 초점 (목표 40): <input type="range" min="0" max="100" step="5" value="${fy}" id="hc-p12-fy" style="width:100%"/></label>
           </div>
         </div>
       `;
-      const updateBlur = (nextX: number, nextY: number) => {
-        h.patchState(12, { fx: nextX, fy: nextY });
-        h.rerender();
+      const updateDom = () => {
+        const d = Math.abs(fx - 60) + Math.abs(fy - 40);
+        const b = Math.min(8, Math.round(d / 7));
+        const film = mount.querySelector<HTMLElement>('#hc-p12-film');
+        const lbl = mount.querySelector('#hc-p12-lbl');
+        const card = mount.querySelector('#hc-p12-card');
+        if (film) film.style.filter = `blur(${b}px)`;
+        if (lbl) lbl.textContent = `🧭 린 · 마이크로필름 XY 스캐너 (X:${fx}, Y:${fy}) ${d <= 12 ? '✔ 초점 일치!' : ''}`;
+        if (card) card.classList.toggle('ok', d <= 12);
       };
-      mount.querySelector<HTMLInputElement>('#hc-p12-fx')?.addEventListener('change', (e) => {
-        updateBlur(Number((e.target as HTMLInputElement).value), fy);
+      mount.querySelector<HTMLInputElement>('#hc-p12-fx')?.addEventListener('input', (e) => {
+        fx = Number((e.target as HTMLInputElement).value);
+        updateDom();
       });
-      mount.querySelector<HTMLInputElement>('#hc-p12-fy')?.addEventListener('change', (e) => {
-        updateBlur(fx, Number((e.target as HTMLInputElement).value));
+      mount.querySelector<HTMLInputElement>('#hc-p12-fx')?.addEventListener('change', () => {
+        h.patchState(12, { fx, fy });
+      });
+      mount.querySelector<HTMLInputElement>('#hc-p12-fy')?.addEventListener('input', (e) => {
+        fy = Number((e.target as HTMLInputElement).value);
+        updateDom();
+      });
+      mount.querySelector<HTMLInputElement>('#hc-p12-fy')?.addEventListener('change', () => {
+        h.patchState(12, { fx, fy });
       });
       return;
     }
 
-    if (pid === 13 && (soloMode || myRole === 'doyun' || objId === 'preserve-cabinet-1' || objId === 'preserve-cabinet-2')) {
+    if (pid === 13 && myRole === 'doyun') {
       const valveOpen = Boolean(s.valveOpen);
       mount.innerHTML = `
         <div class="p-card ${valveOpen ? 'ok' : 'warn'}">
@@ -456,66 +594,26 @@ export class TaskModal {
       mount.querySelector('#hc-p13-valve')?.addEventListener('click', () => {
         soundEngine.playClick();
         h.patchState(13, { valveOpen: true });
-        h.setInfo('서하린: 시약 공급 안전 밸브를 열었습니다! 카이가 작업대에서 적정·세척을 시작할 수 있습니다.');
+        h.setInfo('서하린: 시약 공급 안전 밸브 개방 완료! 카이에게 무전으로 알려주세요.');
       });
-    }
-  }
-
-  private renderCoordsView(stage: HTMLElement, objs: (MapObject & { floor: string })[]) {
-    stage.innerHTML = `
-      <div class="au-board">
-        <table class="au-obj-table">
-          <thead>
-            <tr><th>오브젝트 ID / 이름</th><th>층 · 방</th><th>역할 배분</th><th>좌표 / 크기</th><th>상호작용</th></tr>
-          </thead>
-          <tbody>
-            ${objs
-              .map(
-                (o) => `<tr>
-                <td><strong style="color:#89EFD0">${o.id}</strong><br><span style="color:#C2CFD8">${o.name}</span></td>
-                <td><code>${o.floor} · ${o.room}</code></td>
-                <td>${o.role || '-'}</td>
-                <td><code>(${o.x}, ${o.y}) ${o.width}×${o.height}</code></td>
-                <td><code>${o.interact ? `(${o.interact[0]}, ${o.interact[1]})` : '-'}</code></td>
-              </tr>`
-              )
-              .join('')}
-          </tbody>
-        </table>
-      </div>
-    `;
-  }
-
-  private renderMainBoard(stage: HTMLElement, room: RoomState) {
-    const p = PUZZLES_BY_ID[this.pid];
-    const s = (room.puzzleStates[this.pid] || {}) as Record<string, unknown>;
-    const helpers = this.createHelpers(room, this.session.getMyRole());
-
-    const handled =
-      renderAct1Act2Board(this.pid, stage, p, s, helpers) ||
-      renderAct3Act4Board(this.pid, stage, p, s, helpers, {
-        sendHere: () => {
-          this.session.sendRadio('lin', ['COOP_HERE']);
-          soundEngine.playRadio();
-        },
-        gotoAtrium: () => this.host.onJumpToAtrium(),
-        closeModal: () => this.close(),
-      });
-
-    if (!handled) {
-      stage.innerHTML = `<div class="au-board">퍼즐 보드를 찾을 수 없습니다.</div>`;
+      return;
     }
 
-    if (!room.solvedPids.includes(p.id) && p.id !== 16) {
-      const helperWrap = document.createElement('div');
-      helperWrap.className = 'p-bot-help-bar';
-      helperWrap.innerHTML = `<button class="s-btn" id="au-ask-bot-clue" style="font-size:12px">🤖 동료 무전 단서 다시 받기</button>`;
-      stage.appendChild(helperWrap);
-      helperWrap.querySelector<HTMLElement>('#au-ask-bot-clue')!.onclick = () => {
-        this.host.onRequestBotClue(p.id);
-        soundEngine.playRadio();
-        this.render();
-      };
+    if (pid === 16 && myRole === 'doyun') {
+      const mountUnlocked = Boolean(s.mountUnlocked);
+      mount.innerHTML = `
+        <div class="p-card ${mountUnlocked ? 'ok' : 'warn'}">
+          <div class="p-row-between">
+            <span style="font:800 13px sans-serif;color:#FFB86B">⚙ 서하린 · 프리즘 거치대 베어링: ${mountUnlocked ? '잠금 해제됨 ✔ (프리즘 회전 가능)' : '잠김'}</span>
+            <button class="s-btn ${mountUnlocked ? 'primary' : 'amber'}" id="hc-p16-mount" ${mountUnlocked ? 'disabled' : ''}>${mountUnlocked ? '✔ 잠금 해제됨' : '🔧 거치대 베어링 해제'}</button>
+          </div>
+        </div>
+      `;
+      mount.querySelector('#hc-p16-mount')?.addEventListener('click', () => {
+        soundEngine.playClick();
+        h.patchState(16, { mountUnlocked: true });
+        h.setInfo('서하린: 프리즘 거치대 잠금 해제 완료! 린에게 3번 각도(M3=90°)와 함께 무전으로 알려주세요.');
+      });
     }
   }
 

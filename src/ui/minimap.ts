@@ -91,7 +91,7 @@ export class MinimapController {
       ctx.fillRect(px * sx - 1, py * sy - 1, Math.max(4, pw * sx + 2), Math.max(4, ph * sy + 2));
     }
 
-    // For Lin (Navigator), draw compass rose + bearing crosshair on minimap!
+    // For Lin (Navigator), draw compass rose + bearing crosshair + unsolved puzzle waypoints on minimap!
     if (activeRole === 'lin') {
       ctx.save();
       ctx.strokeStyle = 'rgba(82, 239, 191, 0.35)';
@@ -102,23 +102,47 @@ export class MinimapController {
       ctx.moveTo(0, slot.y * sy);
       ctx.lineTo(w, slot.y * sy);
       ctx.stroke();
+
+      let nearestObj: { x: number; y: number; dist: number; code: string } | null = null;
+      for (const p of PUZZLES) {
+        if (p.floor !== slot.floor || room.solvedPids.includes(p.id)) continue;
+        const obj = fl.objects.find((o) => o.id === p.focusObj);
+        if (!obj) continue;
+        const ox = (obj.x + obj.width / 2) * sx;
+        const oy = (obj.y + obj.height / 2) * sy;
+        ctx.fillStyle = '#FFD86B';
+        ctx.beginPath();
+        ctx.arc(ox, oy, 3.2, 0, Math.PI * 2);
+        ctx.fill();
+        const d = Math.hypot(obj.x - slot.x, obj.y - slot.y);
+        if (!nearestObj || d < nearestObj.dist) {
+          nearestObj = { x: ox, y: oy, dist: d, code: p.code };
+        }
+      }
+      if (nearestObj) {
+        ctx.strokeStyle = 'rgba(255, 216, 107, 0.65)';
+        ctx.setLineDash([2, 2]);
+        ctx.beginPath();
+        ctx.moveTo(slot.x * sx, slot.y * sy);
+        ctx.lineTo(nearestObj.x, nearestObj.y);
+        ctx.stroke();
+      }
       ctx.restore();
       ctx.font = 'bold 9px monospace';
       ctx.fillStyle = '#52EFBF';
       ctx.textAlign = 'left';
-      ctx.fillText('N ↑', 6, 11);
-    }
-
-    // Unsolved puzzle pins on this floor
-    for (const p of PUZZLES) {
-      if (p.floor !== slot.floor) continue;
-      const obj = fl.objects.find((o) => o.id === p.focusObj);
-      if (!obj) continue;
-      const solved = room.solvedPids.includes(p.id);
-      ctx.fillStyle = solved ? '#27BA74' : '#FFD86B';
-      ctx.beginPath();
-      ctx.arc((obj.x + obj.width / 2) * sx, (obj.y + obj.height / 2) * sy, 3, 0, Math.PI * 2);
-      ctx.fill();
+      ctx.fillText('N ↑ 🧭', 6, 11);
+    } else {
+      // Solved puzzle check pins on this floor
+      for (const p of PUZZLES) {
+        if (p.floor !== slot.floor || !room.solvedPids.includes(p.id)) continue;
+        const obj = fl.objects.find((o) => o.id === p.focusObj);
+        if (!obj) continue;
+        ctx.fillStyle = '#27BA74';
+        ctx.beginPath();
+        ctx.arc((obj.x + obj.width / 2) * sx, (obj.y + obj.height / 2) * sy, 2.6, 0, Math.PI * 2);
+        ctx.fill();
+      }
     }
 
     // All 4 players on this floor
@@ -180,9 +204,10 @@ export class MinimapController {
               ${floorPuzzles
                 .map((p) => {
                   const done = room.solvedPids.includes(p.id);
+                  const helpers = p.helperRoles.map((hr) => ROLES[hr].name).join('+');
                   return `<div class="guide-puz-row ${done ? 'done' : ''}">
                     <span><strong>${p.code}</strong> ${p.title}</span>
-                    <span class="guide-badge">${done ? '✔ 완료' : ROLES[p.mainRole].name + ' 주도'}</span>
+                    <span class="guide-badge">${done ? '✔ 완료' : `${ROLES[p.mainRole].name} 주도 · 도움: ${helpers}`}</span>
                   </div>`;
                 })
                 .join('')}

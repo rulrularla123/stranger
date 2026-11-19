@@ -213,8 +213,8 @@ function boardP11(stage: HTMLElement, s: Record<string, unknown>, h: BoardHelper
 }
 
 function boardP12(stage: HTMLElement, s: Record<string, unknown>, h: BoardHelpers) {
-  let fx = Number(s.fx ?? 15);
-  let fy = Number(s.fy ?? 85);
+  const fx = Number(s.fx ?? 15);
+  const fy = Number(s.fy ?? 85);
   const punchGrid =
     Array.isArray(s.punchGrid) && s.punchGrid.length === 16
       ? [...(s.punchGrid as boolean[])]
@@ -222,9 +222,7 @@ function boardP12(stage: HTMLElement, s: Record<string, unknown>, h: BoardHelper
   const hint = h.difficulty.showTargetHints;
 
   const dist = Math.abs(fx - 60) + Math.abs(fy - 40);
-  const blur = Math.min(8, Math.round(dist / 7));
   const sharp = dist <= 12;
-  const showScanner = h.soloMode || h.myRole !== 'maria';
 
   const rowSyms = [
     { key: 'SUN', label: '☀ 태양' },
@@ -233,39 +231,23 @@ function boardP12(stage: HTMLElement, s: Record<string, unknown>, h: BoardHelper
     { key: 'WAVE', label: '🌊 파도' },
   ];
 
-  const scannerHtml = showScanner
-    ? `
-      <div class="p-card ${sharp ? 'ok' : ''}" id="p12-scan-card">
-        <div id="p12-scan-lbl" style="font:800 12px sans-serif;color:#52EFBF;margin-bottom:6px">① 마이크로필름 XY 스캐너 (X:${fx}, Y:${fy})</div>
-        <div id="p12-film" style="background:#061210;border:2px solid #2A3F3A;padding:12px;border-radius:6px;text-align:center;filter:blur(${blur}px);transition:filter .1s">
-          <div style="font:900 13px monospace;color:#52EFBF">TARGET PUNCH CODE</div>
-          <div style="font:900 18px monospace;color:#FFD86B;margin-top:4px">COL 2 [★] · COL 4 [🌊]</div>
-        </div>
-        <div class="p-stack" style="margin-top:8px">
-          <label style="font-size:11px">X 초점${hint ? ' (목표 60)' : ''}: <input type="range" min="0" max="100" step="5" value="${fx}" id="p12-fx" style="width:100%"/></label>
-          <label style="font-size:11px">Y 초점${hint ? ' (목표 40)' : ''}: <input type="range" min="0" max="100" step="5" value="${fy}" id="p12-fy" style="width:100%"/></label>
-        </div>
-      </div>
-    `
-    : `
+  stage.innerHTML = `
+    <div class="au-board p-grid-2">
       <div class="p-card ${sharp ? 'ok' : 'warn'}">
-        <div style="font:800 13px sans-serif;color:${sharp ? '#52EFBF' : '#FFB86B'};margin-bottom:6px">① 린 · 마이크로필름 리더기 상태</div>
-        <p style="margin:0;font-size:13px;color:#DCE6EE">
+        <div style="font:800 13px sans-serif;color:${sharp ? '#52EFBF' : '#FFB86B'};margin-bottom:6px">
+          ① 🧭 린 · 마이크로필름 XY 스캐너 상태
+        </div>
+        <p style="margin:0;font-size:13px;color:#DCE6EE;line-height:1.55">
           ${
             sharp
-              ? '✔ 린이 마이크로필름 초점 정렬을 완료했습니다! 린의 무전 좌표에 맞춰 오른쪽 4×4 카드를 타공하세요.'
-              : '⏳ 린이 동측 책상(archive-side-desk-e)에서 마이크로필름 XY 초점을 맞추고 무전을 보낼 때까지 기다리세요.'
+              ? '✔ 린이 마이크로필름 초점 정렬을 완료했습니다!<br/>린이 무전으로 알려준 열·문양 좌표만 오른쪽 카드에 타공하세요.'
+              : '🔒 <strong>린의 도움이 필요합니다</strong><br/>린이 동측 책상(archive-side-desk-e)에서 마이크로필름 XY 초점을 맞추고 타공 좌표를 무전으로 알려줄 때까지 기다리세요.'
           }
         </p>
       </div>
-    `;
-
-  stage.innerHTML = `
-    <div class="au-board p-grid-2">
-      ${scannerHtml}
       <div style="background:#E6D6B8;border:3px solid #705638;border-radius:8px;padding:12px;color:#1F170F">
         <div class="p-row-between" style="margin-bottom:6px">
-          <div style="font:900 13px sans-serif">② 4열 × 4행 아카이브 천공 카드</div>
+          <div style="font:900 13px sans-serif">② 📜 이안 · 4열 × 4행 천공 카드</div>
           <button class="s-btn" id="p12-tape" style="padding:3px 8px;font-size:11px">🩹 보수 테이프</button>
         </div>
         <div class="p-punch-grid-4x4">
@@ -291,33 +273,6 @@ function boardP12(stage: HTMLElement, s: Record<string, unknown>, h: BoardHelper
     </div>
   `;
 
-  if (showScanner) {
-    const updateLiveBlur = () => {
-      const d = Math.abs(fx - 60) + Math.abs(fy - 40);
-      const b = Math.min(8, Math.round(d / 7));
-      const film = stage.querySelector<HTMLElement>('#p12-film');
-      const lbl = stage.querySelector('#p12-scan-lbl');
-      const card = stage.querySelector('#p12-scan-card');
-      if (film) film.style.filter = `blur(${b}px)`;
-      if (lbl) lbl.textContent = `① 마이크로필름 XY 스캐너 (X:${fx}, Y:${fy})`;
-      if (card) card.classList.toggle('ok', d <= 12);
-    };
-    stage.querySelector<HTMLInputElement>('#p12-fx')!.oninput = (e) => {
-      fx = Number((e.target as HTMLInputElement).value);
-      updateLiveBlur();
-    };
-    stage.querySelector<HTMLInputElement>('#p12-fx')!.onchange = () => {
-      h.patchState(12, { fx, fy });
-    };
-    stage.querySelector<HTMLInputElement>('#p12-fy')!.oninput = (e) => {
-      fy = Number((e.target as HTMLInputElement).value);
-      updateLiveBlur();
-    };
-    stage.querySelector<HTMLInputElement>('#p12-fy')!.onchange = () => {
-      h.patchState(12, { fx, fy });
-    };
-  }
-
   stage.querySelector<HTMLElement>('#p12-tape')!.onclick = () => {
     soundEngine.playClick();
     h.patchState(12, { punchGrid: Array(16).fill(false) });
@@ -336,9 +291,8 @@ function boardP12(stage: HTMLElement, s: Record<string, unknown>, h: BoardHelper
   });
 
   stage.querySelector<HTMLElement>('#p12-stamp')!.onclick = () => {
-    const curSharp = Math.abs(fx - 60) + Math.abs(fy - 40) <= 12;
-    if (!curSharp) {
-      h.setErr('먼저 마이크로필름 XY 초점을 선명하게 맞춘 뒤 스탬프를 찍으세요.');
+    if (!sharp) {
+      h.setErr('먼저 린이 마이크로필름 XY 초점을 맞춰야 천공 카드 스탬프를 찍을 수 있습니다.');
       return;
     }
     const exactMatch = punchGrid.every((v, idx) => (idx === 5 || idx === 15 ? v : !v));
@@ -369,16 +323,9 @@ function boardP13(stage: HTMLElement, s: Record<string, unknown>, h: BoardHelper
   stage.innerHTML = `
     <div class="au-board p-stack">
       <div class="p-card ${valveOpen ? 'ok' : 'warn'}">
-        <div class="p-row-between">
-          <span style="font:800 12px sans-serif;color:${valveOpen ? '#52EFBF' : '#FFB86B'}">
-            ⚙ 서하린 · 시약 공급 안전 밸브: ${valveOpen ? '개방됨 ✔ (스포이드 사용 가능)' : '잠김 🔒 — 약품 보관장(preserve-cabinet-1/2)에서 열어야 함'}
-          </span>
-          ${
-            h.soloMode && !valveOpen
-              ? '<button class="s-btn amber" id="p13-valve-btn" style="padding:4px 9px;font-size:11px">🔧 밸브 열기</button>'
-              : ''
-          }
-        </div>
+        <span style="font:800 12px sans-serif;color:${valveOpen ? '#52EFBF' : '#FFB86B'}">
+          ⚙ 서하린 · 시약 공급 안전 밸브: ${valveOpen ? '개방됨 ✔ (스포이드 사용 가능)' : '잠김 🔒 — 서하린이 약품 보관장(preserve-cabinet-1/2)에서 열어야 합니다'}
+        </span>
       </div>
 
       <div class="p-grid-2">
@@ -411,11 +358,6 @@ function boardP13(stage: HTMLElement, s: Record<string, unknown>, h: BoardHelper
     </div>
   `;
 
-  stage.querySelector<HTMLElement>('#p13-valve-btn')?.addEventListener('click', () => {
-    soundEngine.playClick();
-    h.patchState(13, { valveOpen: true });
-    h.rerender();
-  });
   stage.querySelector<HTMLElement>('#p13-cyan')!.onclick = () => {
     soundEngine.playClick();
     h.patchState(13, { cyan: Math.min(5, cyan + 1) });
@@ -767,7 +709,8 @@ function boardP16(
   }
 ) {
   const prisms = ((s.prisms as number[]) || [0, 45, 45]).slice(0, 3);
-  const beamOk = prisms[0] === 45 && prisms[1] === 135 && prisms[2] === 90;
+  const mountUnlocked = Boolean(s.mountUnlocked);
+  const beamOk = mountUnlocked && prisms[0] === 45 && prisms[1] === 135 && prisms[2] === 90;
   const hereSent = Boolean(s.hereSent);
   const pads = ((s.pads as boolean[]) || [false, false, false, false]).slice(0, 4);
   const padsCnt = pads.filter(Boolean).length;
@@ -779,6 +722,11 @@ function boardP16(
 
   stage.innerHTML = `
     <div class="au-board p-stack">
+      <div class="p-card ${mountUnlocked ? 'ok' : 'warn'}">
+        <span style="font:800 12px sans-serif;color:${mountUnlocked ? '#52EFBF' : '#FFB86B'}">
+          ⚙ 서하린 · 목선 거치대 회전 베어링: ${mountUnlocked ? '잠금 해제됨 ✔ (프리즘 회전 가능)' : '잠김 🔒 — 서하린이 목선 진열장(special-boat-nw)에서 베어링을 풀어야 프리즘을 돌릴 수 있습니다'}
+        </span>
+      </div>
       <div class="p-card ${beamOk ? 'ok' : 'warn'}">
         <div style="font:800 13px sans-serif;color:${beamOk ? '#52EFBF' : '#FFD86B'};margin-bottom:8px">
           1부 · 기획전시실 3프리즘 광학 굴절 ${hint ? '(목표: M1=45°, M2=135°, M3=90° → 2F 반원 홀 동상)' : '(이안·서하린 단서에 맞춰 2F 반원 홀로 광선 연결)'}
@@ -797,7 +745,7 @@ function boardP16(
           ${[0, 1, 2]
             .map(
               (i) =>
-                `<button class="s-btn ${hint && prisms[i] === [45, 135, 90][i] ? 'primary' : ''}" data-pr="${i}">프리즘 M${i + 1} 회전 (${prisms[i]}°)</button>`
+                `<button class="s-btn ${hint && prisms[i] === [45, 135, 90][i] ? 'primary' : ''}" data-pr="${i}" ${!mountUnlocked ? 'disabled' : ''}>프리즘 M${i + 1} 회전 (${prisms[i]}°)</button>`
             )
             .join('')}
         </div>
@@ -831,6 +779,10 @@ function boardP16(
 
   stage.querySelectorAll<HTMLElement>('[data-pr]').forEach((b) => {
     b.onclick = () => {
+      if (!mountUnlocked) {
+        h.setErr('먼저 서하린이 목선 진열장(special-boat-nw)에서 프리즘 거치대 잠금을 해제해야 합니다.');
+        return;
+      }
       const idx = Number(b.dataset.pr);
       const next = [...prisms];
       next[idx] = (next[idx] + 45) % 180;

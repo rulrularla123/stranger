@@ -1,12 +1,26 @@
-import { C_CATEGORIES, ROLES, TOKENS_BY_ID, renderTokenPillHtml } from '../data/cMenuTokens.ts';
+import {
+  C_CATEGORIES,
+  ROLES,
+  ROLE_ORDER,
+  TOKENS_BY_ID,
+  escapeTokenText,
+  renderRadioTargetHtml,
+  renderTokenPillHtml,
+  sanitizeRadioNumber,
+} from '../data/cMenuTokens.ts';
+import type { RoleId } from '../types/stranger.ts';
 import { soundEngine } from '../audio/soundEngine.ts';
 import type { SessionClient } from '../net/sessionClient.ts';
+
+const MAX_COMPOSED_TOKENS = 8;
 
 export class CMenuWheel {
   private root: HTMLElement;
   private session: SessionClient;
   private open = false;
   private selected: string[] = [];
+  private targetRoleId: RoleId | null = null;
+  private numDraft = '';
   private activeCatIdx = 0;
 
   constructor(container: HTMLElement, session: SessionClient) {
@@ -25,6 +39,15 @@ export class CMenuWheel {
     return this.open;
   }
 
+  openWithTarget(targetRoleId: RoleId | null) {
+    this.targetRoleId = targetRoleId && ROLE_ORDER.includes(targetRoleId) ? targetRoleId : null;
+    if (!this.open) {
+      this.toggle(true);
+    } else {
+      this.render();
+    }
+  }
+
   toggle(force?: boolean) {
     const next = force !== undefined ? force : !this.open;
     if (next === this.open) return;
@@ -40,13 +63,88 @@ export class CMenuWheel {
     this.toggle(false);
   }
 
+  private pushToken(tid: string) {
+    if (this.selected.length >= MAX_COMPOSED_TOKENS) {
+      this.selected.shift();
+    }
+    this.selected.push(tid);
+  }
+
+  private commitDraftNumber(): boolean {
+    const clean = sanitizeRadioNumber(this.numDraft);
+    if (!clean) return false;
+    this.pushToken(`VAL:${clean}`);
+    this.numDraft = '';
+    const inp = this.root.querySelector<HTMLInputElement>('#cw-num-input');
+    if (inp) inp.value = '';
+    return true;
+  }
+
+  private buildPreviewHtml(withRemoveButtons: boolean): string {
+    const room = this.session.getRoom();
+    const targetName = this.targetRoleId
+      ? room?.slots[this.targetRoleId]?.nickname || ROLES[this.targetRoleId].name
+      : null;
+    const targetHtml = renderRadioTargetHtml({ targetRoleId: this.targetRoleId, targetName });
+    const draftClean = sanitizeRadioNumber(this.numDraft);
+
+    const chips = this.selected
+      .map((id, idx) => {
+        const pill = renderTokenPillHtml(id, room?.slots);
+        if (!withRemoveButtons) return pill;
+        return `<span class="cw-chip-wrap">${pill}<button class="cw-chip-rm" data-rm-idx="${idx}" title="항목 삭제">×</button></span>`;
+      })
+      .join(' <span class="cw-plus">+</span> ');
+
+    const draftPill = draftClean
+      ? `${chips ? ' <span class="cw-plus">+</span> ' : ''}${renderTokenPillHtml(`VAL:${draftClean}`, room?.slots)}`
+      : '';
+
+    const emptyHint =
+      !chips && !draftPill
+        ? '<span class="cw-hint">아이콘·숫자·상대방 이름을 조합하세요 (최대 8개)</span>'
+        : '';
+
+    return `${targetHtml} ${chips}${draftPill}${emptyHint}`;
+  }
+
+  private updatePreviewDom() {
+    const composeEl = this.root.querySelector('#cw-compose-chips');
+    const hubSelEl = this.root.querySelector('#cw-hub-sel');
+    const sendBtn = this.root.querySelector<HTMLButtonElement>('#cw-send');
+    const undoBtn = this.root.querySelector<HTMLButtonElement>('#cw-undo');
+    const countEl = this.root.querySelector('#cw-count');
+    const hasDraft = Boolean(sanitizeRadioNumber(this.numDraft));
+    const canSend = this.selected.length > 0 || hasDraft;
+
+    if (composeEl) {
+      composeEl.innerHTML = this.buildPreviewHtml(true);
+      composeEl.querySelectorAll<HTMLElement>('[data-rm-idx]').forEach((btn) => {
+        btn.onclick = () => {
+          const idx = Number(btn.dataset.rmIdx);
+          if (!Number.isNaN(idx)) {
+            soundEngine.playClick();
+            this.selected.splice(idx, 1);
+            this.render();
+          }
+        };
+      });
+    }
+    if (hubSelEl) {
+      hubSelEl.innerHTML = this.buildPreviewHtml(false);
+    }
+    if (sendBtn) sendBtn.disabled = !canSend;
+    if (undoBtn) undoBtn.disabled = this.selected.length === 0;
+    if (countEl) countEl.textContent = `${this.selected.length}/${MAX_COMPOSED_TOKENS}`;
+  }
+
   render() {
     if (!this.open) return;
-    const role = this.session.getMyRole();
-    const rMeta = ROLES[role];
-    const selHtml = this.selected.length
-      ? this.selected.map((id) => renderTokenPillHtml(id)).join(' <span class="cw-plus">+</span> ')
-      : '<span class="cw-hint">1~2개 토큰을 선택해 조합 무전을 보내세요</span>';
+    const room = this.session.getRoom();
+    const myRole = this.session.getMyRole();
+    const rMeta = ROLES[myRole];
+    const hasDraft = Boolean(sanitizeRadioNumber(this.numDraft));
+    const canSend = this.selected.length > 0 || hasDraft;
 
     const ringTokens = C_CATEGORIES.flatMap((cat) => cat.tokens);
     const radius = 196;
@@ -55,12 +153,12 @@ export class CMenuWheel {
 
     const nodesHtml = ringTokens
       .map((tok, i) => {
-        const angle = ((i / ringTokens.length) * Math.PI * 2) - Math.PI / 2;
+        const angle = (i / ringTokens.length) * Math.PI * 2 - Math.PI / 2;
         const x = Math.round(cx + Math.cos(angle) * radius);
         const y = Math.round(cy + Math.sin(angle) * radius);
         const isSel = this.selected.includes(tok.id);
         return `<button class="cw-node ${isSel ? 'selected' : ''}" data-tok="${tok.id}"
-          style="left:${x}px;top:${y}px;--tok-color:${tok.color}" title="${tok.sub}">
+          style="left:${x}px;top:${y}px;--tok-color:${tok.color}" title="${tok.sub} (클릭해 조합에 추가)">
           <span class="cw-glyph">${tok.glyph}</span>
           <span class="cw-label">${tok.label}</span>
         </button>`;
@@ -70,13 +168,35 @@ export class CMenuWheel {
     const activeCat = C_CATEGORIES[this.activeCatIdx];
 
     this.root.innerHTML = `
-      <div class="cw-dialog" role="dialog" aria-label="C-Menu 2.0 20토큰 무전 휠">
+      <div class="cw-dialog" role="dialog" aria-label="C-Menu 2.0 조합형 전술 무전 휠">
         <div class="cw-head">
           <div>
             <span class="cw-badge" style="color:${rMeta.color};border-color:${rMeta.color}">${rMeta.badge} ${rMeta.name} (${rMeta.shortRole})</span>
-            <strong>C-Menu 2.0 전술 무전 휠 (4분류 20토큰)</strong>
+            <strong>C-Menu 2.0 조합 무전 (최대 ${MAX_COMPOSED_TOKENS}개 · 이름 + 아이콘 + 숫자)</strong>
           </div>
           <button class="au-close-x" id="cw-close" aria-label="무전 휠 닫기">✕</button>
+        </div>
+
+        <div class="cw-target-bar">
+          <span class="cw-bar-lbl">수신자 지정</span>
+          <button class="cw-target-btn ${this.targetRoleId === null ? 'active' : ''}" data-target="">📢 전체</button>
+          ${ROLE_ORDER.map((rId) => {
+            const meta = ROLES[rId];
+            const nick = room?.slots[rId]?.nickname || meta.name;
+            const selfTag = rId === myRole ? ' (나)' : '';
+            return `<button class="cw-target-btn ${this.targetRoleId === rId ? 'active' : ''}" data-target="${rId}" style="--rc:${meta.color}">
+              ${meta.badge} ${escapeTokenText(nick)}${selfTag}
+            </button>`;
+          }).join('')}
+        </div>
+
+        <div class="cw-compose-bar">
+          <div class="cw-compose-chips" id="cw-compose-chips"></div>
+          <div class="cw-compose-ctrl">
+            <span class="cw-count-pill" id="cw-count">${this.selected.length}/${MAX_COMPOSED_TOKENS}</span>
+            <button class="s-btn" id="cw-undo" ${this.selected.length ? '' : 'disabled'}>⌫ 하나 지우기</button>
+            <button class="s-btn" id="cw-clear">초기화</button>
+          </div>
         </div>
 
         <div class="cw-body">
@@ -88,11 +208,10 @@ export class CMenuWheel {
             <div class="cw-quad-lbl q4">④ 협동 콜사인</div>
             ${nodesHtml}
             <div class="cw-hub">
-              <div class="cw-hub-title">조합 패킷 (최대 2개)</div>
-              <div class="cw-hub-sel">${selHtml}</div>
+              <div class="cw-hub-title">조합 무전 미리보기</div>
+              <div class="cw-hub-sel" id="cw-hub-sel"></div>
               <div class="cw-hub-actions">
-                <button class="s-btn" id="cw-clear">지우기</button>
-                <button class="s-btn primary" id="cw-send" ${this.selected.length ? '' : 'disabled'} title="Enter 키로도 즉시 발신">📡 무전 발신</button>
+                <button class="s-btn primary" id="cw-send" ${canSend ? '' : 'disabled'} title="Enter 키로도 즉시 발신">📡 발신 (Enter)</button>
               </div>
             </div>
           </div>
@@ -114,18 +233,69 @@ export class CMenuWheel {
                 )
                 .join('')}
             </div>
-            <p class="cw-access-note">색맹·저연령 배려: 모든 토큰에 고유 아이콘 + 색상 + 한글 명칭이 함께 표기됩니다. 발신 시 상단 배너(12초)와 퍼즐 모달 우측 상단에 고정됩니다.</p>
+
+            <div class="cw-num-panel">
+              <div class="cw-bar-lbl">🔢 숫자 조합 추가 &amp; @이름 칩 삽입</div>
+              <div class="cw-num-row">
+                <input id="cw-num-input" class="cw-num-input" type="text" inputmode="decimal" maxlength="10"
+                  value="${escapeTokenText(this.numDraft)}" placeholder="숫자 (예: 180, 45/18, 7.0)" />
+                <button class="s-btn amber" id="cw-num-add">+ 숫자 추가</button>
+              </div>
+              <div class="cw-keypad">
+                ${['1', '2', '3', '4', '5', '6', '7', '8', '9', '0', '.', '/', '⌫']
+                  .map((k) => `<button class="cw-key-btn" data-kpad="${k}">${k}</button>`)
+                  .join('')}
+              </div>
+              <div class="cw-mention-row">
+                ${ROLE_ORDER.map((rId) => {
+                  const meta = ROLES[rId];
+                  const nick = room?.slots[rId]?.nickname || meta.name;
+                  return `<button class="cw-mention-btn" data-mention="${rId}" style="--rc:${meta.color}">+${meta.badge} @${escapeTokenText(nick)}</button>`;
+                }).join('')}
+              </div>
+            </div>
           </div>
         </div>
       </div>
     `;
 
+    this.updatePreviewDom();
+
     this.root.querySelector('#cw-close')?.addEventListener('click', () => this.close());
+    this.root.querySelector('#cw-undo')?.addEventListener('click', () => {
+      if (this.selected.length > 0) {
+        soundEngine.playClick();
+        this.selected.pop();
+        this.render();
+      }
+    });
     this.root.querySelector('#cw-clear')?.addEventListener('click', () => {
+      soundEngine.playClick();
       this.selected = [];
+      this.numDraft = '';
+      this.targetRoleId = null;
       this.render();
     });
     this.root.querySelector('#cw-send')?.addEventListener('click', () => this.transmit());
+
+    this.root.querySelectorAll<HTMLElement>('[data-target]').forEach((btn) => {
+      btn.onclick = () => {
+        soundEngine.playClick();
+        const t = btn.dataset.target || '';
+        this.targetRoleId = t && ROLE_ORDER.includes(t as RoleId) ? (t as RoleId) : null;
+        this.render();
+      };
+    });
+
+    this.root.querySelectorAll<HTMLElement>('[data-mention]').forEach((btn) => {
+      btn.onclick = () => {
+        const rid = btn.dataset.mention as RoleId;
+        if (!ROLE_ORDER.includes(rid)) return;
+        soundEngine.playClick();
+        this.pushToken(`ROLE:${rid}`);
+        this.render();
+      };
+    });
 
     this.root.querySelectorAll<HTMLElement>('[data-cidx]').forEach((btn) => {
       btn.onclick = () => {
@@ -139,24 +309,61 @@ export class CMenuWheel {
         const tid = btn.dataset.tok!;
         if (!TOKENS_BY_ID[tid]) return;
         soundEngine.playClick();
-        const existing = this.selected.indexOf(tid);
-        if (existing >= 0) {
-          this.selected.splice(existing, 1);
-        } else {
-          if (this.selected.length >= 2) this.selected.shift();
-          this.selected.push(tid);
-        }
+        this.pushToken(tid);
         this.render();
+      };
+    });
+
+    const numInput = this.root.querySelector<HTMLInputElement>('#cw-num-input');
+    if (numInput) {
+      numInput.addEventListener('input', () => {
+        const clean = sanitizeRadioNumber(numInput.value);
+        if (numInput.value !== clean) numInput.value = clean;
+        this.numDraft = clean;
+        this.updatePreviewDom();
+      });
+      numInput.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') {
+          e.preventDefault();
+          this.transmit();
+        } else if (e.key === 'Escape') {
+          e.preventDefault();
+          this.close();
+        }
+      });
+    }
+
+    this.root.querySelector('#cw-num-add')?.addEventListener('click', () => {
+      if (this.commitDraftNumber()) {
+        soundEngine.playClick();
+        this.render();
+      }
+    });
+
+    this.root.querySelectorAll<HTMLElement>('[data-kpad]').forEach((btn) => {
+      btn.onclick = () => {
+        const k = btn.dataset.kpad!;
+        soundEngine.playClick();
+        if (k === '⌫') {
+          this.numDraft = this.numDraft.slice(0, -1);
+        } else {
+          this.numDraft = sanitizeRadioNumber(this.numDraft + k);
+        }
+        if (numInput) numInput.value = this.numDraft;
+        this.updatePreviewDom();
       };
     });
   }
 
   transmit() {
+    this.commitDraftNumber();
     if (this.selected.length === 0) return;
     const role = this.session.getMyRole();
-    this.session.sendRadio(role, [...this.selected]);
+    this.session.sendRadio(role, [...this.selected], { targetRoleId: this.targetRoleId });
     soundEngine.playRadio();
     this.selected = [];
+    this.numDraft = '';
+    this.targetRoleId = null;
     this.close();
   }
 }

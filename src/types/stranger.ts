@@ -49,7 +49,10 @@ export interface RadioPacket {
   seq: number;
   roleId: RoleId;
   senderName: string;
+  targetRoleId?: RoleId | null;
+  targetName?: string | null;
   tokenIds: string[];
+  note?: string | null;
   ts: number;
   expiresAt: number;
 }
@@ -198,10 +201,12 @@ export interface PuzzleDef {
   arch: string;
   mainRole: RoleId;
   helperRoles: RoleId[];
+  helperSummaryByRole?: Partial<Record<RoleId, string>>;
   focusObj: string;
   answerTokens: string[][];
   clueTitle: string;
   clueSummary: string;
   clueHtml: string;
+  roleClues?: Partial<Record<RoleId, { title: string; bodyHtml: string }>>;
   objectRoleClues?: Record<string, { roleId: RoleId; title: string; bodyHtml: string; recommendedTokens?: string[][] }>;
 }
