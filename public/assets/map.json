@@ -9781,61 +9781,65 @@
           "id": "entry-flag-left",
           "name": "필리핀 국기 현수막",
           "sprite": "assets/sprites/heritage-flag.png",
-          "x": 810,
-          "y": 965,
-          "width": 32,
-          "height": 50,
+          "x": 809,
+          "y": 964,
+          "width": 34,
+          "height": 52,
           "order": 1015,
           "room": "hall",
           "puzzles": [],
           "role": "",
           "description": "",
-          "wall": true
+          "wall": true,
+          "outlined": true
         },
         {
           "id": "entry-lamp-left",
           "name": "중앙 계단 벽등",
           "sprite": "assets/sprites/brass-sconce.png",
-          "x": 866,
-          "y": 972,
-          "width": 17,
-          "height": 32,
+          "x": 865,
+          "y": 971,
+          "width": 19,
+          "height": 34,
           "order": 1004,
           "room": "hall",
           "puzzles": [],
           "role": "",
           "description": "",
-          "wall": true
+          "wall": true,
+          "outlined": true
         },
         {
           "id": "entry-lamp-right",
           "name": "중앙 계단 벽등",
           "sprite": "assets/sprites/brass-sconce.png",
-          "x": 1014,
-          "y": 972,
-          "width": 17,
-          "height": 32,
+          "x": 1013,
+          "y": 971,
+          "width": 19,
+          "height": 34,
           "order": 1004,
           "room": "hall",
           "puzzles": [],
           "role": "",
           "description": "",
-          "wall": true
+          "wall": true,
+          "outlined": true
         },
         {
           "id": "entry-flag-right",
           "name": "필리핀 국기 현수막",
           "sprite": "assets/sprites/heritage-flag.png",
-          "x": 1044,
-          "y": 965,
-          "width": 32,
-          "height": 50,
+          "x": 1043,
+          "y": 964,
+          "width": 34,
+          "height": 52,
           "order": 1015,
           "room": "hall",
           "puzzles": [],
           "role": "",
           "description": "",
-          "wall": true
+          "wall": true,
+          "outlined": true
         },
         {
           "id": "hall-reception",
@@ -9889,10 +9893,10 @@
           "id": "hall-planter-ne",
           "name": "북측 로비 화분",
           "sprite": "assets/sprites/terracotta-planter.png",
-          "x": 1014,
-          "y": 1026,
-          "width": 34,
-          "height": 42,
+          "x": 1013,
+          "y": 1025,
+          "width": 36,
+          "height": 44,
           "order": 1068,
           "room": "hall",
           "puzzles": [],
@@ -9904,7 +9908,8 @@
             1051,
             20,
             12
-          ]
+          ],
+          "outlined": true
         },
         {
           "id": "hall-compass-dial",
@@ -9973,10 +9978,10 @@
           "id": "hall-side1",
           "name": "입구 화분 (좌)",
           "sprite": "assets/sprites/terracotta-planter.png",
-          "x": 762,
-          "y": 1524,
-          "width": 34,
-          "height": 42,
+          "x": 761,
+          "y": 1523,
+          "width": 36,
+          "height": 44,
           "order": 1566,
           "room": "hall",
           "puzzles": [],
@@ -9988,16 +9993,17 @@
             1549,
             20,
             12
-          ]
+          ],
+          "outlined": true
         },
         {
           "id": "hall-side2",
           "name": "입구 화분 (우)",
           "sprite": "assets/sprites/terracotta-planter.png",
-          "x": 1108,
-          "y": 1524,
-          "width": 34,
-          "height": 42,
+          "x": 1107,
+          "y": 1523,
+          "width": 36,
+          "height": 44,
           "order": 1566,
           "room": "hall",
           "puzzles": [],
@@ -10009,7 +10015,8 @@
             1549,
             20,
             12
-          ]
+          ],
+          "outlined": true
         },
         {
           "id": "life-spot-1",
@@ -10030,10 +10037,10 @@
           "id": "life-wall-art",
           "name": "전통 바하이 쿠보 회화",
           "sprite": "assets/sprites/bahay-painting.png",
-          "x": 498,
-          "y": 974,
-          "width": 64,
-          "height": 42,
+          "x": 497,
+          "y": 973,
+          "width": 66,
+          "height": 44,
           "order": 1016,
           "room": "life",
           "puzzles": [
@@ -10045,46 +10052,49 @@
           "interact": [
             530,
             1034
-          ]
+          ],
+          "outlined": true
         },
         {
           "id": "life-sconce-l",
           "name": "전시 벽등",
           "sprite": "assets/sprites/brass-sconce.png",
-          "x": 448,
-          "y": 978,
-          "width": 15,
-          "height": 28,
+          "x": 447,
+          "y": 977,
+          "width": 17,
+          "height": 30,
           "order": 1006,
           "room": "life",
           "puzzles": [],
           "role": "",
           "description": "",
-          "wall": true
+          "wall": true,
+          "outlined": true
         },
         {
           "id": "life-sconce-r",
           "name": "전시 벽등",
           "sprite": "assets/sprites/brass-sconce.png",
-          "x": 598,
-          "y": 978,
-          "width": 15,
-          "height": 28,
+          "x": 597,
+          "y": 977,
+          "width": 17,
+          "height": 30,
           "order": 1006,
           "room": "life",
           "puzzles": [],
           "role": "",
           "description": "",
-          "wall": true
+          "wall": true,
+          "outlined": true
         },
         {
           "id": "life-case-nw",
           "name": "마눙굴 항아리 · 생활 도기 진열장",
           "sprite": "assets/sprites/compact-pottery.png",
-          "x": 368,
-          "y": 1004,
-          "width": 58,
-          "height": 44,
+          "x": 367,
+          "y": 1003,
+          "width": 60,
+          "height": 46,
           "order": 1048,
           "room": "life",
           "puzzles": [
@@ -10102,7 +10112,8 @@
             1028,
             46,
             16
-          ]
+          ],
+          "outlined": true
         },
         {
           "id": "life-vitrine-ne",
@@ -10231,25 +10242,26 @@
           "id": "life-pottery-catalog",
           "name": "생활 유물 도감 책자",
           "sprite": "assets/sprites/pottery-catalog.png",
-          "x": 465,
-          "y": 1104,
-          "width": 26,
-          "height": 18,
+          "x": 464,
+          "y": 1103,
+          "width": 28,
+          "height": 20,
           "order": 1152,
           "room": "life",
           "puzzles": [],
           "role": "",
           "description": "",
-          "wall": false
+          "wall": false,
+          "outlined": true
         },
         {
           "id": "life-heritage-jar",
           "name": "마눙굴 국보 항아리 원형 진열대",
           "sprite": "assets/sprites/heritage-jar.png",
-          "x": 568,
-          "y": 1084,
-          "width": 38,
-          "height": 68,
+          "x": 567,
+          "y": 1083,
+          "width": 40,
+          "height": 70,
           "order": 1152,
           "room": "life",
           "puzzles": [
@@ -10267,7 +10279,8 @@
             1130,
             28,
             18
-          ]
+          ],
+          "outlined": true
         },
         {
           "id": "life-stanchion-e",
@@ -10294,10 +10307,10 @@
           "id": "life-basket-sw",
           "name": "대나무 공예 바구니 진열장",
           "sprite": "assets/sprites/basket-case.png",
-          "x": 386,
-          "y": 1188,
-          "width": 52,
-          "height": 50,
+          "x": 385,
+          "y": 1187,
+          "width": 54,
+          "height": 52,
           "order": 1238,
           "room": "life",
           "puzzles": [],
@@ -10309,7 +10322,8 @@
             1218,
             40,
             16
-          ]
+          ],
+          "outlined": true
         },
         {
           "id": "life-bench-s",
@@ -10336,10 +10350,10 @@
           "id": "life-corner-plant-sw",
           "name": "모서리 화분 (좌)",
           "sprite": "assets/sprites/terracotta-planter.png",
-          "x": 342,
-          "y": 1208,
-          "width": 34,
-          "height": 42,
+          "x": 341,
+          "y": 1207,
+          "width": 36,
+          "height": 44,
           "order": 1250,
           "room": "life",
           "puzzles": [],
@@ -10351,16 +10365,17 @@
             1233,
             20,
             12
-          ]
+          ],
+          "outlined": true
         },
         {
           "id": "life-corner-plant-se",
           "name": "모서리 화분 (우)",
           "sprite": "assets/sprites/terracotta-planter.png",
-          "x": 666,
-          "y": 1210,
-          "width": 34,
-          "height": 42,
+          "x": 665,
+          "y": 1209,
+          "width": 36,
+          "height": 44,
           "order": 1252,
           "room": "life",
           "puzzles": [],
@@ -10372,7 +10387,8 @@
             1235,
             20,
             12
-          ]
+          ],
+          "outlined": true
         },
         {
           "id": "time-spot-1",
@@ -10414,40 +10430,42 @@
           "id": "time-sconce-l",
           "name": "전시 벽등",
           "sprite": "assets/sprites/brass-sconce.png",
-          "x": 1288,
-          "y": 978,
-          "width": 15,
-          "height": 28,
+          "x": 1287,
+          "y": 977,
+          "width": 17,
+          "height": 30,
           "order": 1006,
           "room": "time",
           "puzzles": [],
           "role": "",
           "description": "",
-          "wall": true
+          "wall": true,
+          "outlined": true
         },
         {
           "id": "time-sconce-r",
           "name": "전시 벽등",
           "sprite": "assets/sprites/brass-sconce.png",
-          "x": 1428,
-          "y": 978,
-          "width": 15,
-          "height": 28,
+          "x": 1427,
+          "y": 977,
+          "width": 17,
+          "height": 30,
           "order": 1006,
           "room": "time",
           "puzzles": [],
           "role": "",
           "description": "",
-          "wall": true
+          "wall": true,
+          "outlined": true
         },
         {
           "id": "time-bust-nw",
           "name": "역사 인물 흉상 진열장",
           "sprite": "assets/sprites/stone-bust-case.png",
-          "x": 1208,
-          "y": 990,
-          "width": 27,
-          "height": 58,
+          "x": 1207,
+          "y": 989,
+          "width": 29,
+          "height": 60,
           "order": 1048,
           "room": "time",
           "puzzles": [],
@@ -10459,7 +10477,8 @@
             1028,
             20,
             15
-          ]
+          ],
+          "outlined": true
         },
         {
           "id": "time-long-shelf-ne",
@@ -10555,10 +10574,10 @@
           "id": "time-table-center",
           "name": "연표 · 군도 해협 대형 경사 유리 진열대",
           "sprite": "assets/sprites/document-display.png",
-          "x": 1326,
-          "y": 1100,
-          "width": 84,
-          "height": 56,
+          "x": 1325,
+          "y": 1099,
+          "width": 86,
+          "height": 58,
           "order": 1156,
           "room": "time",
           "puzzles": [
@@ -10576,22 +10595,24 @@
             1132,
             72,
             20
-          ]
+          ],
+          "outlined": true
         },
         {
           "id": "time-event-cards",
           "name": "독립 연표 사료 카드",
           "sprite": "assets/sprites/event-cards.png",
-          "x": 1359,
-          "y": 1106,
-          "width": 18,
-          "height": 14,
+          "x": 1358,
+          "y": 1105,
+          "width": 20,
+          "height": 16,
           "order": 1158,
           "room": "time",
           "puzzles": [],
           "role": "",
           "description": "",
-          "wall": false
+          "wall": false,
+          "outlined": true
         },
         {
           "id": "time-stanchion-c",
@@ -10618,10 +10639,10 @@
           "id": "time-bust-sw",
           "name": "독립 영웅 석고 흉상",
           "sprite": "assets/sprites/stone-bust-case.png",
-          "x": 1244,
-          "y": 1186,
-          "width": 28,
-          "height": 58,
+          "x": 1243,
+          "y": 1185,
+          "width": 30,
+          "height": 60,
           "order": 1244,
           "room": "time",
           "puzzles": [],
@@ -10633,7 +10654,8 @@
             1224,
             22,
             16
-          ]
+          ],
+          "outlined": true
         },
         {
           "id": "time-bench-s",
@@ -10660,10 +10682,10 @@
           "id": "time-rack-se",
           "name": "역사 신문·사료 거치대",
           "sprite": "assets/sprites/document-rack.png",
-          "x": 1458,
-          "y": 1186,
-          "width": 52,
-          "height": 54,
+          "x": 1457,
+          "y": 1185,
+          "width": 54,
+          "height": 56,
           "order": 1240,
           "room": "time",
           "puzzles": [],
@@ -10675,16 +10697,17 @@
             1220,
             44,
             16
-          ]
+          ],
+          "outlined": true
         },
         {
           "id": "time-plant-se",
           "name": "모서리 화분 (우)",
           "sprite": "assets/sprites/terracotta-planter.png",
-          "x": 1526,
-          "y": 1210,
-          "width": 34,
-          "height": 42,
+          "x": 1525,
+          "y": 1209,
+          "width": 36,
+          "height": 44,
           "order": 1252,
           "room": "time",
           "puzzles": [],
@@ -10696,7 +10719,8 @@
             1235,
             20,
             12
-          ]
+          ],
+          "outlined": true
         },
         {
           "id": "craft-spot-1",
@@ -10738,40 +10762,42 @@
           "id": "craft-sconce-l",
           "name": "전시 벽등",
           "sprite": "assets/sprites/brass-sconce.png",
-          "x": 448,
-          "y": 1311,
-          "width": 15,
-          "height": 28,
+          "x": 447,
+          "y": 1310,
+          "width": 17,
+          "height": 30,
           "order": 1339,
           "room": "craft",
           "puzzles": [],
           "role": "",
           "description": "",
-          "wall": true
+          "wall": true,
+          "outlined": true
         },
         {
           "id": "craft-sconce-r",
           "name": "전시 벽등",
           "sprite": "assets/sprites/brass-sconce.png",
-          "x": 598,
-          "y": 1311,
-          "width": 15,
-          "height": 28,
+          "x": 597,
+          "y": 1310,
+          "width": 17,
+          "height": 30,
           "order": 1339,
           "room": "craft",
           "puzzles": [],
           "role": "",
           "description": "",
-          "wall": true
+          "wall": true,
+          "outlined": true
         },
         {
           "id": "craft-basket-nw",
           "name": "전통 직조 바구니 진열장",
           "sprite": "assets/sprites/basket-case.png",
-          "x": 368,
-          "y": 1320,
-          "width": 60,
-          "height": 58,
+          "x": 367,
+          "y": 1319,
+          "width": 62,
+          "height": 60,
           "order": 1378,
           "room": "craft",
           "puzzles": [
@@ -10789,16 +10815,17 @@
             1352,
             46,
             20
-          ]
+          ],
+          "outlined": true
         },
         {
           "id": "craft-trade-ne",
           "name": "공예 도구 유물 상자",
           "sprite": "assets/sprites/trade-case.png",
-          "x": 620,
-          "y": 1336,
-          "width": 56,
-          "height": 41,
+          "x": 619,
+          "y": 1335,
+          "width": 58,
+          "height": 43,
           "order": 1377,
           "room": "craft",
           "puzzles": [],
@@ -10810,7 +10837,8 @@
             1355,
             46,
             17
-          ]
+          ],
+          "outlined": true
         },
         {
           "id": "craft-side-vitrine-w",
@@ -10879,10 +10907,10 @@
           "id": "craft-table-center",
           "name": "이푸가오 전통 수직 베틀",
           "sprite": "assets/sprites/textile-loom.png",
-          "x": 500,
-          "y": 1418,
-          "width": 60,
-          "height": 62,
+          "x": 499,
+          "y": 1417,
+          "width": 62,
+          "height": 64,
           "order": 1480,
           "room": "craft",
           "puzzles": [
@@ -10900,16 +10928,17 @@
             1456,
             48,
             20
-          ]
+          ],
+          "outlined": true
         },
         {
           "id": "craft-trade-w",
           "name": "전통 직조 실·도구 전시함",
           "sprite": "assets/sprites/trade-case.png",
-          "x": 404,
-          "y": 1444,
-          "width": 54,
-          "height": 40,
+          "x": 403,
+          "y": 1443,
+          "width": 56,
+          "height": 42,
           "order": 1484,
           "room": "craft",
           "puzzles": [],
@@ -10921,16 +10950,17 @@
             1464,
             42,
             16
-          ]
+          ],
+          "outlined": true
         },
         {
           "id": "craft-pottery-e",
           "name": "천연 염색 토기 공예 함",
           "sprite": "assets/sprites/compact-pottery.png",
-          "x": 586,
-          "y": 1446,
-          "width": 54,
-          "height": 40,
+          "x": 585,
+          "y": 1445,
+          "width": 56,
+          "height": 42,
           "order": 1486,
           "room": "craft",
           "puzzles": [],
@@ -10942,7 +10972,8 @@
             1466,
             42,
             16
-          ]
+          ],
+          "outlined": true
         },
         {
           "id": "craft-bench-sw",
@@ -10990,10 +11021,10 @@
           "id": "craft-plant-se",
           "name": "모서리 화분 (우)",
           "sprite": "assets/sprites/terracotta-planter.png",
-          "x": 666,
-          "y": 1538,
-          "width": 34,
-          "height": 42,
+          "x": 665,
+          "y": 1537,
+          "width": 36,
+          "height": 44,
           "order": 1580,
           "room": "craft",
           "puzzles": [],
@@ -11005,7 +11036,8 @@
             1563,
             20,
             12
-          ]
+          ],
+          "outlined": true
         },
         {
           "id": "city-spot-1",
@@ -11026,10 +11058,10 @@
           "id": "city-wall-art",
           "name": "1910 근현대 마닐라 거리화",
           "sprite": "assets/sprites/historic-city-painting.png",
-          "x": 1338,
-          "y": 1307,
-          "width": 60,
-          "height": 42,
+          "x": 1337,
+          "y": 1306,
+          "width": 62,
+          "height": 44,
           "order": 1349,
           "room": "city",
           "puzzles": [
@@ -11041,37 +11073,40 @@
           "interact": [
             1368,
             1368
-          ]
+          ],
+          "outlined": true
         },
         {
           "id": "city-sconce-l",
           "name": "전시 벽등",
           "sprite": "assets/sprites/brass-sconce.png",
-          "x": 1288,
-          "y": 1311,
-          "width": 15,
-          "height": 28,
+          "x": 1287,
+          "y": 1310,
+          "width": 17,
+          "height": 30,
           "order": 1339,
           "room": "city",
           "puzzles": [],
           "role": "",
           "description": "",
-          "wall": true
+          "wall": true,
+          "outlined": true
         },
         {
           "id": "city-sconce-r",
           "name": "전시 벽등",
           "sprite": "assets/sprites/brass-sconce.png",
-          "x": 1428,
-          "y": 1311,
-          "width": 15,
-          "height": 28,
+          "x": 1427,
+          "y": 1310,
+          "width": 17,
+          "height": 30,
           "order": 1339,
           "room": "city",
           "puzzles": [],
           "role": "",
           "description": "",
-          "wall": true
+          "wall": true,
+          "outlined": true
         },
         {
           "id": "city-cabinet-nw",
@@ -11188,10 +11223,10 @@
           "id": "city-table-center",
           "name": "1910 마닐라 전차 거리 디오라마 모형",
           "sprite": "assets/sprites/street-model.png",
-          "x": 1326,
-          "y": 1424,
-          "width": 84,
-          "height": 64,
+          "x": 1325,
+          "y": 1423,
+          "width": 86,
+          "height": 66,
           "order": 1488,
           "room": "city",
           "puzzles": [
@@ -11209,16 +11244,17 @@
             1462,
             72,
             22
-          ]
+          ],
+          "outlined": true
         },
         {
           "id": "city-optics",
           "name": "전차 노선 광학 뷰파인더",
           "sprite": "assets/sprites/optics.png",
-          "x": 1424,
-          "y": 1454,
-          "width": 26,
-          "height": 20,
+          "x": 1423,
+          "y": 1453,
+          "width": 28,
+          "height": 22,
           "order": 1474,
           "room": "city",
           "puzzles": [
@@ -11236,7 +11272,8 @@
             1462,
             22,
             12
-          ]
+          ],
+          "outlined": true
         },
         {
           "id": "city-stanchion-l",
@@ -11284,10 +11321,10 @@
           "id": "city-trade-sw",
           "name": "초기 전차 부품 유물 상자",
           "sprite": "assets/sprites/trade-case.png",
-          "x": 1248,
-          "y": 1536,
-          "width": 54,
-          "height": 40,
+          "x": 1247,
+          "y": 1535,
+          "width": 56,
+          "height": 42,
           "order": 1576,
           "room": "city",
           "puzzles": [],
@@ -11299,7 +11336,8 @@
             1556,
             42,
             16
-          ]
+          ],
+          "outlined": true
         },
         {
           "id": "city-bench-s",
@@ -11326,10 +11364,10 @@
           "id": "city-doc-se",
           "name": "도시 건축 청사진 거치대",
           "sprite": "assets/sprites/document-rack.png",
-          "x": 1476,
-          "y": 1524,
-          "width": 50,
-          "height": 54,
+          "x": 1475,
+          "y": 1523,
+          "width": 52,
+          "height": 56,
           "order": 1578,
           "room": "city",
           "puzzles": [],
@@ -11341,16 +11379,17 @@
             1556,
             42,
             16
-          ]
+          ],
+          "outlined": true
         },
         {
           "id": "city-plant-sw",
           "name": "모서리 화분 (좌)",
           "sprite": "assets/sprites/terracotta-planter.png",
-          "x": 1206,
-          "y": 1538,
-          "width": 34,
-          "height": 42,
+          "x": 1205,
+          "y": 1537,
+          "width": 36,
+          "height": 44,
           "order": 1580,
           "room": "city",
           "puzzles": [],
@@ -11362,7 +11401,8 @@
             1563,
             20,
             12
-          ]
+          ],
+          "outlined": true
         }
       ],
       "portals": [
@@ -20987,10 +21027,10 @@
           "id": "atrium-statue",
           "name": "반원 홀 중심 여신 동상",
           "sprite": "assets/sprites/marble-statue.png",
-          "x": 924,
-          "y": 384,
-          "width": 53,
-          "height": 109,
+          "x": 923,
+          "y": 383,
+          "width": 55,
+          "height": 111,
           "order": 493,
           "room": "atrium",
           "puzzles": [
@@ -21008,76 +21048,81 @@
             464,
             42,
             24
-          ]
+          ],
+          "outlined": true
         },
         {
           "id": "atrium-flag1",
           "name": "동상 홀 현수막 (좌)",
           "sprite": "assets/sprites/embroidered-banner.png",
-          "x": 846,
-          "y": 380,
-          "width": 30,
-          "height": 42,
+          "x": 845,
+          "y": 379,
+          "width": 32,
+          "height": 44,
           "order": 422,
           "room": "atrium",
           "puzzles": [],
           "role": "",
           "description": "",
-          "wall": true
+          "wall": true,
+          "outlined": true
         },
         {
           "id": "atrium-flag2",
           "name": "동상 홀 현수막 (우)",
           "sprite": "assets/sprites/embroidered-banner.png",
-          "x": 1024,
-          "y": 380,
-          "width": 30,
-          "height": 42,
+          "x": 1023,
+          "y": 379,
+          "width": 32,
+          "height": 44,
           "order": 422,
           "room": "atrium",
           "puzzles": [],
           "role": "",
           "description": "",
-          "wall": true
+          "wall": true,
+          "outlined": true
         },
         {
           "id": "atrium-sconce-l",
           "name": "원형 홀 벽등 (좌)",
           "sprite": "assets/sprites/brass-sconce.png",
-          "x": 792,
-          "y": 386,
-          "width": 17,
-          "height": 32,
+          "x": 791,
+          "y": 385,
+          "width": 19,
+          "height": 34,
           "order": 418,
           "room": "atrium",
           "puzzles": [],
           "role": "",
           "description": "",
-          "wall": true
+          "wall": true,
+          "outlined": true
         },
         {
           "id": "atrium-sconce-r",
           "name": "원형 홀 벽등 (우)",
           "sprite": "assets/sprites/brass-sconce.png",
-          "x": 1091,
-          "y": 386,
-          "width": 17,
-          "height": 32,
+          "x": 1090,
+          "y": 385,
+          "width": 19,
+          "height": 34,
           "order": 418,
           "room": "atrium",
           "puzzles": [],
           "role": "",
           "description": "",
-          "wall": true
+          "wall": true,
+          "outlined": true
         },
         {
           "id": "atrium-bust-l",
           "name": "기념 흉상 (좌)",
           "sprite": "assets/sprites/stone-bust-case.png",
-          "x": 872,
-          "y": 418,
-          "width": 27,
-          "height": 58,
+          "x": 871,
+          "y": 417,
+          "width": 29,
+          "height": 60,
           "order": 476,
           "room": "atrium",
           "puzzles": [
@@ -21095,16 +21140,17 @@
           "interact": [
             885,
             488
-          ]
+          ],
+          "outlined": true
         },
         {
           "id": "atrium-bust-r",
           "name": "기념 흉상 (우)",
           "sprite": "assets/sprites/stone-bust-case.png",
-          "x": 1002,
-          "y": 418,
-          "width": 27,
-          "height": 58,
+          "x": 1001,
+          "y": 417,
+          "width": 29,
+          "height": 60,
           "order": 476,
           "room": "atrium",
           "puzzles": [
@@ -21122,16 +21168,17 @@
           "interact": [
             1015,
             488
-          ]
+          ],
+          "outlined": true
         },
         {
           "id": "atrium-planter3",
           "name": "반원 홀 상단 화분 (좌)",
           "sprite": "assets/sprites/terracotta-planter.png",
-          "x": 774,
-          "y": 488,
-          "width": 34,
-          "height": 42,
+          "x": 773,
+          "y": 487,
+          "width": 36,
+          "height": 44,
           "order": 530,
           "room": "atrium",
           "puzzles": [],
@@ -21143,16 +21190,17 @@
             513,
             20,
             12
-          ]
+          ],
+          "outlined": true
         },
         {
           "id": "atrium-planter4",
           "name": "반원 홀 상단 화분 (우)",
           "sprite": "assets/sprites/terracotta-planter.png",
-          "x": 1092,
-          "y": 488,
-          "width": 34,
-          "height": 42,
+          "x": 1091,
+          "y": 487,
+          "width": 36,
+          "height": 44,
           "order": 530,
           "room": "atrium",
           "puzzles": [],
@@ -21164,7 +21212,8 @@
             513,
             20,
             12
-          ]
+          ],
+          "outlined": true
         },
         {
           "id": "atrium-side-bench-w",
@@ -21233,10 +21282,10 @@
           "id": "atrium-pottery-wl",
           "name": "서측 홀 도자기 진열장",
           "sprite": "assets/sprites/compact-pottery.png",
-          "x": 660,
-          "y": 566,
-          "width": 61,
-          "height": 46,
+          "x": 659,
+          "y": 565,
+          "width": 63,
+          "height": 48,
           "order": 612,
           "room": "atrium",
           "puzzles": [],
@@ -21248,16 +21297,17 @@
             590,
             48,
             17
-          ]
+          ],
+          "outlined": true
         },
         {
           "id": "atrium-trade-er",
           "name": "동측 홀 유물 진열장",
           "sprite": "assets/sprites/trade-case.png",
-          "x": 1180,
-          "y": 568,
-          "width": 56,
-          "height": 41,
+          "x": 1179,
+          "y": 567,
+          "width": 58,
+          "height": 43,
           "order": 609,
           "room": "atrium",
           "puzzles": [],
@@ -21269,7 +21319,8 @@
             587,
             46,
             17
-          ]
+          ],
+          "outlined": true
         },
         {
           "id": "atrium-vitrine-er",
@@ -21380,10 +21431,10 @@
           "id": "atrium-planter-wl",
           "name": "서측 회랑 화분",
           "sprite": "assets/sprites/terracotta-planter.png",
-          "x": 562,
-          "y": 748,
-          "width": 34,
-          "height": 42,
+          "x": 561,
+          "y": 747,
+          "width": 36,
+          "height": 44,
           "order": 790,
           "room": "atrium",
           "puzzles": [],
@@ -21395,7 +21446,8 @@
             773,
             20,
             12
-          ]
+          ],
+          "outlined": true
         },
         {
           "id": "atrium-bench1",
@@ -21422,10 +21474,10 @@
           "id": "atrium-planter1",
           "name": "중앙 홀 화분 (좌)",
           "sprite": "assets/sprites/terracotta-planter.png",
-          "x": 736,
-          "y": 686,
-          "width": 34,
-          "height": 42,
+          "x": 735,
+          "y": 685,
+          "width": 36,
+          "height": 44,
           "order": 728,
           "room": "atrium",
           "puzzles": [],
@@ -21437,16 +21489,17 @@
             711,
             20,
             12
-          ]
+          ],
+          "outlined": true
         },
         {
           "id": "atrium-planter2",
           "name": "중앙 홀 화분 (우)",
           "sprite": "assets/sprites/terracotta-planter.png",
-          "x": 1130,
-          "y": 686,
-          "width": 34,
-          "height": 42,
+          "x": 1129,
+          "y": 685,
+          "width": 36,
+          "height": 44,
           "order": 728,
           "room": "atrium",
           "puzzles": [],
@@ -21458,7 +21511,8 @@
             711,
             20,
             12
-          ]
+          ],
+          "outlined": true
         },
         {
           "id": "atrium-bench2",
@@ -21485,10 +21539,10 @@
           "id": "atrium-planter-er",
           "name": "동측 회랑 화분",
           "sprite": "assets/sprites/terracotta-planter.png",
-          "x": 1304,
-          "y": 748,
-          "width": 34,
-          "height": 42,
+          "x": 1303,
+          "y": 747,
+          "width": 36,
+          "height": 44,
           "order": 790,
           "room": "atrium",
           "puzzles": [],
@@ -21500,7 +21554,8 @@
             773,
             20,
             12
-          ]
+          ],
+          "outlined": true
         },
         {
           "id": "archive-spot-1",
@@ -21521,10 +21576,10 @@
           "id": "archive-paint",
           "name": "카티푸난 고문서 헌장 액자",
           "sprite": "assets/sprites/archive-frame.png",
-          "x": 554,
-          "y": 52,
-          "width": 68,
-          "height": 37,
+          "x": 553,
+          "y": 51,
+          "width": 70,
+          "height": 39,
           "order": 89,
           "room": "archive",
           "puzzles": [
@@ -21536,37 +21591,40 @@
           "interact": [
             588,
             124
-          ]
+          ],
+          "outlined": true
         },
         {
           "id": "archive-lamp-left",
           "name": "기록실 벽등 (좌)",
           "sprite": "assets/sprites/brass-sconce.png",
-          "x": 520,
-          "y": 54,
-          "width": 15,
-          "height": 28,
+          "x": 519,
+          "y": 53,
+          "width": 17,
+          "height": 30,
           "order": 82,
           "room": "archive",
           "puzzles": [],
           "role": "",
           "description": "",
-          "wall": true
+          "wall": true,
+          "outlined": true
         },
         {
           "id": "archive-lamp",
           "name": "기록실 벽등 (우)",
           "sprite": "assets/sprites/brass-sconce.png",
-          "x": 642,
-          "y": 54,
-          "width": 15,
-          "height": 28,
+          "x": 641,
+          "y": 53,
+          "width": 17,
+          "height": 30,
           "order": 82,
           "room": "archive",
           "puzzles": [],
           "role": "",
           "description": "",
-          "wall": true
+          "wall": true,
+          "outlined": true
         },
         {
           "id": "archive-long-nw",
@@ -21797,25 +21855,26 @@
           "id": "archive-folio",
           "name": "카티푸난 기증·등록부 원본",
           "sprite": "assets/sprites/accession-folio.png",
-          "x": 574,
-          "y": 194,
-          "width": 20,
-          "height": 14,
+          "x": 573,
+          "y": 193,
+          "width": 22,
+          "height": 16,
           "order": 246,
           "room": "archive",
           "puzzles": [],
           "role": "",
           "description": "",
-          "wall": false
+          "wall": false,
+          "outlined": true
         },
         {
           "id": "archive-rack-w",
           "name": "아카이브 사료 거치대",
           "sprite": "assets/sprites/document-rack.png",
-          "x": 438,
-          "y": 178,
-          "width": 52,
-          "height": 56,
+          "x": 437,
+          "y": 177,
+          "width": 54,
+          "height": 58,
           "order": 234,
           "room": "archive",
           "puzzles": [],
@@ -21827,7 +21886,8 @@
             212,
             44,
             18
-          ]
+          ],
+          "outlined": true
         },
         {
           "id": "archive-records-e",
@@ -21854,10 +21914,10 @@
           "id": "archive-plant-sw",
           "name": "기록실 화분",
           "sprite": "assets/sprites/terracotta-planter.png",
-          "x": 396,
-          "y": 286,
-          "width": 34,
-          "height": 42,
+          "x": 395,
+          "y": 285,
+          "width": 36,
+          "height": 44,
           "order": 328,
           "room": "archive",
           "puzzles": [],
@@ -21869,7 +21929,8 @@
             311,
             20,
             12
-          ]
+          ],
+          "outlined": true
         },
         {
           "id": "archive-bench-sw",
@@ -21932,10 +21993,10 @@
           "id": "preserve-wall-chart",
           "name": "유물 보존 현황 기록 (시약 배합표)",
           "sprite": "assets/sprites/archive-photo.png",
-          "x": 1288,
-          "y": 54,
-          "width": 50,
-          "height": 36,
+          "x": 1287,
+          "y": 53,
+          "width": 52,
+          "height": 38,
           "order": 90,
           "room": "preserve",
           "puzzles": [
@@ -21947,37 +22008,40 @@
           "interact": [
             1313,
             124
-          ]
+          ],
+          "outlined": true
         },
         {
           "id": "preserve-lamp",
           "name": "보존실 벽등 (좌)",
           "sprite": "assets/sprites/brass-sconce.png",
-          "x": 1250,
-          "y": 56,
-          "width": 15,
-          "height": 28,
+          "x": 1249,
+          "y": 55,
+          "width": 17,
+          "height": 30,
           "order": 84,
           "room": "preserve",
           "puzzles": [],
           "role": "",
           "description": "",
-          "wall": true
+          "wall": true,
+          "outlined": true
         },
         {
           "id": "preserve-lamp-right",
           "name": "보존실 벽등 (우)",
           "sprite": "assets/sprites/brass-sconce.png",
-          "x": 1360,
-          "y": 56,
-          "width": 15,
-          "height": 28,
+          "x": 1359,
+          "y": 55,
+          "width": 17,
+          "height": 30,
           "order": 84,
           "room": "preserve",
           "puzzles": [],
           "role": "",
           "description": "",
-          "wall": true
+          "wall": true,
+          "outlined": true
         },
         {
           "id": "preserve-cabinet-1",
@@ -22058,10 +22122,10 @@
           "id": "preserve-rack-ne",
           "name": "유물 건조 선반",
           "sprite": "assets/sprites/document-rack.png",
-          "x": 1476,
-          "y": 60,
-          "width": 54,
-          "height": 58,
+          "x": 1475,
+          "y": 59,
+          "width": 56,
+          "height": 60,
           "order": 118,
           "room": "preserve",
           "puzzles": [],
@@ -22073,7 +22137,8 @@
             94,
             44,
             20
-          ]
+          ],
+          "outlined": true
         },
         {
           "id": "preserve-side-desk-w",
@@ -22163,10 +22228,10 @@
           "id": "preserve-pottery-w",
           "name": "세척 대기 도기 수습함",
           "sprite": "assets/sprites/compact-pottery.png",
-          "x": 1152,
-          "y": 188,
-          "width": 54,
-          "height": 42,
+          "x": 1151,
+          "y": 187,
+          "width": 56,
+          "height": 44,
           "order": 230,
           "room": "preserve",
           "puzzles": [],
@@ -22178,16 +22243,17 @@
             212,
             42,
             16
-          ]
+          ],
+          "outlined": true
         },
         {
           "id": "preserve-lab-c",
           "name": "현미경·시약 분석 작업대 (초음파)",
           "sprite": "assets/sprites/lab-equipment-table.png",
-          "x": 1246,
-          "y": 182,
-          "width": 68,
-          "height": 54,
+          "x": 1245,
+          "y": 181,
+          "width": 70,
+          "height": 56,
           "order": 236,
           "room": "preserve",
           "puzzles": [
@@ -22205,7 +22271,8 @@
             212,
             56,
             20
-          ]
+          ],
+          "outlined": true
         },
         {
           "id": "preserve-optics",
@@ -22226,10 +22293,10 @@
           "id": "preserve-bench-r",
           "name": "보존 복원 작업대 (도르래·밀랍)",
           "sprite": "assets/sprites/conservation-desk.png",
-          "x": 1330,
-          "y": 180,
-          "width": 68,
-          "height": 58,
+          "x": 1329,
+          "y": 179,
+          "width": 70,
+          "height": 60,
           "order": 238,
           "room": "preserve",
           "puzzles": [
@@ -22247,7 +22314,8 @@
             211,
             54,
             22
-          ]
+          ],
+          "outlined": true
         },
         {
           "id": "preserve-jar-e",
@@ -22280,10 +22348,10 @@
           "id": "preserve-crate-sw",
           "name": "보존 대기 수송 상자 (장력 점검)",
           "sprite": "assets/sprites/rope-crate.png",
-          "x": 1120,
-          "y": 280,
-          "width": 48,
-          "height": 40,
+          "x": 1119,
+          "y": 279,
+          "width": 50,
+          "height": 42,
           "order": 320,
           "room": "preserve",
           "puzzles": [
@@ -22301,16 +22369,17 @@
             294,
             40,
             22
-          ]
+          ],
+          "outlined": true
         },
         {
           "id": "preserve-trade-se",
           "name": "밀랍·복원 도구 보관함",
           "sprite": "assets/sprites/trade-case.png",
-          "x": 1352,
-          "y": 282,
-          "width": 54,
-          "height": 40,
+          "x": 1351,
+          "y": 281,
+          "width": 56,
+          "height": 42,
           "order": 322,
           "room": "preserve",
           "puzzles": [],
@@ -22322,16 +22391,17 @@
             302,
             42,
             16
-          ]
+          ],
+          "outlined": true
         },
         {
           "id": "preserve-crate-se",
           "name": "미결 유물 운반 상자",
           "sprite": "assets/sprites/rope-crate.png",
-          "x": 1454,
-          "y": 280,
-          "width": 48,
-          "height": 40,
+          "x": 1453,
+          "y": 279,
+          "width": 50,
+          "height": 42,
           "order": 320,
           "room": "preserve",
           "puzzles": [
@@ -22349,7 +22419,8 @@
           "interact": [
             1478,
             272
-          ]
+          ],
+          "outlined": true
         },
         {
           "id": "reading-spot-1",
@@ -22370,10 +22441,10 @@
           "id": "reading-wall-art-c",
           "name": "역사 공화국 사료화 (성곽 축선)",
           "sprite": "assets/sprites/colonial-painting.png",
-          "x": 296,
-          "y": 532,
-          "width": 60,
-          "height": 40,
+          "x": 295,
+          "y": 531,
+          "width": 62,
+          "height": 42,
           "order": 572,
           "room": "reading",
           "puzzles": [
@@ -22385,37 +22456,40 @@
           "interact": [
             326,
             594
-          ]
+          ],
+          "outlined": true
         },
         {
           "id": "reading-sconce-l",
           "name": "열람실 벽등 (좌)",
           "sprite": "assets/sprites/brass-sconce.png",
-          "x": 258,
-          "y": 534,
-          "width": 15,
-          "height": 28,
+          "x": 257,
+          "y": 533,
+          "width": 17,
+          "height": 30,
           "order": 562,
           "room": "reading",
           "puzzles": [],
           "role": "",
           "description": "",
-          "wall": true
+          "wall": true,
+          "outlined": true
         },
         {
           "id": "reading-sconce-r",
           "name": "열람실 벽등 (우)",
           "sprite": "assets/sprites/brass-sconce.png",
-          "x": 376,
-          "y": 534,
-          "width": 15,
-          "height": 28,
+          "x": 375,
+          "y": 533,
+          "width": 17,
+          "height": 30,
           "order": 562,
           "room": "reading",
           "puzzles": [],
           "role": "",
           "description": "",
-          "wall": true
+          "wall": true,
+          "outlined": true
         },
         {
           "id": "reading-long-nw",
@@ -22463,10 +22537,10 @@
           "id": "reading-rack-ne",
           "name": "성곽 도면 트레이싱지 거치대",
           "sprite": "assets/sprites/document-rack.png",
-          "x": 396,
-          "y": 542,
-          "width": 52,
-          "height": 56,
+          "x": 395,
+          "y": 541,
+          "width": 54,
+          "height": 58,
           "order": 598,
           "room": "reading",
           "puzzles": [],
@@ -22478,7 +22552,8 @@
             576,
             44,
             18
-          ]
+          ],
+          "outlined": true
         },
         {
           "id": "reading-long-ne",
@@ -22607,16 +22682,17 @@
           "id": "reading-folio",
           "name": "고서 지명 색인 원장",
           "sprite": "assets/sprites/accession-folio.png",
-          "x": 254,
-          "y": 662,
-          "width": 20,
-          "height": 14,
+          "x": 253,
+          "y": 661,
+          "width": 22,
+          "height": 16,
           "order": 715,
           "room": "reading",
           "puzzles": [],
           "role": "",
           "description": "",
-          "wall": false
+          "wall": false,
+          "outlined": true
         },
         {
           "id": "reading-blueprint-e",
@@ -22691,10 +22767,10 @@
           "id": "reading-plant-sw",
           "name": "열람실 화분 (좌)",
           "sprite": "assets/sprites/terracotta-planter.png",
-          "x": 142,
-          "y": 758,
-          "width": 34,
-          "height": 42,
+          "x": 141,
+          "y": 757,
+          "width": 36,
+          "height": 44,
           "order": 800,
           "room": "reading",
           "puzzles": [],
@@ -22706,16 +22782,17 @@
             783,
             20,
             12
-          ]
+          ],
+          "outlined": true
         },
         {
           "id": "reading-plant-se",
           "name": "열람실 화분 (우)",
           "sprite": "assets/sprites/terracotta-planter.png",
-          "x": 432,
-          "y": 758,
-          "width": 34,
-          "height": 42,
+          "x": 431,
+          "y": 757,
+          "width": 36,
+          "height": 44,
           "order": 800,
           "room": "reading",
           "puzzles": [],
@@ -22727,7 +22804,8 @@
             783,
             20,
             12
-          ]
+          ],
+          "outlined": true
         },
         {
           "id": "special-spot-1",
@@ -22748,10 +22826,10 @@
           "id": "special-wall-art",
           "name": "해양 교류 기획전 벽화",
           "sprite": "assets/sprites/coastal-painting.png",
-          "x": 1542,
-          "y": 531,
-          "width": 68,
-          "height": 42,
+          "x": 1541,
+          "y": 530,
+          "width": 70,
+          "height": 44,
           "order": 573,
           "room": "special",
           "puzzles": [
@@ -22763,46 +22841,49 @@
           "interact": [
             1576,
             594
-          ]
+          ],
+          "outlined": true
         },
         {
           "id": "special-sconce-l",
           "name": "기획전 벽등 (좌)",
           "sprite": "assets/sprites/brass-sconce.png",
-          "x": 1504,
-          "y": 534,
-          "width": 15,
-          "height": 28,
+          "x": 1503,
+          "y": 533,
+          "width": 17,
+          "height": 30,
           "order": 562,
           "room": "special",
           "puzzles": [],
           "role": "",
           "description": "",
-          "wall": true
+          "wall": true,
+          "outlined": true
         },
         {
           "id": "special-sconce-r",
           "name": "기획전 벽등 (우)",
           "sprite": "assets/sprites/brass-sconce.png",
-          "x": 1628,
-          "y": 534,
-          "width": 15,
-          "height": 28,
+          "x": 1627,
+          "y": 533,
+          "width": 17,
+          "height": 30,
           "order": 562,
           "room": "special",
           "puzzles": [],
           "role": "",
           "description": "",
-          "wall": true
+          "wall": true,
+          "outlined": true
         },
         {
           "id": "special-boat-nw",
           "name": "목선 유물 진열장 (프리즘 1)",
           "sprite": "assets/sprites/boat-case.png",
-          "x": 1390,
-          "y": 544,
-          "width": 68,
-          "height": 49,
+          "x": 1389,
+          "y": 543,
+          "width": 70,
+          "height": 51,
           "order": 593,
           "room": "special",
           "puzzles": [
@@ -22820,16 +22901,17 @@
             567,
             54,
             20
-          ]
+          ],
+          "outlined": true
         },
         {
           "id": "special-pottery-ne",
           "name": "해양 도자기 진열장",
           "sprite": "assets/sprites/compact-pottery.png",
-          "x": 1700,
-          "y": 548,
-          "width": 61,
-          "height": 46,
+          "x": 1699,
+          "y": 547,
+          "width": 63,
+          "height": 48,
           "order": 594,
           "room": "special",
           "puzzles": [],
@@ -22841,7 +22923,8 @@
             572,
             48,
             17
-          ]
+          ],
+          "outlined": true
         },
         {
           "id": "special-side-vitrine-e",
@@ -22952,10 +23035,10 @@
           "id": "special-trade-w",
           "name": "향신료 · 해양 교역 상자",
           "sprite": "assets/sprites/trade-case.png",
-          "x": 1458,
-          "y": 658,
-          "width": 52,
-          "height": 38,
+          "x": 1457,
+          "y": 657,
+          "width": 54,
+          "height": 40,
           "order": 696,
           "room": "special",
           "puzzles": [],
@@ -22967,7 +23050,8 @@
             676,
             40,
             16
-          ]
+          ],
+          "outlined": true
         },
         {
           "id": "special-jar-e",
@@ -23057,10 +23141,10 @@
           "id": "special-plant-se",
           "name": "기획전시실 화분",
           "sprite": "assets/sprites/terracotta-planter.png",
-          "x": 1742,
-          "y": 758,
-          "width": 34,
-          "height": 42,
+          "x": 1741,
+          "y": 757,
+          "width": 36,
+          "height": 44,
           "order": 800,
           "room": "special",
           "puzzles": [],
@@ -23072,7 +23156,8 @@
             783,
             20,
             12
-          ]
+          ],
+          "outlined": true
         }
       ],
       "portals": [
@@ -30678,10 +30763,10 @@
           "id": "maint-crate-nw",
           "name": "밀폐 방수 자재함",
           "sprite": "assets/sprites/b1-sealed-crate.png",
-          "x": 1092,
-          "y": 850,
-          "width": 44,
-          "height": 36,
+          "x": 1091,
+          "y": 849,
+          "width": 46,
+          "height": 38,
           "order": 886,
           "room": "maintenance",
           "puzzles": [],
@@ -30693,7 +30778,8 @@
             864,
             36,
             18
-          ]
+          ],
+          "outlined": true
         },
         {
           "id": "maint-pump-ne",
@@ -31143,10 +31229,10 @@
           "id": "rescue-rack-ne",
           "name": "방수 자재 스틸 선반 (목표 2단)",
           "sprite": "assets/sprites/b1-steel-rack.png",
-          "x": 1940,
-          "y": 1158,
-          "width": 43,
-          "height": 39,
+          "x": 1939,
+          "y": 1157,
+          "width": 45,
+          "height": 41,
           "order": 1197,
           "room": "rescue",
           "puzzles": [
@@ -31164,7 +31250,8 @@
             1183,
             35,
             14
-          ]
+          ],
+          "outlined": true
         },
         {
           "id": "rescue-side-table-e",
@@ -31212,10 +31299,10 @@
           "id": "rescue-table-c",
           "name": "스테인리스 응급 처치대 (호이스트 제어)",
           "sprite": "assets/sprites/b1-steel-worktable.png",
-          "x": 1832,
-          "y": 1246,
-          "width": 50,
-          "height": 42,
+          "x": 1831,
+          "y": 1245,
+          "width": 52,
+          "height": 44,
           "order": 1288,
           "room": "rescue",
           "puzzles": [
@@ -31233,16 +31320,17 @@
             1268,
             42,
             18
-          ]
+          ],
+          "outlined": true
         },
         {
           "id": "rescue-crate-sw1",
           "name": "밀폐 방수 수장 상자 1 (체결)",
           "sprite": "assets/sprites/b1-sealed-crate.png",
-          "x": 1712,
-          "y": 1342,
-          "width": 37,
-          "height": 31,
+          "x": 1711,
+          "y": 1341,
+          "width": 39,
+          "height": 33,
           "order": 1373,
           "room": "rescue",
           "puzzles": [
@@ -31260,16 +31348,17 @@
             1356,
             29,
             14
-          ]
+          ],
+          "outlined": true
         },
         {
           "id": "rescue-crate-sw2",
           "name": "밀폐 방수 수장 상자 2",
           "sprite": "assets/sprites/b1-sealed-crate.png",
-          "x": 1756,
-          "y": 1342,
-          "width": 37,
-          "height": 31,
+          "x": 1755,
+          "y": 1341,
+          "width": 39,
+          "height": 33,
           "order": 1373,
           "room": "rescue",
           "puzzles": [
@@ -31287,7 +31376,8 @@
           "interact": [
             1774,
             1334
-          ]
+          ],
+          "outlined": true
         }
       ],
       "portals": [
