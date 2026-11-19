@@ -30,6 +30,25 @@ export interface WorldCallbacks {
 
 const MOVE_SPEED = 135; // world px / sec
 
+/**
+ * Rooms the player may not walk out of once inside (by room id, per floor).
+ * The boundary is the room's `outline` polygon in map.json.
+ * Entering through a doorway is still allowed; only leaving the outline is blocked.
+ */
+const CONFINED_ROOMS: Partial<Record<FloorKey, string[]>> = {
+  '2F': ['atrium'], // 반원 동상 홀
+};
+
+function pointInPolygon(px: number, py: number, poly: [number, number][]): boolean {
+  let inside = false;
+  for (let i = 0, j = poly.length - 1; i < poly.length; j = i++) {
+    const [xi, yi] = poly[i];
+    const [xj, yj] = poly[j];
+    if (yi > py !== yj > py && px < ((xj - xi) * (py - yi)) / (yj - yi) + xi) inside = !inside;
+  }
+  return inside;
+}
+
 export class WorldEngine {
   private mapData: MapJson;
   private anims: AnimationsMeta;
@@ -166,7 +185,13 @@ export class WorldEngine {
     this.cameraSnap = true;
   }
 
-  canMove(floorKey: FloorKey, x: number, y: number): boolean {
+  /**
+   * Movement check for a footprint centred on (x, y).
+   * When fromX/fromY are given and the character currently stands inside a
+   * confined room (see CONFINED_ROOMS), a step that would take the footprint
+   * outside that room's outline is rejected.
+   */
+  canMove(floorKey: FloorKey, x: number, y: number, fromX?: number, fromY?: number): boolean {
     const fl = this.mapData.floors[floorKey];
     if (!fl) return false;
     const [fw, fh] = this.mapData.player.footprint;
@@ -183,7 +208,31 @@ export class WorldEngine {
       const [u, v, w, h] = obj.collision;
       if (left < u + w && right >= u && top < v + h && bottom >= v) return false;
     }
+    if (fromX !== undefined && fromY !== undefined) {
+      const outline = this.confinedOutline(floorKey, fromX, fromY);
+      if (outline) {
+        const corners: [number, number][] = [
+          [left, top],
+          [right, top],
+          [left, bottom],
+          [right, bottom],
+        ];
+        if (!corners.every(([cx, cy]) => pointInPolygon(cx, cy, outline))) return false;
+      }
+    }
     return true;
+  }
+
+  /** Outline of the confined room the character is currently standing in, if any. */
+  private confinedOutline(floorKey: FloorKey, x: number, y: number): [number, number][] | null {
+    const fl = this.mapData.floors[floorKey];
+    const ids = CONFINED_ROOMS[floorKey];
+    if (!fl || !ids) return null;
+    for (const room of fl.rooms) {
+      if (!ids.includes(room.id) || !room.outline) continue;
+      if (pointInPolygon(x, y, room.outline)) return room.outline;
+    }
+    return null;
   }
 
   private insideRect(x: number, y: number, [rx, ry, rw, rh]: [number, number, number, number], pad = 0): boolean {
@@ -303,8 +352,8 @@ export class WorldEngine {
     for (const r of ROLE_ORDER) {
       if (r === active.roleId) continue;
       const [ox, oy] = offsets[i++ % offsets.length];
-      const tx = this.canMove(active.floor, active.x + ox, active.y + oy) ? active.x + ox : active.x;
-      const ty = this.canMove(active.floor, tx, active.y + oy) ? active.y + oy : active.y;
+      const tx = this.canMove(active.floor, active.x + ox, active.y + oy, active.x, active.y) ? active.x + ox : active.x;
+      const ty = this.canMove(active.floor, tx, active.y + oy, active.x, active.y) ? active.y + oy : active.y;
       this.session.moveSlot(
         r,
         { floor: active.floor, scene: active.scene, x: tx, y: ty, dir: 'down', moving: false },
@@ -363,8 +412,10 @@ export class WorldEngine {
         const vy = (dy / mag) * MOVE_SPEED * dt;
         let nx = slot.x;
         let ny = slot.y;
-        if (this.canMove(slot.floor, nx + vx, ny)) nx += vx;
-        if (this.canMove(slot.floor, nx, ny + vy)) ny += vy;
+        const fromX = slot.x;
+        const fromY = slot.y;
+        if (this.canMove(slot.floor, nx + vx, ny, fromX, fromY)) nx += vx;
+        if (this.canMove(slot.floor, nx, ny + vy, fromX, fromY)) ny += vy;
 
         let nextDir: Direction = slot.dir;
         if (Math.abs(dx) >= Math.abs(dy)) nextDir = dx < 0 ? 'left' : 'right';
