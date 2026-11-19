@@ -11389,10 +11389,10 @@
           "id": "b1",
           "name": "지하 연결 계단",
           "rect": [
-            1082,
-            1002,
-            62,
-            32
+            1103,
+            1017,
+            41,
+            17
           ],
           "targetFloor": "B1",
           "targetPortal": "up",
@@ -23060,10 +23060,10 @@
           "sourceScene": "atrium",
           "targetScene": "archive",
           "rect": [
-            640,
-            397,
-            80,
-            46
+            660,
+            399,
+            60,
+            44
           ],
           "targetFloor": "2F",
           "arrival": [
@@ -23082,10 +23082,10 @@
           "sourceScene": "archive",
           "targetScene": "atrium",
           "rect": [
-            603,
+            612,
             323,
-            85,
-            34
+            74,
+            28
           ],
           "targetFloor": "2F",
           "arrival": [
@@ -23105,9 +23105,9 @@
           "targetScene": "preserve",
           "rect": [
             1179,
-            397,
-            80,
-            46
+            399,
+            62,
+            44
           ],
           "targetFloor": "2F",
           "arrival": [
@@ -23126,10 +23126,10 @@
           "sourceScene": "preserve",
           "targetScene": "atrium",
           "rect": [
-            1211,
+            1212,
             323,
-            85,
-            34
+            74,
+            28
           ],
           "targetFloor": "2F",
           "arrival": [
@@ -31232,7 +31232,7 @@
             1101,
             989,
             59,
-            30
+            26
           ],
           "targetFloor": "1F",
           "targetPortal": "b1",
