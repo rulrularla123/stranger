@@ -96,10 +96,10 @@ function normalizePuzzleStates(room: RoomState): RoomState {
 }
 
 const DEFAULT_SPAWNS: Record<RoleId, { floor: FloorKey; scene: string; x: number; y: number; dir: Direction }> = {
-  doyun: { floor: '1F', scene: 'hall', x: 922, y: 1550, dir: 'down' },
-  maria: { floor: '1F', scene: 'hall', x: 942, y: 1556, dir: 'down' },
-  lin: { floor: '1F', scene: 'hall', x: 962, y: 1556, dir: 'down' },
-  aisha: { floor: '1F', scene: 'hall', x: 982, y: 1550, dir: 'down' },
+  doyun: { floor: '1F', scene: 'hall', x: 913, y: 1552, dir: 'down' },
+  maria: { floor: '1F', scene: 'hall', x: 939, y: 1552, dir: 'down' },
+  lin: { floor: '1F', scene: 'hall', x: 965, y: 1552, dir: 'down' },
+  aisha: { floor: '1F', scene: 'hall', x: 991, y: 1552, dir: 'down' },
 };
 
 function createLocalRoom(code: string, clientId: string, nickname: string, fillBots = true): RoomState {

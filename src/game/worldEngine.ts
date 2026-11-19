@@ -30,6 +30,33 @@ export interface WorldCallbacks {
 
 const MOVE_SPEED = 135; // world px / sec
 
+/** Direction a character at (x, y) should face to look at (tx, ty). */
+export function faceToward(x: number, y: number, tx: number, ty: number): Direction {
+  const dx = tx - x;
+  const dy = ty - y;
+  if (Math.abs(dx) >= Math.abs(dy)) return dx < 0 ? 'left' : 'right';
+  return dy < 0 ? 'up' : 'down';
+}
+
+// Two characters closer than this (feet to feet) visibly overlap: sprites are ~20px
+// wide and ~50px tall, so someone standing less than ~36px straight behind is hidden.
+const PARTY_GAP_X = 22;
+const PARTY_GAP_Y = 36;
+// Preferred places for teammates around a leader: side by side in a row first,
+// then a staggered second row behind, then in front.
+const PARTY_OFFSETS: [number, number][] = [
+  [-26, 2],
+  [26, 2],
+  [-52, 0],
+  [52, 0],
+  [-13, -40],
+  [13, -40],
+  [-39, -40],
+  [39, -40],
+  [-13, 40],
+  [13, 40],
+];
+
 /**
  * Rooms the player may not walk out of once inside (by room id, per floor).
  * The boundary is the room's `outline` polygon in map.json.
@@ -75,6 +102,12 @@ export class WorldEngine {
   private lastTick = 0;
   private rafId: number | null = null;
   private walkTimers: Record<RoleId, number> = { doyun: 0, maria: 0, lin: 0, aisha: 0 };
+  /**
+   * Where each character is drawn. Bots and remote players update their real
+   * position in coarse steps (bot tick / network), so we glide the drawn sprite
+   * toward it at walking speed instead of letting it jump.
+   */
+  private drawPos: Partial<Record<RoleId, { x: number; y: number; floor: FloorKey; scene: string; gliding: boolean }>> = {};
   private speechBubbles: Partial<Record<RoleId, { text: string; color: string; until: number }>> = {};
   private coronationHoldTimer = 0;
   private coronationDone = false;
@@ -337,24 +370,16 @@ export class WorldEngine {
     const room = this.session.getRoom();
     const active = this.getActiveSlot();
     if (!room || !active) return;
-    const offsets: [number, number][] = [
-      [-18, 6],
-      [18, 6],
-      [-12, 16],
-      [12, 16],
-    ];
-    let i = 0;
-    for (const r of ROLE_ORDER) {
-      if (r === active.roleId) continue;
-      const [ox, oy] = offsets[i++ % offsets.length];
-      const tx = this.canMove(active.floor, active.x + ox, active.y + oy, active.x, active.y) ? active.x + ox : active.x;
-      const ty = this.canMove(active.floor, tx, active.y + oy, active.x, active.y) ? active.y + oy : active.y;
+    const mates = ROLE_ORDER.filter((r) => r !== active.roleId);
+    const spots = this.findPartySpots(active.floor, active.x, active.y, mates.length);
+    mates.forEach((r, i) => {
+      const [tx, ty] = spots[i];
       this.session.moveSlot(
         r,
-        { floor: active.floor, scene: active.scene, x: tx, y: ty, dir: 'down', moving: false },
+        { floor: active.floor, scene: active.scene, x: tx, y: ty, dir: faceToward(tx, ty, active.x, active.y), moving: false },
         true
       );
-    }
+    });
     soundEngine.playClick();
     this.callbacks.onStatusToast('🧲 친구들이 모였어요!', 'mint');
   }
@@ -435,10 +460,31 @@ export class WorldEngine {
       }
     }
 
+    // Glide drawn positions of other characters toward their real positions
+    const myRole = this.session.getMyRole();
+    for (const r of ROLE_ORDER) {
+      const s = room.slots[r];
+      if (!s) continue;
+      const dp = this.drawPos[r];
+      const dist = dp ? Math.hypot(s.x - dp.x, s.y - dp.y) : Infinity;
+      if (!dp || r === myRole || dp.floor !== s.floor || dp.scene !== s.scene || dist > 110) {
+        this.drawPos[r] = { x: s.x, y: s.y, floor: s.floor, scene: s.scene, gliding: false };
+      } else if (dist > 0.5) {
+        const step = Math.min(dist, Math.max(MOVE_SPEED * 1.05, dist * 4) * dt);
+        dp.x += ((s.x - dp.x) / dist) * step;
+        dp.y += ((s.y - dp.y) / dist) * step;
+        dp.gliding = dist - step > 0.5;
+      } else {
+        dp.x = s.x;
+        dp.y = s.y;
+        dp.gliding = false;
+      }
+    }
+
     // Advance walk clocks for all moving characters (local + remote + bots)
     for (const r of ROLE_ORDER) {
       const s = room.slots[r];
-      if (s.moving) this.walkTimers[r] += dt;
+      if (s.moving || this.drawPos[r]?.gliding) this.walkTimers[r] += dt;
       else this.walkTimers[r] = 0;
     }
 
@@ -614,11 +660,11 @@ export class WorldEngine {
       }
     }
 
-    // Characters in current floor & scene
-    const party = ROLE_ORDER.map((r) => room.slots[r]).filter(
+    // Characters in current floor & scene (drawn at their smoothed positions)
+    const party = ROLE_ORDER.map((r) => this.visualSlot(room.slots[r])).filter(
       (s) => s.floor === activeSlot.floor && s.scene === activeSlot.scene
     );
-    party.sort((a, b) => a.y - b.y);
+    party.sort((a, b) => a.y - b.y || a.x - b.x);
 
     const visibleObjs = fl.objects
       .filter((o) => o.room === activeSlot.scene || Math.abs(o.x - activeSlot.x) < 420)
@@ -738,6 +784,47 @@ export class WorldEngine {
     }
   }
 
+  /** The slot as it should be drawn this frame (smoothed position, walking while gliding). */
+  private visualSlot(slot: CharacterSlot): CharacterSlot {
+    const dp = this.drawPos[slot.roleId];
+    if (!dp || dp.floor !== slot.floor || dp.scene !== slot.scene) return slot;
+    return { ...slot, x: dp.x, y: dp.y, moving: slot.moving || dp.gliding };
+  }
+
+  /**
+   * Walkable spots around a leader where followers can stand side by side without
+   * overlapping the leader, each other or anyone listed in `others`.
+   */
+  findPartySpots(
+    floorKey: FloorKey,
+    leaderX: number,
+    leaderY: number,
+    count: number,
+    others: [number, number][] = []
+  ): [number, number][] {
+    const taken: [number, number][] = [[leaderX, leaderY], ...others];
+    const spots: [number, number][] = [];
+    const tooClose = (x: number, y: number) =>
+      taken.some(([tx, ty]) => Math.abs(x - tx) < PARTY_GAP_X && Math.abs(y - ty) < PARTY_GAP_Y);
+    const candidates: [number, number][] = [...PARTY_OFFSETS];
+    for (const r of [40, 56, 72, 90]) {
+      for (let k = 0; k < 12; k++) {
+        const a = (k / 12) * Math.PI * 2;
+        candidates.push([Math.round(Math.cos(a) * r), Math.round(Math.sin(a) * r * 0.7)]);
+      }
+    }
+    for (const [ox, oy] of candidates) {
+      if (spots.length >= count) break;
+      const x = leaderX + ox;
+      const y = leaderY + oy;
+      if (tooClose(x, y) || !this.canMove(floorKey, x, y, leaderX, leaderY)) continue;
+      spots.push([x, y]);
+      taken.push([x, y]);
+    }
+    while (spots.length < count) spots.push([leaderX, leaderY]);
+    return spots;
+  }
+
   private drawPixelCharacter(ctx: CanvasRenderingContext2D, slot: CharacterSlot) {
     const sheet = this.loadImage(this.anims.sheet);
     const meta = this.anims.characters[slot.roleId];
@@ -754,9 +841,14 @@ export class WorldEngine {
     const px = Math.round(slot.x) - meta.anchorX;
     const py = Math.round(slot.y) - meta.anchorY;
 
-    // Ground shadow ellipse
-    ctx.fillStyle = 'rgba(0, 0, 0, 0.35)';
-    ctx.fillRect(Math.round(slot.x) - 6, Math.round(slot.y) - 2, 12, 4);
+    // Ground shadow: a small pixel ellipse (two overlapping rects filled once)
+    const fx = Math.round(slot.x);
+    const fy = Math.round(slot.y);
+    ctx.fillStyle = 'rgba(0, 0, 0, 0.32)';
+    ctx.beginPath();
+    ctx.rect(fx - 4, fy - 2, 8, 4);
+    ctx.rect(fx - 6, fy - 1, 12, 2);
+    ctx.fill();
 
     ctx.imageSmoothingEnabled = false;
     ctx.drawImage(sheet, f.sx, f.sy, f.w, f.h, px, py, f.w, f.h);

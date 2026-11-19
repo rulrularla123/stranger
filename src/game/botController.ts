@@ -2,7 +2,7 @@ import type { MapJson, RadioPacket, RoleId } from '../types/stranger.ts';
 import { ROLES, ROLE_ORDER } from '../data/cMenuTokens.ts';
 import { PUZZLES_BY_ID, getObjectOwnerRole } from '../data/puzzleCatalog.ts';
 import type { SessionClient } from '../net/sessionClient.ts';
-import type { WorldEngine } from './worldEngine.ts';
+import { faceToward, type WorldEngine } from './worldEngine.ts';
 
 const GATHER_TARGETS: Record<RoleId, [number, number]> = {
   doyun: [896, 623],
@@ -147,7 +147,6 @@ export class BotController {
   private mapData: MapJson;
   private timerId: number | null = null;
   private sentClueFor = new Set<string>();
-  private patrolAngles: Record<RoleId, number> = { doyun: 0, maria: 1.5, lin: 3.1, aisha: 4.7 };
   private roomEnterTicks = new Map<string, number>();
 
   constructor(session: SessionClient, world: WorldEngine, mapData: MapJson) {
@@ -283,6 +282,18 @@ export class BotController {
       (p) => p.floor === activeSlot.floor && p.room === activeSlot.scene && !room.solvedPids.includes(p.id)
     );
 
+    // Free spots beside the player for following bots, so nobody stacks on the player
+    // or on each other (see WorldEngine.findPartySpots).
+    const followers = ROLE_ORDER.filter(
+      (r) => r !== activeRole && room.slots[r]?.isBot && !room.slots[r].ownerClientId
+    );
+    const othersHere = ROLE_ORDER.filter((r) => r !== activeRole && !followers.includes(r))
+      .map((r) => room.slots[r])
+      .filter((s) => s && s.floor === activeSlot.floor && s.scene === activeSlot.scene)
+      .map((s) => [s.x, s.y] as [number, number]);
+    const spots = this.world.findPartySpots(activeSlot.floor, activeSlot.x, activeSlot.y, followers.length, othersHere);
+    const formation = new Map<RoleId, [number, number]>(followers.map((r, i) => [r, spots[i]]));
+
     for (const r of ROLE_ORDER) {
       if (r === activeRole) continue;
       const slot = room.slots[r];
@@ -314,25 +325,13 @@ export class BotController {
         const fl = this.mapData.floors[activeSlot.floor];
         const nearScene = fl?.scenes[activeSlot.scene];
         if (nearScene && Math.random() < 0.35) {
-          const offsets: [number, number][] = [
-            [-20, 10],
-            [20, 10],
-            [-14, 18],
-            [14, 18],
-          ];
-          const [ox, oy] = offsets[ROLE_ORDER.indexOf(r)];
-          const tx = this.world.canMove(activeSlot.floor, activeSlot.x + ox, activeSlot.y + oy, activeSlot.x, activeSlot.y)
-            ? activeSlot.x + ox
-            : activeSlot.x;
-          const ty = this.world.canMove(activeSlot.floor, tx, activeSlot.y + oy, activeSlot.x, activeSlot.y)
-            ? activeSlot.y + oy
-            : activeSlot.y;
+          const [tx, ty] = formation.get(r) || [activeSlot.x, activeSlot.y];
           this.session.moveSlot(r, {
             floor: activeSlot.floor,
             scene: activeSlot.scene,
             x: tx,
             y: ty,
-            dir: 'down',
+            dir: faceToward(tx, ty, activeSlot.x, activeSlot.y),
             moving: false,
           });
           this.roomEnterTicks.set(`${r}:${activeSlot.floor}:${activeSlot.scene}`, 0);
@@ -349,6 +348,7 @@ export class BotController {
       let targetX: number;
       let targetY: number;
       let objDist = Infinity;
+      let following = false;
 
       if (helperPuzzle && !this.sentClueFor.has(`${helperPuzzle.code}:${r}`)) {
         const pt = this.getBotObjectTarget(helperPuzzle.id, r);
@@ -368,18 +368,17 @@ export class BotController {
           targetY = activeSlot.y;
         }
       } else {
-        // Gentle patrol around active player
-        this.patrolAngles[r] += 0.35;
-        const idx = ROLE_ORDER.indexOf(r);
-        targetX = activeSlot.x + Math.cos(this.patrolAngles[r] + idx) * 26;
-        targetY = activeSlot.y + Math.sin(this.patrolAngles[r] + idx) * 20;
+        // Stand in its own free spot beside the active player
+        [targetX, targetY] = formation.get(r) || [activeSlot.x, activeSlot.y];
+        following = true;
       }
 
       const dx = targetX - slot.x;
       const dy = targetY - slot.y;
       const dist = Math.hypot(dx, dy);
-      if (dist > 14) {
-        const step = Math.min(12, dist);
+      if (dist > (following ? 6 : 14)) {
+        // Followers keep up with the player (135 px/s); object walks stay gentle.
+        const step = Math.min(following ? (dist > 90 ? 40 : 30) : 12, dist);
         const nx = slot.x + (dx / dist) * step;
         const ny = slot.y + (dy / dist) * step;
         let movedX = slot.x;
@@ -392,6 +391,12 @@ export class BotController {
           this.session.moveSlot(r, { floor: slot.floor, scene: slot.scene, x: movedX, y: movedY, dir, moving: true });
         } else if (slot.moving) {
           this.session.moveSlot(r, { floor: slot.floor, scene: slot.scene, x: slot.x, y: slot.y, dir: slot.dir, moving: false });
+        }
+      } else if (following) {
+        // Arrived: stop and look at the player
+        const lookDir = faceToward(slot.x, slot.y, activeSlot.x, activeSlot.y);
+        if (slot.moving || slot.dir !== lookDir) {
+          this.session.moveSlot(r, { floor: slot.floor, scene: slot.scene, x: slot.x, y: slot.y, dir: lookDir, moving: false });
         }
       } else if (slot.moving) {
         this.session.moveSlot(r, { floor: slot.floor, scene: slot.scene, x: slot.x, y: slot.y, dir: slot.dir, moving: false });
