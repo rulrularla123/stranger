@@ -1,0 +1,26 @@
+{
+  "name": "stranger-2",
+  "version": "2.0.0",
+  "private": true,
+  "type": "module",
+  "description": "STRANGER 2.0 · UNESCO PARALLAX 4-player cooperative pixel mystery game",
+  "scripts": {
+    "setup:assets": "node scripts/setup-assets.mjs",
+    "build:chars": "node scripts/build-characters.mjs",
+    "dev": "vite",
+    "build": "tsc --noEmit && vite build",
+    "start": "node server/index.mjs"
+  },
+  "dependencies": {
+    "@supabase/supabase-js": "2.119.2",
+    "ws": "^8.18.0"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.0",
+    "@types/pngjs": "^6.0.5",
+    "@types/ws": "^8.5.14",
+    "pngjs": "^7.0.0",
+    "typescript": "^5.7.2",
+    "vite": "^6.0.3"
+  }
+}
