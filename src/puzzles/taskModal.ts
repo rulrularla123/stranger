@@ -13,6 +13,7 @@ import { soundEngine } from '../audio/soundEngine.ts';
 import type { SessionClient } from '../net/sessionClient.ts';
 import { renderAct1Act2Board, type BoardHelpers } from './boardsAct1Act2.ts';
 import { renderAct3Act4Board } from './boardsAct3Act4.ts';
+import { PUZZLE_KID, charSpriteHtml, puzzlePicHtml, teamFlowHtml } from '../ui/kidVisuals.ts';
 
 export interface TaskModalHost {
   onOpenCMenu: (targetRoleId?: RoleId | null) => void;
@@ -114,7 +115,7 @@ export class TaskModal {
               `<span class="au-pin-item"><strong style="color:${ROLES[pkt.roleId].color}">${pkt.senderName}</strong> ${renderRadioTargetHtml(pkt)} ${renderRadioContentHtml(pkt, room.slots)}</span>`
           )
           .join('<span class="au-pin-sep">|</span>')
-      : '<span class="au-pin-empty">수신 무전 없음 · [C] 무전 휠로 단서 교환</span>';
+      : '<span class="au-pin-empty">📭 아직 없음</span>';
   }
 
   private createHelpers(room: RoomState, myRole: RoleId): BoardHelpers {
@@ -182,49 +183,50 @@ export class TaskModal {
     this.shouldShake = false;
 
     const ownerRole: RoleId | 'all' = this.currentObj ? getObjectOwnerRole(this.currentObj, p) : myRole;
+    const kid = PUZZLE_KID[p.id];
 
     const helpersHtml = p.helperRoles
       .map((hr) => {
         const rm = ROLES[hr];
         const summary = p.helperSummaryByRole?.[hr] || '단서 지원';
-        return `<span class="au-coop-chip" style="border-color:${rm.color};color:${rm.color}">${rm.badge} ${rm.name} <small>(${summary})</small></span>`;
+        return `<span class="au-coop-chip kid-coop-chip" style="border-color:${rm.color};color:${rm.color}" title="${summary}">${charSpriteHtml(hr, 0.45)}${rm.name}</span>`;
       })
       .join(' ');
 
     this.root.innerHTML = `
       <div class="au-modal ${shakeNow ? 'au-shake' : ''}" role="dialog" aria-modal="true" aria-label="${p.code} ${p.title}">
         <div class="au-task-stripe-bar">
-          <span>TASK ${totalSolved} / 16 · 난이도 ${room.difficulty}</span>
+          <span>🧩 ${totalSolved} / 16 · ${room.difficulty}</span>
           <div class="au-progress-track"><div class="au-progress-fill" style="width:${pct}%"></div></div>
         </div>
         <div class="au-modal-head">
-          <div class="au-head-title">
-            <span class="au-rivet"></span>
+          <div class="au-head-title" title="${p.code} ${p.title}">
+            ${puzzlePicHtml(p.id, 'kid-obj-head')}
             <span class="au-code-pill" style="border-color:${rMain.color};color:${rMain.color}">${p.code}</span>
-            <strong>${p.title}</strong>
-            <span class="au-room-pill">[${p.roomLabel}]</span>
+            <strong class="kid-puzzle-title">${kid ? `${kid.emoji} ${kid.title}` : p.title}</strong>
+            <span class="au-room-pill">${p.roomLabel}</span>
           </div>
           <div class="au-head-right">
-            <div class="au-pin-radio" title="최근 수신 무전 2건 고정">
+            <div class="au-pin-radio" title="최근 받은 무전">
               <span class="au-pin-lbl">📡</span>
               ${pinHtml}
             </div>
-            <button class="s-btn" id="au-open-cmenu" title="C-Menu 2.0 무전 휠">📡 [C]</button>
+            <button class="s-btn" id="au-open-cmenu" title="그림 무전 열기">📡 [C]</button>
             <button class="au-close-x" id="au-close-btn" title="닫기 (ESC)">✕</button>
           </div>
         </div>
         <div class="au-modal-sub au-coop-bar">
           <div class="au-coop-left">
-            <span class="au-coop-chip" style="border-color:${rMain.color};color:${rMain.color}">★ 주도: ${rMain.badge} ${rMain.name}</span>
-            <span style="font-size:12px;color:#9BB0BE">🤝 도움 필요:</span>
+            <span class="au-coop-chip kid-coop-chip" style="border-color:${rMain.color};color:${rMain.color}" title="주도 조작">★ ${charSpriteHtml(p.mainRole, 0.45)}${rMain.name}</span>
+            <span class="kid-coop-arrow" title="도와주는 친구">⬅ 📡</span>
             ${helpersHtml}
           </div>
-          <div class="au-coop-me" style="color:${myMeta.color}">내 역할: <strong>${myMeta.badge} ${myMeta.name}</strong></div>
+          <div class="au-coop-me kid-coop-chip" style="color:${myMeta.color}">나: ${charSpriteHtml(myRole, 0.45)}<strong>${myMeta.name}</strong></div>
         </div>
         <div class="au-body">
           <div id="au-stage-area"></div>
           ${this.feedback.msg ? `<div class="au-feedback ${this.feedback.kind}">${this.feedback.msg}</div>` : ''}
-          ${isSolved ? `<div class="au-stamp-clear">✔ TASK COMPLETED! · ${p.code} 복구 완료 (${totalSolved}/16)</div>` : ''}
+          ${isSolved ? `<div class="au-stamp-clear">🎉 성공! ${kid ? kid.emoji : ''} (${totalSolved}/16)</div>` : ''}
         </div>
       </div>
     `;
@@ -275,34 +277,27 @@ export class TaskModal {
     const myAssignHtml =
       myRole === p.mainRole || p.helperRoles.includes(myRole)
         ? myObjects.length
-          ? `<div class="au-my-pointer">💡 내 역할(<strong>${ROLES[myRole].badge} ${ROLES[myRole].name}</strong>) 담당 위치: <strong>${myObjects.map((o) => o.name).join(', ')}</strong></div>`
-          : `<div class="au-my-pointer">💡 <strong>${ROLES[myRole].name}</strong> 역할로 이 퍼즐에 참여합니다.</div>`
-        : `<div class="au-my-pointer">ℹ 이 구역 퍼즐은 ${rMain.name} 주도 · ${p.helperRoles.map((hr) => ROLES[hr].name).join(' + ')} 협동 구역입니다.</div>`;
+          ? `<div class="au-my-pointer">💡 내 자리: <strong>${myObjects.map((o) => o.name).join(', ')}</strong></div>`
+          : `<div class="au-my-pointer">💡 나도 이 퍼즐을 함께해요</div>`
+        : `<div class="au-my-pointer">ℹ ${rMain.name}의 퍼즐이에요</div>`;
 
     stage.innerHTML = `
       <div class="au-board au-locked-role-card">
-        <div class="au-locked-title" style="color:${ownerMeta.color}">
-          🔒 ${ownerMeta.badge} ${ownerMeta.name} (${ownerMeta.shortRole}) 전용 장치
+        <div class="au-locked-title kid-locked-title" style="color:${ownerMeta.color}" title="${ownerMeta.name} (${ownerMeta.shortRole}) 전용 장치">
+          ${charSpriteHtml(ownerRole, 1.2)}
+          <span>🔒 ${ownerMeta.name}만 쓸 수 있어요</span>
         </div>
-        <p class="au-locked-desc">
-          <strong>${obj.name}</strong>은(는) <strong>${ownerMeta.name}</strong>만 열람/조작할 수 있습니다.<br/>
-          서로 다른 단서와 장치를 맡고 있으므로 무전으로 소통하며 진행하세요!
-        </p>
-        <div class="au-locked-need">
-          <div>★ <strong>주도 조작</strong>: <span style="color:${rMain.color}">${rMain.badge} ${rMain.name}</span></div>
-          <div>🤝 <strong>도움이 필요한 동료</strong>: ${p.helperRoles
-            .map((hr) => {
-              const rm = ROLES[hr];
-              const summary = p.helperSummaryByRole?.[hr] || '단서 지원';
-              return `<span style="color:${rm.color}">${rm.badge} ${rm.name} (${summary})</span>`;
-            })
-            .join(' · ')}</div>
+        <p class="au-locked-desc"><strong>${obj.name}</strong> · 📡 무전으로 도와 달라고 해요!</p>
+        <div class="au-locked-need kid-locked-need" title="${p.helperRoles
+          .map((hr) => `${ROLES[hr].name}: ${p.helperSummaryByRole?.[hr] || '단서 지원'}`)
+          .join(' · ')}">
+          ${teamFlowHtml(p, 0.9)}
         </div>
         ${myAssignHtml}
         <div class="p-row" style="margin-top:10px">
-          <button class="s-btn primary" id="au-lock-radio">📡 ${ownerMeta.name}에게 무전 보내기</button>
-          ${canAskBot ? `<button class="s-btn amber" id="au-lock-bot">🤖 AI ${ownerMeta.name}에게 협동 요청</button>` : ''}
-          ${soloMode ? `<button class="s-btn" id="au-lock-switch">🔄 ${ownerMeta.name}(으)로 캐릭터 전환</button>` : ''}
+          <button class="s-btn primary" id="au-lock-radio">📡 ${ownerMeta.name}에게 무전</button>
+          ${canAskBot ? `<button class="s-btn amber" id="au-lock-bot">🤖 ${ownerMeta.name}에게 부탁하기</button>` : ''}
+          ${soloMode ? `<button class="s-btn" id="au-lock-switch">🔄 ${ownerMeta.name}(으)로 바꾸기</button>` : ''}
         </div>
       </div>
     `;
@@ -314,7 +309,7 @@ export class TaskModal {
     stage.querySelector('#au-lock-bot')?.addEventListener('click', () => {
       soundEngine.playRadio();
       this.host.onRequestBotHelp(p.id, ownerRole);
-      this.feedback = { msg: `AI ${ownerMeta.name}에게 협동을 요청했습니다. 좌상단 무전 채팅을 확인하세요!`, kind: 'ok' };
+      this.feedback = { msg: `🤖 ${ownerMeta.name}에게 부탁했어요! 왼쪽 위 무전 채팅을 봐요`, kind: 'ok' };
       this.render();
     });
     stage.querySelector('#au-lock-switch')?.addEventListener('click', () => {
@@ -335,16 +330,17 @@ export class TaskModal {
         const summary = p.helperSummaryByRole?.[hr] || '단서 지원';
         const isBot = Boolean(room.slots[hr]?.isBot && !room.slots[hr]?.ownerClientId);
         return `<div class="au-helper-pill" style="border-color:${rm.color}">
-          <span style="color:${rm.color};font-weight:800">${rm.badge} ${rm.name}</span>
+          ${charSpriteHtml(hr, 0.6)}
+          <span style="color:${rm.color};font-weight:800">${rm.name}</span>
           <span style="color:#C8D6E2">${summary}</span>
           <button class="s-btn" data-req-radio="${hr}" style="padding:3px 8px;font-size:11px">📡 무전</button>
-          ${isBot && !isSolved ? `<button class="s-btn amber" data-req-bot="${hr}" style="padding:3px 8px;font-size:11px">🤖 AI 요청</button>` : ''}
+          ${isBot && !isSolved ? `<button class="s-btn amber" data-req-bot="${hr}" style="padding:3px 8px;font-size:11px">🤖 부탁하기</button>` : ''}
         </div>`;
       })
       .join('');
 
     helperBannerWrap.innerHTML = `
-      <div style="font:800 12px sans-serif;color:#9BB0BE;margin-bottom:6px">🤝 도움이 필요한 동료 (누구에게 무엇을 요청해야 하는지 확인 후 무전으로 소통하세요)</div>
+      <div style="font:800 13px sans-serif;color:#9BB0BE;margin-bottom:6px">🤝 도와줄 친구 · 📡 무전으로 물어봐요</div>
       <div class="au-helper-pill-list">${helperChips}</div>
     `;
 
@@ -365,7 +361,7 @@ export class TaskModal {
         const hr = btn.dataset.reqBot as RoleId;
         soundEngine.playRadio();
         this.host.onRequestBotHelp(p.id, hr);
-        this.feedback = { msg: `AI ${ROLES[hr].name}에게 협동 및 무전 안내를 요청했습니다!`, kind: 'ok' };
+        this.feedback = { msg: `🤖 ${ROLES[hr].name}에게 부탁했어요!`, kind: 'ok' };
         this.render();
       };
     });
@@ -396,15 +392,18 @@ export class TaskModal {
     const h = this.createHelpers(room, myRole);
 
     stage.innerHTML = `
-      <div class="au-board p-stack">
-        <div class="p-row-between">
-          <div>
-            <span style="font:800 13px sans-serif;color:${myMeta.color}">
-              ${myMeta.badge} ${myMeta.name} (${myMeta.shortRole}) 전용 단서 · 보조 조작
-            </span>
-            <div style="font:800 16px sans-serif;margin-top:2px">${roleClue?.title || `${myMeta.name} 담당 단서`}</div>
+      <div class="au-board p-stack kid-clue">
+        <div class="kid-clue-hero">
+          <div class="kid-radio-person">${charSpriteHtml(myRole, 1.5, true)}<strong style="color:${myMeta.color}">나 · ${myMeta.name}</strong></div>
+          <div class="kid-bubble">
+            <div class="kid-bubble-lbl">💡 ${roleClue?.title || `${myMeta.name}의 힌트`}</div>
+            <div class="kid-clue-ask">아래 힌트를 보고 📡 그림 무전으로 알려 줘요</div>
           </div>
-          <button class="s-btn primary" id="au-send-to-main">📡 ${mainR.name}에게 무전 보내기</button>
+          <div class="kid-flow-arrow big">➜</div>
+          <div class="kid-radio-person">${charSpriteHtml(p.mainRole, 1.5)}<strong style="color:${mainR.color}">${mainR.name}</strong></div>
+        </div>
+        <div class="p-row kid-clue-actions">
+          <button class="s-btn primary big" id="au-send-to-main">📡 ${mainR.name}에게 무전 보내기</button>
         </div>
         ${roleClue?.bodyHtml || `<div class="clue-card"><p>무전으로 ${mainR.name}에게 정보를 전달하세요.</p></div>`}
         <div id="au-helper-interactive"></div>
@@ -424,12 +423,12 @@ export class TaskModal {
     const rMain = ROLES[p.mainRole];
     stage.innerHTML = `
       <div class="au-board au-locked-role-card">
-        <div class="au-locked-title" style="color:${rMain.color}">🤝 협동 구역 안내</div>
-        <p class="au-locked-desc">
-          이 구역 퍼즐(${p.code})은 <strong>${rMain.name}</strong> 주도 · <strong>${p.helperRoles.map((hr) => ROLES[hr].name).join(' + ')}</strong> 협동으로 진행됩니다.
-        </p>
+        <div class="au-locked-title" style="color:${rMain.color}">🤝 친구들의 퍼즐이에요</div>
+        <div class="au-locked-need kid-locked-need" title="${p.code}: ${rMain.name} 주도 · ${p.helperRoles.map((hr) => ROLES[hr].name).join(' + ')} 협동">
+          ${teamFlowHtml(p, 1)}
+        </div>
         <div class="p-row">
-          <button class="s-btn primary" id="au-uninv-radio">📡 ${rMain.name}에게 무전 보내기</button>
+          <button class="s-btn primary" id="au-uninv-radio">📡 ${rMain.name}에게 무전</button>
         </div>
       </div>
     `;
@@ -451,23 +450,28 @@ export class TaskModal {
     const pads = p16.pads || [false, false, false, false];
     stage.innerHTML = `
       <div class="au-board p-stack">
-        <div class="p-card ${priorDone === 15 ? 'ok' : 'warn'}">
-          <strong>선행 1~3막 복원: ${priorDone} / 15</strong> ·
-          <strong>기획전시실 광선: ${p16.beamReachedAtrium ? '도착 ✔' : '미도착 🔒'}</strong> ·
-          <strong>린 [집결 호출 HERE]: ${p16.hereSent ? '발신됨 ✔' : '대기 🔒'}</strong>
+        <div class="kid-chips">
+          <span class="kid-chip">${priorDone === 15 ? '✅' : '⬜'} 🧩 퍼즐 ${priorDone} / 15</span>
+          <span class="kid-flow-arrow">➜</span>
+          <span class="kid-chip">${p16.beamReachedAtrium ? '✅' : '⬜'} 🌈 빛 쏘기</span>
+          <span class="kid-flow-arrow">➜</span>
+          <span class="kid-chip">${p16.hereSent ? '✅' : '⬜'} 📍 린이 "모여라!"</span>
+          <span class="kid-flow-arrow">➜</span>
+          <span class="kid-chip">👣 발판 ${pads.filter(Boolean).length} / 4</span>
         </div>
         <div class="p-grid-4">
           ${(['doyun', 'maria', 'lin', 'aisha'] as const)
             .map((rid, i) => {
               const rr = ROLES[rid];
-              return `<div class="p-pad-chip ${pads[i] ? 'active' : ''}" style="border-color:${rr.color}">
-                <span>${rr.badge} ${rr.name}</span>
-                <small>${pads[i] ? '✔ 발판 착지' : `gather-${i + 1}`}</small>
+              return `<div class="p-pad-chip kid-pad-chip ${pads[i] ? 'active' : ''}" style="border-color:${rr.color}">
+                ${charSpriteHtml(rid, 1)}
+                <span>${rr.name}</span>
+                <small>${pads[i] ? '✅ 올라섰어요' : '⬜ 기다리는 중'}</small>
               </div>`;
             })
             .join('')}
         </div>
-        <p class="clue-note">P01~P15 완료 → 기획전시실(2F special) 프리즘 광선 연결 → 린이 <code>[집결 호출 HERE]</code> 발신 → 반원 홀 4개 발판(gather-1~4) 동시 착지 시 대관식 엔딩이 시작됩니다!</p>
+        <p class="clue-note">👑 4명이 모두 발판에 올라서면 성공!</p>
       </div>
     `;
   }

@@ -102,7 +102,7 @@ export class CMenuWheel {
 
     const emptyHint =
       !chips && !draftPill
-        ? '<span class="cw-hint">아이콘·숫자·상대방 이름을 조합하세요 (최대 8개)</span>'
+        ? '<span class="cw-hint">👆 그림·숫자·친구 이름을 골라요 (8개까지)</span>'
         : '';
 
     return `${targetHtml} ${chips}${draftPill}${emptyHint}`;
@@ -172,13 +172,13 @@ export class CMenuWheel {
         <div class="cw-head">
           <div>
             <span class="cw-badge" style="color:${rMeta.color};border-color:${rMeta.color}">${rMeta.badge} ${rMeta.name} (${rMeta.shortRole})</span>
-            <strong>C-Menu 2.0 조합 무전 (최대 ${MAX_COMPOSED_TOKENS}개 · 이름 + 아이콘 + 숫자)</strong>
+            <strong>📡 그림 무전 (${MAX_COMPOSED_TOKENS}개까지)</strong>
           </div>
           <button class="au-close-x" id="cw-close" aria-label="무전 휠 닫기">✕</button>
         </div>
 
         <div class="cw-target-bar">
-          <span class="cw-bar-lbl">수신자 지정</span>
+          <span class="cw-bar-lbl">👉 누구에게?</span>
           <button class="cw-target-btn ${this.targetRoleId === null ? 'active' : ''}" data-target="">📢 전체</button>
           ${ROLE_ORDER.map((rId) => {
             const meta = ROLES[rId];
@@ -195,23 +195,23 @@ export class CMenuWheel {
           <div class="cw-compose-ctrl">
             <span class="cw-count-pill" id="cw-count">${this.selected.length}/${MAX_COMPOSED_TOKENS}</span>
             <button class="s-btn" id="cw-undo" ${this.selected.length ? '' : 'disabled'}>⌫ 하나 지우기</button>
-            <button class="s-btn" id="cw-clear">초기화</button>
+            <button class="s-btn" id="cw-clear">🧽 모두 지우기</button>
           </div>
         </div>
 
         <div class="cw-body">
           <div class="cw-wheel-stage">
             <div class="cw-ring-bg"></div>
-            <div class="cw-quad-lbl q1">① 수치·순서</div>
-            <div class="cw-quad-lbl q2">② 방위·동작</div>
-            <div class="cw-quad-lbl q3">③ 문양·속성</div>
-            <div class="cw-quad-lbl q4">④ 협동 콜사인</div>
+            <div class="cw-quad-lbl q1">🔢 숫자</div>
+            <div class="cw-quad-lbl q2">🧭 방향</div>
+            <div class="cw-quad-lbl q3">🎨 그림</div>
+            <div class="cw-quad-lbl q4">🤝 신호</div>
             ${nodesHtml}
             <div class="cw-hub">
-              <div class="cw-hub-title">조합 무전 미리보기</div>
+              <div class="cw-hub-title">👀 보낼 무전</div>
               <div class="cw-hub-sel" id="cw-hub-sel"></div>
               <div class="cw-hub-actions">
-                <button class="s-btn primary" id="cw-send" ${canSend ? '' : 'disabled'} title="Enter 키로도 즉시 발신">📡 발신 (Enter)</button>
+                <button class="s-btn primary" id="cw-send" ${canSend ? '' : 'disabled'} title="Enter 키로도 보낼 수 있어요">📡 보내기 (Enter)</button>
               </div>
             </div>
           </div>
@@ -235,11 +235,11 @@ export class CMenuWheel {
             </div>
 
             <div class="cw-num-panel">
-              <div class="cw-bar-lbl">🔢 숫자 조합 추가 &amp; @이름 칩 삽입</div>
+              <div class="cw-bar-lbl">🔢 숫자 · 🙂 친구 이름 넣기</div>
               <div class="cw-num-row">
                 <input id="cw-num-input" class="cw-num-input" type="text" inputmode="decimal" maxlength="10"
                   value="${escapeTokenText(this.numDraft)}" placeholder="숫자 (예: 180, 45/18, 7.0)" />
-                <button class="s-btn amber" id="cw-num-add">+ 숫자 추가</button>
+                <button class="s-btn amber" id="cw-num-add">+ 숫자 넣기</button>
               </div>
               <div class="cw-keypad">
                 ${['1', '2', '3', '4', '5', '6', '7', '8', '9', '0', '.', '/', '⌫']

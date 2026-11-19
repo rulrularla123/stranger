@@ -24,7 +24,9 @@ import { BotController } from './game/botController.ts';
 import { CMenuWheel } from './ui/cMenuWheel.ts';
 import { MinimapController } from './ui/minimap.ts';
 import { TaskModal } from './puzzles/taskModal.ts';
+import { PUZZLE_KID, ROLE_KID, charSpriteHtml } from './ui/kidVisuals.ts';
 import {
+  INTRO_SLIDE_COUNT,
   renderClearRecordsHtml,
   renderControlsModalHtml,
   renderCoronationEndingHtml,
@@ -357,7 +359,7 @@ class StrangerApp {
       this.root.querySelector('#btn-intro-skip')?.addEventListener('click', () => this.finishIntro());
       this.root.querySelector('#btn-intro-next')?.addEventListener('click', () => {
         soundEngine.playClick();
-        if (this.introSlide < 2) {
+        if (this.introSlide < INTRO_SLIDE_COUNT - 1) {
           this.introSlide++;
           this.renderCurrentPhase();
         } else {
@@ -390,14 +392,14 @@ class StrangerApp {
         <div class="hud-top-left">
           <div class="hud-box">
             <div class="hud-task-row">
-              <span id="hud-task-label">TASK 0 / 16</span>
+              <span id="hud-task-label">🧩 0 / 16</span>
               <div class="au-progress-track"><div class="au-progress-fill" id="hud-task-fill" style="width:0%"></div></div>
             </div>
             <div class="p-row-between" style="margin-top:6px">
-              <div class="hud-obj-title" style="margin-bottom:0">공용 목표</div>
-              <button class="hud-chk-toggle" id="hud-chk-toggle">${this.checklistExpanded ? '목록 접기 ▴' : '체크리스트 ▾'}</button>
+              <div class="hud-obj-title" style="margin-bottom:0">🎯 목표</div>
+              <button class="hud-chk-toggle" id="hud-chk-toggle">${this.checklistExpanded ? '접기 ▴' : '퍼즐 목록 ▾'}</button>
             </div>
-            <div class="hud-obj-line" id="hud-objective">1층 로비 나침반과 전시관을 복원하세요</div>
+            <div class="hud-obj-line" id="hud-objective">🧭 1층 나침반부터 풀어요!</div>
             <div class="hud-checklist" id="hud-checklist" style="display:${this.checklistExpanded ? 'flex' : 'none'}"></div>
           </div>
           <div class="hud-box hud-role-banner" id="hud-role-box"></div>
@@ -420,10 +422,10 @@ class StrangerApp {
         <div class="hud-top-right">
           <div class="hud-btn-row">
             <span class="room-code-pill" style="padding:4px 9px;font-size:11px">방 <strong>${room.code}</strong></span>
-            <button class="s-btn primary" id="hud-c-btn">[C] 무전</button>
-            <button class="s-btn" id="hud-m-btn">[M] 안내도</button>
-            <button class="s-btn" id="hud-h-btn">[H] 조작</button>
-            <button class="s-btn danger" id="hud-p-btn">[P] 나가기</button>
+            <button class="s-btn primary" id="hud-c-btn">📡 [C] 무전</button>
+            <button class="s-btn" id="hud-m-btn">🗺 [M] 지도</button>
+            <button class="s-btn" id="hud-h-btn">❔ [H] 도움말</button>
+            <button class="s-btn danger" id="hud-p-btn">🚪 [P]</button>
           </div>
           <div class="hud-minimap-wrap" id="hud-minimap-wrap" title="클릭하거나 M 키를 눌러 전체 층 안내도 열기">
             <canvas id="minimap-canvas"></canvas>
@@ -470,11 +472,11 @@ class StrangerApp {
           };
           const padsCnt = (p16.pads || []).filter(Boolean).length;
           if (!p16.beamReachedAtrium) {
-            this.showToast('먼저 동쪽 [2F 기획전시실] 프리즘 3개를 맞춰 빛을 반원 홀로 쏘세요!', 'amber');
+            this.showToast('🌈 먼저 기획전시실에서 빛을 쏘아요!', 'amber');
           } else if (!p16.hereSent) {
-            this.showToast('빛이 도착했습니다! 린이 [C] → [📍 집결 호출 HERE] 무전을 발신하세요.', 'mint');
+            this.showToast('✨ 빛 도착! 린이 [C] ➜ 📍 모여라!', 'mint');
           } else {
-            this.showToast(`반원 홀 발판 집결 중 (${padsCnt}/4) — 4인 모두 발판에 올라서세요!`, 'mint');
+            this.showToast(`👣 발판 ${padsCnt} / 4 · 4명 모두 올라서요!`, 'mint');
           }
           return;
         }
@@ -543,7 +545,7 @@ class StrangerApp {
       const list = this.root.querySelector<HTMLElement>('#hud-checklist');
       const btn = this.root.querySelector('#hud-chk-toggle');
       if (list) list.style.display = this.checklistExpanded ? 'flex' : 'none';
-      if (btn) btn.textContent = this.checklistExpanded ? '목록 접기 ▴' : '체크리스트 ▾';
+      if (btn) btn.textContent = this.checklistExpanded ? '접기 ▴' : '퍼즐 목록 ▾';
     });
 
     this.root.querySelectorAll<HTMLElement>('[data-pad-key]').forEach((btn) => {
@@ -626,7 +628,16 @@ class StrangerApp {
         this.closeOverlay();
         return;
       }
-      this.overlayBackdrop.innerHTML = renderRoomIntroModalHtml(info);
+      const [floorKey, sceneId] = this.roomIntroKey.split(':') as [FloorKey, string];
+      const scene = this.mapData.floors[floorKey]?.scenes[sceneId];
+      this.overlayBackdrop.innerHTML = renderRoomIntroModalHtml(info, {
+        key: this.roomIntroKey,
+        floor: floorKey,
+        sceneLabel: scene?.label || '',
+        view: scene?.view || null,
+        puzzles: PUZZLES.filter((p) => p.floor === floorKey && p.room === sceneId),
+        solvedPids: room?.solvedPids || [],
+      });
       this.overlayBackdrop.querySelector('#btn-room-intro-ok')?.addEventListener('click', () => this.closeOverlay());
     }
     this.overlayBackdrop.querySelector('#btn-close-overlay')?.addEventListener('click', () => this.closeOverlay());
@@ -696,7 +707,7 @@ class StrangerApp {
     soundEngine.playClick();
     this.session.setLocalActiveRole(roleId);
     const rMeta = ROLES[roleId];
-    this.showToast(`역할 전환: ${rMeta.badge} ${rMeta.name} (${rMeta.shortRole})`, 'mint');
+    this.showToast(`🔄 ${rMeta.name} (${ROLE_KID[roleId].emoji} ${ROLE_KID[roleId].job})`, 'mint');
   }
 
   private refreshHud() {
@@ -709,19 +720,19 @@ class StrangerApp {
     const solvedCount = room.solvedPids.length;
     const lbl = this.root.querySelector('#hud-task-label');
     const fill = this.root.querySelector<HTMLElement>('#hud-task-fill');
-    if (lbl) lbl.textContent = `TASK ${solvedCount} / 16`;
+    if (lbl) lbl.textContent = `🧩 ${solvedCount} / 16`;
     if (fill) fill.style.width = `${Math.round((solvedCount / 16) * 100)}%`;
 
     const objEl = this.root.querySelector('#hud-objective');
     if (objEl) {
       if (!room.powerRestored) {
-        objEl.textContent = '1F 전시관(P01~P06) 및 B1 전기실(P09)을 복구해 박물관 조명을 켜세요';
+        objEl.textContent = '💡 불을 켜요! 🏛 1층 ➜ ⚡ 지하';
       } else if (solvedCount < 15) {
-        objEl.textContent = `전력 복구 완료! 남은 전시·아카이브 복원 (${solvedCount}/15) 후 2F 기획전(P16)으로 이동하세요`;
+        objEl.textContent = `✨ 불이 켜졌어요! 남은 퍼즐 (${solvedCount}/15)`;
       } else if (!room.solvedPids.includes(16)) {
-        objEl.textContent = '2F 기획전시실 광학 프리즘(P16) 연결 → 반원 홀 발판 4/4 동시 집결!';
+        objEl.textContent = '🌈 빛을 쏘고 ➜ 👑 2층 홀에 4명 모이기!';
       } else {
-        objEl.textContent = '박물관 전체 복원 및 정식 개관 대관식 완료!';
+        objEl.textContent = '👑 박물관을 다 구했어요!';
       }
     }
 
@@ -733,10 +744,10 @@ class StrangerApp {
       const act3Done = [11, 12, 13, 14, 15].every((id) => solvedSet.has(id));
       const activeAct: 1 | 2 | 3 | 4 = !act1Done ? 1 : !act2Done ? 2 : !act3Done ? 3 : 4;
       const actTitles: Record<1 | 2 | 3 | 4, string> = {
-        1: '1막 · 1F 상설 전시관',
-        2: '2막 · B1 지하 설비·전력',
-        3: '3막 · 2F 아카이브·보존',
-        4: '4막 · 2F 기획전 → 대관식',
+        1: '🏛 1층 전시실',
+        2: '⚡ 지하 기계실',
+        3: '📜 2층 기록실',
+        4: '👑 마지막 퍼즐',
       };
       const items = PUZZLES.filter((pz) => pz.act === activeAct);
       chkEl.innerHTML =
@@ -744,8 +755,11 @@ class StrangerApp {
         items
           .map((pz) => {
             const done = solvedSet.has(pz.id);
-            return `<div class="hud-chk-row ${done ? 'done' : ''}">
-              <span>${done ? '✔' : '○'} <strong>${pz.code}</strong> ${pz.title}</span>
+            const k = PUZZLE_KID[pz.id];
+            return `<div class="hud-chk-row kid-chk-row ${done ? 'done' : ''}" title="${pz.code} ${pz.title}">
+              <span class="kid-chk-mark">${done ? '✅' : '⬜'}</span>
+              <img class="kid-obj kid-obj-xs" src="/assets/sprites/${k?.sprite}.png" alt="" draggable="false" />
+              <span>${k ? `${k.emoji} ${k.title}` : pz.title}</span>
             </div>`;
           })
           .join('');
@@ -761,22 +775,29 @@ class StrangerApp {
         );
         const myMain = roomUnsolved.find((pz) => pz.mainRole === myRole);
         const myHelper = roomUnsolved.find((pz) => pz.helperRoles.includes(myRole));
+        const kidName = (pid: number) => (PUZZLE_KID[pid] ? `${PUZZLE_KID[pid].emoji} ${PUZZLE_KID[pid].title}` : '');
         if (myMain) {
-          roomAssignLine = `<div class="hud-role-assign" style="color:${rMeta.color}">📍 이 방 담당: ★ ${myMain.code} 주도 조작</div>`;
+          roomAssignLine = `<div class="hud-role-assign" style="color:${rMeta.color}" title="${myMain.code} 주도 조작">📍 ★ 내가 풀기: ${kidName(myMain.id)}</div>`;
         } else if (myHelper) {
           const sum = myHelper.helperSummaryByRole?.[myRole] || '단서·보조';
-          roomAssignLine = `<div class="hud-role-assign" style="color:${rMeta.color}">📍 이 방 담당: 👁 ${myHelper.code} ${sum} (${ROLES[myHelper.mainRole].name} 지원)</div>`;
+          roomAssignLine = `<div class="hud-role-assign" style="color:${rMeta.color}" title="${myHelper.code} ${sum}">📍 💡 힌트 주기 ➜ ${ROLES[myHelper.mainRole].name}</div>`;
         } else if (roomUnsolved.length > 0) {
-          roomAssignLine = `<div class="hud-role-assign" style="color:#9BB0BE">📍 이 방: ${roomUnsolved[0].code} 동료 구역 (무전 협동)</div>`;
+          roomAssignLine = `<div class="hud-role-assign" style="color:#9BB0BE" title="${roomUnsolved[0].code} 동료 구역 (무전 협동)">📍 친구 차례: ${kidName(roomUnsolved[0].id)} · 📡로 도와요</div>`;
         } else if (slot.scene === 'atrium') {
-          roomAssignLine = `<div class="hud-role-assign" style="color:#52EFBF">📍 반원 홀: 4인 대관식 집결 광장</div>`;
+          roomAssignLine = `<div class="hud-role-assign" style="color:#52EFBF">📍 👑 4명이 모이는 곳</div>`;
         } else {
-          roomAssignLine = `<div class="hud-role-assign" style="color:#52EFBF">📍 이 방 복원 완료 ✔</div>`;
+          roomAssignLine = `<div class="hud-role-assign" style="color:#52EFBF">📍 이 방 완료 ✅</div>`;
         }
       }
+      const rKid = ROLE_KID[myRole];
       roleBox.innerHTML = `
-        <div style="font-size:13px;font-weight:900;color:${rMeta.color}">${rMeta.badge} ${rMeta.name} · ${rMeta.title}</div>
-        <div style="font-size:11px;color:#b8c7d4;margin-top:2px">${rMeta.passiveName}: ${rMeta.passiveDesc}</div>
+        <div class="kid-hud-role" title="${rMeta.passiveName}: ${rMeta.passiveDesc}">
+          ${charSpriteHtml(myRole, 0.9)}
+          <div>
+            <div style="font-size:14px;font-weight:900;color:${rMeta.color}">나는 ${rMeta.name}</div>
+            <div style="font-size:13px;font-weight:800;color:#e4ecf2;margin-top:2px">${rKid.emoji} ${rKid.does}</div>
+          </div>
+        </div>
         ${roomAssignLine}
       `;
     }
@@ -817,7 +838,7 @@ class StrangerApp {
     const list = this.root.querySelector('#hud-log-list');
     if (!list) return;
     if (room.radioLog.length === 0) {
-      list.innerHTML = `<span style="color:#8597a6">수신된 무전이 없습니다. [C]로 조합 무전을 보내보세요.</span>`;
+      list.innerHTML = `<span style="color:#8597a6">📭 아직 무전이 없어요 · [C]</span>`;
       return;
     }
     list.innerHTML = room.radioLog
