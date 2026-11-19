@@ -5,6 +5,10 @@ import { soundEngine } from '../audio/soundEngine.ts';
 import type { SessionClient } from '../net/sessionClient.ts';
 import { renderAct1Act2Board, type BoardHelpers } from './boardsAct1Act2.ts';
 import { renderAct3Act4Board } from './boardsAct3Act4.ts';
+import { PUZZLE_KID, bigPacketHtml, charSpriteHtml, puzzlePicHtml } from '../ui/kidVisuals.ts';
+
+/** 좌표 표·아키타입 같은 개발용 정보는 주소에 ?dev 가 있을 때만 보여 줍니다. */
+const DEV_MODE = typeof location !== 'undefined' && new URLSearchParams(location.search).has('dev');
 
 export interface TaskModalHost {
   onOpenCMenu: () => void;
@@ -149,7 +153,7 @@ export class TaskModal {
               `<span class="au-pin-item"><strong style="color:${ROLES[pkt.roleId].color}">${pkt.senderName}:</strong>${pkt.tokenIds.map((id) => renderTokenPillHtml(id)).join('+')}</span>`
           )
           .join('<span class="au-pin-sep">|</span>')
-      : '<span class="au-pin-empty">수신 무전 없음 · [C] 무전 휠로 단서 교환</span>';
+      : '<span class="au-pin-empty">📭 아직 없음</span>';
   }
 
   private createHelpers(room: RoomState, myRole: RoleId): BoardHelpers {
@@ -212,7 +216,9 @@ export class TaskModal {
 
     if (this.viewMode === 'main' && !allowMain) this.viewMode = 'clue';
     if (this.viewMode === 'clue' && !allowClue) this.viewMode = 'main';
+    if (this.viewMode === 'coords' && !DEV_MODE) this.viewMode = allowMain ? 'main' : 'clue';
 
+    const kid = PUZZLE_KID[p.id];
     const rMain = ROLES[p.mainRole];
     const isSolved = room.solvedPids.includes(p.id);
     const totalSolved = room.solvedPids.length;
@@ -225,41 +231,45 @@ export class TaskModal {
     this.root.innerHTML = `
       <div class="au-modal ${shakeNow ? 'au-shake' : ''}" role="dialog" aria-modal="true" aria-label="${p.code} ${p.title}">
         <div class="au-task-stripe-bar">
-          <span>TASK ${totalSolved} / 16 · 난이도 ${room.difficulty}</span>
+          <span>🧩 ${totalSolved} / 16 · ${room.difficulty}</span>
           <div class="au-progress-track"><div class="au-progress-fill" style="width:${pct}%"></div></div>
         </div>
         <div class="au-modal-head">
-          <div class="au-head-title">
-            <span class="au-rivet"></span>
+          <div class="au-head-title" title="${p.code} ${p.title}">
+            ${puzzlePicHtml(p.id, 'kid-obj-head')}
             <span class="au-code-pill" style="border-color:${rMain.color};color:${rMain.color}">${p.code}</span>
-            <strong>${p.title}</strong>
-            <span class="au-room-pill">[${p.roomLabel}]</span>
+            <strong class="kid-puzzle-title">${kid ? `${kid.emoji} ${kid.title}` : p.title}</strong>
+            <span class="au-room-pill">${p.roomLabel}</span>
           </div>
           <div class="au-head-right">
-            <div class="au-pin-radio" title="최근 수신 무전 2건 고정">
+            <div class="au-pin-radio" title="최근 받은 무전">
               <span class="au-pin-lbl">📡</span>
               ${pinHtml}
             </div>
-            <button class="s-btn" id="au-open-cmenu" title="C-Menu 2.0 무전 휠">📡 [C]</button>
+            <button class="s-btn" id="au-open-cmenu" title="그림 무전 열기">📡 [C]</button>
             <button class="au-close-x" id="au-close-btn" title="닫기 (ESC)">✕</button>
           </div>
         </div>
         <div class="au-modal-sub">
           <div class="au-view-tabs">
             <button class="au-vtab ${this.viewMode === 'main' ? 'active' : ''}" data-vmode="main" ${
-              allowMain ? '' : `disabled title="주도 조작은 ${rMain.name} 전용"`
-            }>${allowMain ? '★' : '🔒'} 주도 조작 (${rMain.name})</button>
+              allowMain ? '' : `disabled title="${rMain.name}만 풀 수 있어요"`
+            }>${allowMain ? '★' : '🔒'} 풀기 · ${rMain.name}</button>
             <button class="au-vtab ${this.viewMode === 'clue' ? 'active' : ''}" data-vmode="clue" ${
-              allowClue ? '' : 'disabled title="단서 역할 전용 — [C] 무전으로 받으세요"'
-            }>${allowClue ? '👁' : '🔒'} 단서·보조 (${p.helperRoles.map((hr) => ROLES[hr].name).join('+')})</button>
-            <button class="au-vtab ${this.viewMode === 'coords' ? 'active' : ''}" data-vmode="coords">📐 연동 오브젝트 (${objs.length})</button>
+              allowClue ? '' : 'disabled title="힌트는 친구가 무전으로 보내 줘요"'
+            }>${allowClue ? '💡' : '🔒'} 힌트 · ${p.helperRoles.map((hr) => ROLES[hr].name).join('+')}</button>
+            ${
+              DEV_MODE
+                ? `<button class="au-vtab ${this.viewMode === 'coords' ? 'active' : ''}" data-vmode="coords">📐 연동 오브젝트 (${objs.length})</button>`
+                : ''
+            }
           </div>
-          <div class="au-arch-note">아키타입: <strong>${p.arch}</strong></div>
+          ${DEV_MODE ? `<div class="au-arch-note">아키타입: <strong>${p.arch}</strong></div>` : ''}
         </div>
         <div class="au-body">
           <div id="au-stage-area"></div>
           ${this.feedback.msg ? `<div class="au-feedback ${this.feedback.kind}">${this.feedback.msg}</div>` : ''}
-          ${isSolved ? `<div class="au-stamp-clear">✔ TASK COMPLETED! · ${p.code} 복구 완료 (${totalSolved}/16)</div>` : ''}
+          ${isSolved ? `<div class="au-stamp-clear">🎉 성공! ${kid ? kid.emoji : ''} (${totalSolved}/16)</div>` : ''}
         </div>
       </div>
     `;
@@ -292,32 +302,40 @@ export class TaskModal {
     const p = PUZZLES_BY_ID[pid];
     const objId = this.currentObj?.id || '';
     const objClue = objId ? p.objectRoleClues?.[objId] : undefined;
-    const helpers = p.helperRoles.map((r) => ROLES[r]);
     const mainR = ROLES[p.mainRole];
     const myRole = this.session.getMyRole();
     const soloMode = Boolean(room.soloSwitchEnabled);
     const h = this.createHelpers(room, myRole);
 
+    const senderRoleId: RoleId = objClue?.roleId || p.helperRoles[0] || myRole;
+    const chips = p.clueSummary
+      .split(/\s·\s/)
+      .map((c) => c.trim())
+      .filter(Boolean)
+      .map((c) => `<span class="kid-chip">${c}</span>`)
+      .join('');
+
     stage.innerHTML = `
-      <div class="au-board p-stack">
-        <div class="p-row-between">
-          <div>
-            <span style="font:800 13px sans-serif;color:${objClue ? ROLES[objClue.roleId].color : helpers[0].color}">
-              ${objClue ? ROLES[objClue.roleId].badge + ' ' + ROLES[objClue.roleId].name : helpers.map((hr) => hr.badge + ' ' + hr.name).join(' · ')} 전용 단서 뷰
-            </span>
-            <div style="font:800 16px sans-serif;margin-top:2px">${objClue ? objClue.title : p.clueTitle}</div>
+      <div class="au-board p-stack kid-clue">
+        <div class="kid-clue-hero">
+          <div class="kid-radio-person">${charSpriteHtml(senderRoleId, 1.6, true)}<strong style="color:${ROLES[senderRoleId].color}">${ROLES[senderRoleId].name}</strong></div>
+          <div class="kid-bubble">
+            <div class="kid-bubble-lbl">📡 ${mainR.name}에게 이렇게 보내요</div>
+            <div class="kid-packets">${p.answerTokens.map((pkt) => bigPacketHtml(pkt)).join('<span class="kid-or">그리고</span>')}</div>
           </div>
-          <div class="p-row">
-            <button class="s-btn primary" id="au-send-clue">📡 권장 무전 패킷 발신</button>
-            <button class="s-btn" id="au-open-wheel">🎛 C-Menu 휠로 직접 조합</button>
-          </div>
+          <div class="kid-flow-arrow big">➜</div>
+          <div class="kid-radio-person">${charSpriteHtml(p.mainRole, 1.6)}<strong style="color:${mainR.color}">${mainR.name}</strong></div>
         </div>
-        ${objClue ? objClue.bodyHtml : p.clueHtml}
+        <div class="kid-chips" title="${objClue ? objClue.title : p.clueTitle}">${chips}</div>
+        <div class="p-row kid-clue-actions">
+          <button class="s-btn primary big" id="au-send-clue">📡 바로 보내기</button>
+          <button class="s-btn" id="au-open-wheel">🎛 내가 골라서 보내기</button>
+        </div>
         <div id="au-helper-interactive"></div>
-        <div class="p-row" style="margin-top:4px">
-          <span style="font-size:12px;color:#9BB0BE">권장 전달 패킷 (${mainR.name}에게):</span>
-          ${p.answerTokens.map((pkt) => pkt.map((tid) => renderTokenPillHtml(tid)).join(' + ')).join(' <span style="color:#667">/</span> ')}
-        </div>
+        <details class="kid-more">
+          <summary>📖 ${objClue ? objClue.title : p.clueTitle} · 자세히 보기</summary>
+          ${objClue ? objClue.bodyHtml : p.clueHtml}
+        </details>
       </div>
     `;
 
@@ -330,7 +348,7 @@ export class TaskModal {
         this.session.sendRadio(senderRole, pkt);
       }
       soundEngine.playRadio();
-      this.feedback = { msg: '단서 무전 패킷을 상단 공유 배너(12초)와 모달 우측 상단에 고정 발신했습니다!', kind: 'ok' };
+      this.feedback = { msg: `📡 ${mainR.name}에게 무전을 보냈어요!`, kind: 'ok' };
       this.render();
     };
     stage.querySelector<HTMLElement>('#au-open-wheel')!.onclick = () => {
@@ -509,7 +527,7 @@ export class TaskModal {
     if (!room.solvedPids.includes(p.id) && p.id !== 16) {
       const helperWrap = document.createElement('div');
       helperWrap.className = 'p-bot-help-bar';
-      helperWrap.innerHTML = `<button class="s-btn" id="au-ask-bot-clue" style="font-size:12px">🤖 동료 무전 단서 다시 받기</button>`;
+      helperWrap.innerHTML = `<button class="s-btn" id="au-ask-bot-clue" style="font-size:12px">🤖 힌트 다시 받기</button>`;
       stage.appendChild(helperWrap);
       helperWrap.querySelector<HTMLElement>('#au-ask-bot-clue')!.onclick = () => {
         this.host.onRequestBotClue(p.id);

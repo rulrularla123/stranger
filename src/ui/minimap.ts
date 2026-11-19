@@ -1,6 +1,7 @@
 import type { FloorKey, MapJson, RoomState } from '../types/stranger.ts';
 import { ROLE_ORDER, ROLES } from '../data/cMenuTokens.ts';
 import { PUZZLES } from '../data/puzzleCatalog.ts';
+import { PUZZLE_KID, puzzlePicHtml } from './kidVisuals.ts';
 
 export class MinimapController {
   private canvas: HTMLCanvasElement;
@@ -145,7 +146,7 @@ export class MinimapController {
         <div class="au-modal-head">
           <div style="display:flex;align-items:center;gap:10px">
             <span class="au-rivet"></span>
-            <strong style="font-size:16px">🧭 박물관 층별 안내 · 포탈 가이드 (M)</strong>
+            <strong style="font-size:16px">🗺 박물관 지도 (M)</strong>
           </div>
           <button class="au-close-x" id="mg-close">✕</button>
         </div>
@@ -158,14 +159,14 @@ export class MinimapController {
               )
               .join('')}
           </div>
-          <span style="font-size:12px;color:#9BB0BE">통일된 벽면 문 위치는 바닥 노랑/민트 포탈 표식 + [E] 이동으로 안내됩니다</span>
+          <span style="font-size:12px;color:#9BB0BE">🟨 바닥 표시 위에서 [E] = 🚪 이동</span>
         </div>
         <div class="au-body guide-grid">
           <div class="guide-img-box">
             <img src="/assets/guides/STRANGER-${this.activeFloorTab}.png" alt="${fl.label} 구조" />
           </div>
           <div class="guide-list-col">
-            <div class="guide-sec-title">${fl.label} 구역 ${room.soloSwitchEnabled ? '및 빠른 이동 (시연용)' : '안내'}</div>
+            <div class="guide-sec-title">📍 ${fl.label} ${room.soloSwitchEnabled ? '· 눌러서 바로 가기' : ''}</div>
             ${
               room.soloSwitchEnabled
                 ? `<div class="guide-room-btns">
@@ -173,21 +174,22 @@ export class MinimapController {
                       .map((sc) => `<button class="s-btn" data-go-scene="${sc.id}">📍 ${sc.label}</button>`)
                       .join('')}
                   </div>`
-                : '<p style="margin:0;font-size:12px;color:#9BB0BE">고정 역할 협동 모드에서는 박물관 내 문과 계단([E])을 통해 이동합니다.</p>'
+                : '<p style="margin:0;font-size:12px;color:#9BB0BE">🚪 문과 계단에서 [E] 로 이동해요</p>'
             }
-            <div class="guide-sec-title" style="margin-top:12px">${this.activeFloorTab} 퍼즐 현황</div>
+            <div class="guide-sec-title" style="margin-top:12px">🧩 ${this.activeFloorTab} 퍼즐</div>
             <div class="guide-puz-list">
               ${floorPuzzles
                 .map((p) => {
                   const done = room.solvedPids.includes(p.id);
-                  return `<div class="guide-puz-row ${done ? 'done' : ''}">
-                    <span><strong>${p.code}</strong> ${p.title}</span>
-                    <span class="guide-badge">${done ? '✔ 완료' : ROLES[p.mainRole].name + ' 주도'}</span>
+                  const k = PUZZLE_KID[p.id];
+                  return `<div class="guide-puz-row ${done ? 'done' : ''}" title="${p.code} ${p.title}">
+                    <span class="kid-guide-puz">${puzzlePicHtml(p.id, 'kid-obj-xs')}${k ? `${k.emoji} ${k.title}` : p.title}</span>
+                    <span class="guide-badge">${done ? '✅' : `★ ${ROLES[p.mainRole].name}`}</span>
                   </div>`;
                 })
                 .join('')}
             </div>
-            <div class="guide-sec-title" style="margin-top:12px">포탈 연결 안내도</div>
+            <div class="guide-sec-title" style="margin-top:12px">🚪 층 연결 지도</div>
             <img class="guide-portal-thumb" src="/assets/guides/STRANGER-Portal-Guide.png" alt="포탈 연결 안내" />
           </div>
         </div>

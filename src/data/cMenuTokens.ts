@@ -52,7 +52,7 @@ export const ROLES: Record<RoleId, RoleMeta> = {
 export const C_CATEGORIES: TokenCategory[] = [
   {
     id: 'num',
-    label: '① 수치·순서',
+    label: '🔢 숫자',
     color: '#F4F7FA',
     tokens: [
       { id: 'NUM_1', category: 'num', glyph: '①', label: '1번', sub: '첫번째 / 1방울', color: '#F4F7FA' },
@@ -64,7 +64,7 @@ export const C_CATEGORIES: TokenCategory[] = [
   },
   {
     id: 'dir',
-    label: '② 방위·동작',
+    label: '🧭 방향',
     color: '#52EFBF',
     tokens: [
       { id: 'DIR_N', category: 'dir', glyph: '↑', label: '북 ↑', sub: '위 / 북쪽', color: '#52EFBF' },
@@ -76,7 +76,7 @@ export const C_CATEGORIES: TokenCategory[] = [
   },
   {
     id: 'sym',
-    label: '③ 문양·속성',
+    label: '🎨 그림',
     color: '#E6C886',
     tokens: [
       { id: 'SYM_SUN', category: 'sym', glyph: '☀', label: '태양 ☀', sub: '황금 / 지붕 / 호박', color: '#E6C886' },
@@ -89,7 +89,7 @@ export const C_CATEGORIES: TokenCategory[] = [
   },
   {
     id: 'coop',
-    label: '④ 협동 콜사인',
+    label: '🤝 신호',
     color: '#C792EA',
     tokens: [
       { id: 'COOP_OK', category: 'coop', glyph: '✔', label: '준비 완료', sub: 'OK / 작동 가능', color: '#52EFBF' },

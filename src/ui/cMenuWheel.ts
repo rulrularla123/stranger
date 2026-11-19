@@ -46,7 +46,7 @@ export class CMenuWheel {
     const rMeta = ROLES[role];
     const selHtml = this.selected.length
       ? this.selected.map((id) => renderTokenPillHtml(id)).join(' <span class="cw-plus">+</span> ')
-      : '<span class="cw-hint">1~2개 토큰을 선택해 조합 무전을 보내세요</span>';
+      : '<span class="cw-hint">👆 그림을 1~2개 골라요</span>';
 
     const ringTokens = C_CATEGORIES.flatMap((cat) => cat.tokens);
     const radius = 196;
@@ -74,7 +74,7 @@ export class CMenuWheel {
         <div class="cw-head">
           <div>
             <span class="cw-badge" style="color:${rMeta.color};border-color:${rMeta.color}">${rMeta.badge} ${rMeta.name} (${rMeta.shortRole})</span>
-            <strong>C-Menu 2.0 전술 무전 휠 (4분류 20토큰)</strong>
+            <strong>📡 그림 무전</strong>
           </div>
           <button class="au-close-x" id="cw-close" aria-label="무전 휠 닫기">✕</button>
         </div>
@@ -82,17 +82,17 @@ export class CMenuWheel {
         <div class="cw-body">
           <div class="cw-wheel-stage">
             <div class="cw-ring-bg"></div>
-            <div class="cw-quad-lbl q1">① 수치·순서</div>
-            <div class="cw-quad-lbl q2">② 방위·동작</div>
-            <div class="cw-quad-lbl q3">③ 문양·속성</div>
-            <div class="cw-quad-lbl q4">④ 협동 콜사인</div>
+            <div class="cw-quad-lbl q1">🔢 숫자</div>
+            <div class="cw-quad-lbl q2">🧭 방향</div>
+            <div class="cw-quad-lbl q3">🎨 그림</div>
+            <div class="cw-quad-lbl q4">🤝 신호</div>
             ${nodesHtml}
             <div class="cw-hub">
-              <div class="cw-hub-title">조합 패킷 (최대 2개)</div>
+              <div class="cw-hub-title">보낼 그림 (2개까지)</div>
               <div class="cw-hub-sel">${selHtml}</div>
               <div class="cw-hub-actions">
-                <button class="s-btn" id="cw-clear">지우기</button>
-                <button class="s-btn primary" id="cw-send" ${this.selected.length ? '' : 'disabled'} title="Enter 키로도 즉시 발신">📡 무전 발신</button>
+                <button class="s-btn" id="cw-clear">🧽 지우기</button>
+                <button class="s-btn primary" id="cw-send" ${this.selected.length ? '' : 'disabled'} title="Enter 키로도 보낼 수 있어요">📡 보내기</button>
               </div>
             </div>
           </div>
@@ -114,7 +114,7 @@ export class CMenuWheel {
                 )
                 .join('')}
             </div>
-            <p class="cw-access-note">색맹·저연령 배려: 모든 토큰에 고유 아이콘 + 색상 + 한글 명칭이 함께 표기됩니다. 발신 시 상단 배너(12초)와 퍼즐 모달 우측 상단에 고정됩니다.</p>
+            <p class="cw-access-note">👆 고르기 ➜ 📡 보내기 ➜ 👀 친구 화면 위에 떠요</p>
           </div>
         </div>
       </div>

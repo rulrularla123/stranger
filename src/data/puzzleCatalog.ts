@@ -134,25 +134,25 @@ export function getPortalLockReason(room: RoomState, portal: MapPortal): string 
   const solved = new Set(room.solvedPids);
   if (['life-door', 'time-door', 'craft-door', 'city-door'].includes(portal.id)) {
     if (!solved.has(1)) {
-      return '🔒 먼저 1F 중앙 로비 나침반(P01)을 정렬해 4대 전시관을 개방하세요!';
+      return '🔒 먼저 🧭 로비 나침반을 풀어요!';
     }
   }
   if (portal.id === 'b1') {
     const act1Done = [1, 2, 3, 4, 5, 6].every((id) => solved.has(id));
     if (!act1Done) {
-      return '🔒 1막(1F 전시관 P01~P06)을 모두 복원해야 지하 B1 계단이 열립니다!';
+      return '🔒 🏛 1층 퍼즐 6개를 다 풀면 열려요!';
     }
   }
   if (portal.id === 'up') {
     const act2Done = [7, 8, 9, 10].every((id) => solved.has(id));
     if (!act2Done) {
-      return '🔒 2막(B1 설비·전력 P07~P10)을 모두 복구해야 2층 계단이 열립니다!';
+      return '🔒 ⚡ 지하 퍼즐 4개를 다 풀면 열려요!';
     }
   }
   if (portal.id === 'special-door') {
     const act3Done = [11, 12, 13, 14, 15].every((id) => solved.has(id));
     if (!act3Done) {
-      return '🔒 3막(2F 아카이브·보존·열람 P11~P15)을 모두 복원해야 기획전시실이 열립니다!';
+      return '🔒 📜 2층 퍼즐 5개를 다 풀면 열려요!';
     }
   }
   return null;

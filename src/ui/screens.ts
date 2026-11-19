@@ -1,14 +1,31 @@
-import type { AnimationsMeta, ClearRecord, GamePhase, RoleId, RoomState } from '../types/stranger.ts';
+import type { AnimationsMeta, ClearRecord, FloorKey, GamePhase, PuzzleDef, RoleId, RoomState } from '../types/stranger.ts';
 import { ROLE_ORDER, ROLES } from '../data/cMenuTokens.ts';
 import { PUZZLES } from '../data/puzzleCatalog.ts';
 import { soundEngine } from '../audio/soundEngine.ts';
+import {
+  FLOOR_KID,
+  FLOOR_OVERVIEW_VIEW,
+  PUZZLE_KID,
+  ROLE_KID,
+  ROOM_KID,
+  bigPacketHtml,
+  charSpriteHtml,
+  puzzlePicHtml,
+  roomPicHtml,
+  teamFlowHtml,
+} from './kidVisuals.ts';
+
+function teamRowHtml(scale = 1.6, walk = true): string {
+  return `<div class="kid-team-row">${ROLE_ORDER.map((r) => charSpriteHtml(r, scale, walk)).join('')}</div>`;
+}
 
 export function renderSplashHtml(): string {
   return `
     <div class="screen-center splash-screen">
       <div class="splash-brand">P A R A L L A X</div>
-      <div class="splash-sub">2026 유네스코학교 교육의 미래 프로젝트 · 필리핀 역사박물관 복원 미스터리</div>
-      <div class="splash-ver">STRANGER 2.0 · 4인 비언어 협동 픽셀 어드벤처</div>
+      ${teamRowHtml(1.6, true)}
+      <div class="splash-sub">🏛 필리핀 역사박물관을 구해라!</div>
+      <div class="splash-ver">STRANGER 2.0 · 👫 4명이 함께하는 모험</div>
     </div>
   `;
 }
@@ -25,17 +42,17 @@ export function renderTitleHtml(lastRoomCode: string | null = null): string {
           <p class="stranger-subtitle">낯선 말, 하나가 되는 길</p>
         </div>
         <nav class="title-menu" aria-label="메인 메뉴">
-          <button class="title-item primary" id="btn-title-start">▶ 시작하기 (팀 모으기 / 로비)</button>
+          <button class="title-item primary" id="btn-title-start">▶ 친구들과 시작하기</button>
           ${
             lastRoomCode
-              ? `<button class="title-item" id="btn-title-continue">↺ 직전 방 이어하기 (${escapeHtml(lastRoomCode)})</button>`
+              ? `<button class="title-item" id="btn-title-continue">↺ 이어하기 (${escapeHtml(lastRoomCode)})</button>`
               : ''
           }
-          <button class="title-item" id="btn-title-solo">⚡ 솔로 · 4인 역할 전환 즉시 시연</button>
-          <button class="title-item" id="btn-title-settings">⚙ 설정 (효과음 / 배경음악)</button>
-          <button class="title-item" id="btn-title-controls">❔ 조작 방법</button>
+          <button class="title-item" id="btn-title-solo">⚡ 혼자 해 보기</button>
+          <button class="title-item" id="btn-title-settings">🔊 소리 설정</button>
+          <button class="title-item" id="btn-title-controls">❔ 하는 방법</button>
         </nav>
-        <div class="title-footer">v2.0 · 16 무반복 퍼즐 · C-Menu 2.0 20토큰 · .pixil 4방향 애니메이션</div>
+        <div class="title-footer">${teamRowHtml(1.4, true)}</div>
       </div>
     </div>
   `;
@@ -101,10 +118,10 @@ function formatDuration(sec: number): string {
 
 export function renderClearRecordsHtml(recentClears: ClearRecord[] = [], recordsLoading = false): string {
   if (recordsLoading) {
-    return '<div class="gather-records-empty">Supabase에서 기록을 불러오는 중...</div>';
+    return '<div class="gather-records-empty">⏳ 불러오는 중...</div>';
   }
   if (recentClears.length === 0) {
-    return '<div class="gather-records-empty">아직 기록된 완주 팀이 없습니다. 첫 번째 복원 팀이 되어 보세요!</div>';
+    return '<div class="gather-records-empty">🥇 아직 기록이 없어요. 첫 번째 팀이 되어 봐요!</div>';
   }
   return recentClears
     .map((rec) => {
@@ -142,36 +159,38 @@ export function renderGatherHtml(
         <button class="s-btn" id="btn-gather-settings">⚙ 설정</button>
       </div>
       <div class="panel-box gather-box">
-        <div class="panel-kicker">STAGE 1 · 침수된 필리핀 역사박물관</div>
-        <h2>팀 모으기</h2>
+        <div class="panel-kicker">STAGE 1 · 🏛 필리핀 역사박물관</div>
+        <h2>👫 팀 모으기</h2>
         <div class="gather-top-row">
-          <label class="field-label" style="margin-bottom:0">내 닉네임
+          <label class="field-label" style="margin-bottom:0">🙂 내 이름
             <input class="s-input" id="inp-gather-nick" maxlength="12" value="${escapeHtml(nickname)}" placeholder="예: 서하린" />
           </label>
           ${
             lastRoomCode
-              ? `<button class="s-btn primary" id="btn-rejoin-last">↺ 직전 방 이어하기 (${escapeHtml(lastRoomCode)})</button>`
+              ? `<button class="s-btn primary" id="btn-rejoin-last">↺ 이어하기 (${escapeHtml(lastRoomCode)})</button>`
               : ''
           }
         </div>
         <div class="gather-grid">
           <div class="gather-card">
-            <h3>새 협동 방 만들기</h3>
-            <p>6자리 방 코드를 발급받아 친구를 초대하거나 AI 봇 동료와 함께 시작합니다.</p>
+            <div class="kid-card-emoji">🏠</div>
+            <h3>새 방 만들기</h3>
+            <p>🔑 코드가 생겨요 ➜ 친구에게 알려 줘요</p>
             <button class="s-btn primary big" id="btn-create-room">✦ 방 만들기</button>
           </div>
           <div class="gather-card">
-            <h3>방 코드로 참가하기</h3>
-            <p>친구가 공유한 6자리 대문자 방 코드를 입력하세요.</p>
+            <div class="kid-card-emoji">🚪</div>
+            <h3>코드로 들어가기</h3>
+            <p>친구 코드 6글자를 넣어요</p>
             <div class="code-boxes" id="code-boxes">
               ${[0, 1, 2, 3, 4, 5].map((i) => `<input class="code-box" data-cbox="${i}" maxlength="1" autocomplete="off" />`).join('')}
             </div>
-            <button class="s-btn amber big" id="btn-join-room">→ 방 참가하기</button>
+            <button class="s-btn amber big" id="btn-join-room">→ 들어가기</button>
           </div>
         </div>
         ${errorMsg ? `<div class="au-feedback err" style="margin-top:12px">${escapeHtml(errorMsg)}</div>` : ''}
         <div class="gather-records-card">
-          <div class="gather-records-head">🏆 최근 박물관 복원 기록</div>
+          <div class="gather-records-head">🏆 최근 기록</div>
           <div class="gather-records-list" id="gather-records-list">${recordsHtml}</div>
         </div>
       </div>
@@ -193,17 +212,17 @@ export function renderLobbyHtml(
   return `
     <div class="screen-center lobby-screen">
       <div class="lobby-header">
-        <div class="lobby-stage-pill">Stage 1 · 침수된 필리핀 역사박물관 (16개 퍼즐)</div>
+        <div class="lobby-stage-pill">🏛 필리핀 역사박물관 · 🧩 퍼즐 16개</div>
         <div class="lobby-title-wrap">
-          <h2>캐릭터 선택</h2>
+          <h2>👆 누구로 할까요?</h2>
           <div class="room-code-pill" id="btn-copy-code" title="클릭해 방 코드 복사">
             방 코드 <strong>${room.code}</strong>
             <span class="ws-dot ${wsOnline ? 'on' : ''}">${escapeHtml(connText)}</span>
           </div>
         </div>
         <div class="lobby-top-actions">
-          <button class="s-btn" id="btn-lobby-diff">난이도: ${room.difficulty}</button>
-          <button class="s-btn" id="btn-lobby-settings">⚙ 설정</button>
+          <button class="s-btn" id="btn-lobby-diff">🎚 난이도: ${room.difficulty}</button>
+          <button class="s-btn" id="btn-lobby-settings">🔊 소리</button>
         </div>
       </div>
 
@@ -213,19 +232,20 @@ export function renderLobbyHtml(
           const slot = room.slots[rId];
           const isMine = rId === myRole;
           const occupiedOther = Boolean(slot.ownerClientId && slot.ownerClientId !== myClientId);
+          const kid = ROLE_KID[rId];
           const statusLabel = isMine
-            ? `★ ${slot.nickname} (나)`
+            ? `★ 나 (${escapeHtml(slot.nickname)})`
             : occupiedOther
-              ? `👤 ${slot.nickname}`
+              ? `👤 ${escapeHtml(slot.nickname)}`
               : slot.isBot
-                ? '🤖 AI 봇 · 눌러서 전환'
-                : '빈 자리 · 눌러서 선택';
-          return `<button class="role-card ${isMine ? 'selected' : ''}" data-pick-role="${rId}" style="--rc:${meta.color}">
-            <div class="role-card-badge">${meta.badge} ${meta.country}</div>
+                ? '🤖 로봇 친구'
+                : '👆 비어 있어요';
+          return `<button class="role-card ${isMine ? 'selected' : ''}" data-pick-role="${rId}" style="--rc:${meta.color}" title="${meta.passiveName}: ${meta.passiveDesc}">
+            <div class="role-card-badge">${meta.country}</div>
             <canvas class="role-preview-canvas" data-char-canvas="${rId}" width="96" height="192"></canvas>
             <div class="role-card-name" style="color:${meta.color}">${meta.name}</div>
-            <div class="role-card-title">${meta.shortRole}</div>
-            <div class="role-card-passive">${meta.passiveName}</div>
+            <div class="role-card-job"><span class="role-card-job-emoji">${kid.emoji}</span>${kid.job}</div>
+            <div class="role-card-passive">${kid.does}</div>
             <div class="role-card-status">${statusLabel}</div>
           </button>`;
         }).join('')}
@@ -233,13 +253,13 @@ export function renderLobbyHtml(
 
       <div class="lobby-bottom">
         <button class="s-btn" id="btn-lobby-leave">← 나가기</button>
-        <label class="lobby-nick-wrap">닉네임
+        <label class="lobby-nick-wrap">🙂 이름
           <input class="s-input" id="inp-lobby-nick" maxlength="12" value="${escapeHtml(room.slots[myRole]?.nickname || ROLES[myRole].name)}" />
         </label>
-        <button class="s-btn ${room.fillBots ? 'amber' : ''}" id="btn-lobby-bots">🤖 +봇 (${room.fillBots ? 'ON' : 'OFF'})</button>
-        <button class="s-btn ${room.soloSwitchEnabled ? 'primary' : ''}" id="btn-lobby-solo">🎛 1~4키 역할 전환 (${room.soloSwitchEnabled ? '허용' : '고정'})</button>
+        <button class="s-btn ${room.fillBots ? 'amber' : ''}" id="btn-lobby-bots">🤖 로봇 친구 ${room.fillBots ? 'ON' : 'OFF'}</button>
+        <button class="s-btn ${room.soloSwitchEnabled ? 'primary' : ''}" id="btn-lobby-solo">🔄 1~4 바꾸기 ${room.soloSwitchEnabled ? 'ON' : 'OFF'}</button>
         <button class="s-btn primary big" id="btn-lobby-start">
-          ▶ 게임 시작 ${botCount > 0 ? `(사람 ${humanCount} + 봇 ${botCount})` : `(참여 ${humanCount}명)`}
+          ▶ 시작! ${botCount > 0 ? `(👤${humanCount} + 🤖${botCount})` : `(👤${humanCount})`}
         </button>
       </div>
     </div>
@@ -275,36 +295,94 @@ export function startLobbyCharacterPreviewLoop(container: HTMLElement, anims: An
   return () => window.cancelAnimationFrame(rafId);
 }
 
-const INTRO_SLIDES = [
+/** 인트로: 긴 글 대신 "그림 한 장 + 한 문장" 슬라이드 */
+const INTRO_SLIDES: { title: string; caption: string; visual: () => string }[] = [
   {
-    kicker: 'PROLOGUE 1 / 3 · 필리핀 역사박물관 긴급 복원 임무',
-    title: '태풍이 지나간 밤, 정전과 침수에 잠긴 박물관',
-    body: '유네스코 동아리 PARALLAX 현장 조사단 서하린·이안·린·카이가 마닐라 역사박물관에 도착했습니다. 1층 전시실의 잠금 장치, 지하 B1의 침수된 배전반과 보일러, 2층 아카이브의 훼손된 사료까지 모두 복원해야 합니다.',
+    title: '🌀 박물관에 큰일이 났어요!',
+    caption: '태풍 때문에 불이 꺼지고 물이 찼어요.',
+    visual: () =>
+      roomPicHtml(
+        '1F',
+        [731, 1080, 440, 260],
+        '',
+        'kid-storm',
+        `<span class="kid-fx kid-fx-rain">⛈</span>
+         <span class="kid-fx kid-fx-bulb">💡<b>✕</b></span>
+         <span class="kid-fx kid-fx-wave">🌊🌊🌊</span>
+         <div class="kid-storm-team">${ROLE_ORDER.map((r) => charSpriteHtml(r, 1.5, true)).join('')}</div>`
+      ),
   },
   {
-    kicker: 'PROLOGUE 2 / 3 · 4인 고정 역할과 C-Menu 2.0 무전',
-    title: '서로 다른 단서, 하나의 무전 채널',
-    body: '각자의 직업(조작자·통역·네비게이터·관측자) 시야는 탐색부터 퍼즐 끝까지 유지됩니다. [C] 키를 눌러 20토큰 무전 휠로 1~2개 신호를 조합해 팀원과 소통하세요.',
+    title: '👫 우리는 탐험대 4명!',
+    caption: '모두 잘하는 게 달라요. 서로 도와야 해요!',
+    visual: () => `
+      <div class="kid-intro-team">
+        ${ROLE_ORDER.map((r) => {
+          const m = ROLES[r];
+          const k = ROLE_KID[r];
+          return `<div class="kid-intro-hero" style="--rc:${m.color}">
+            ${charSpriteHtml(r, 2.2, true)}
+            <strong style="color:${m.color}">${m.name}</strong>
+            <span class="kid-intro-job"><span>${k.emoji}</span>${k.job}</span>
+          </div>`;
+        }).join('')}
+      </div>`,
   },
   {
-    kicker: 'PROLOGUE 3 / 3 · 최종 목표',
-    title: '16개 유물을 복원하고 반원 동상 홀에 모여라',
-    body: '지하 B1 고압 전기실(P09)을 복구하면 박물관 전체 조명이 돌아옵니다. 모든 전시를 복원한 뒤 2층 반원 홀 발판 4곳에 함께 서면 정식 개관 대관식이 시작됩니다!',
+    title: '📡 말 대신 그림으로 말해요',
+    caption: '[C] 키를 누르면 그림 무전을 보낼 수 있어요.',
+    visual: () => `
+      <div class="kid-radio-demo">
+        <div class="kid-radio-person">${charSpriteHtml('maria', 2.2, true)}<strong style="color:${ROLES.maria.color}">${ROLES.maria.name}</strong></div>
+        <div class="kid-bubble">${bigPacketHtml(['DIR_N', 'SYM_SUN'])}</div>
+        <div class="kid-flow-arrow big">➜</div>
+        <div class="kid-radio-person">${charSpriteHtml('lin', 2.2, true)}<strong style="color:${ROLES.lin.color}">${ROLES.lin.name}</strong><span class="kid-ok">👍 알았어!</span></div>
+      </div>
+      <div class="kid-radio-key"><kbd class="kid-kbd">C</kbd> = 📡 무전</div>`,
+  },
+  {
+    title: '🧩 퍼즐 16개를 풀어요!',
+    caption: '마지막엔 2층 홀에 4명이 모두 모이면 성공!',
+    visual: () => `
+      <div class="kid-floor-path">
+        ${(['1F', 'B1', '2F'] as FloorKey[])
+          .map((f) => {
+            const fk = FLOOR_KID[f];
+            return `<div class="kid-floor-step">
+              ${roomPicHtml(f, FLOOR_OVERVIEW_VIEW[f], '', 'kid-floor-pic')}
+              <strong>${fk.emoji} ${fk.name}</strong>
+              <span class="kid-count">🧩 × ${fk.count}</span>
+            </div>`;
+          })
+          .join('<div class="kid-flow-arrow big">➜</div>')}
+        <div class="kid-flow-arrow big">➜</div>
+        <div class="kid-floor-step kid-goal">
+          <div class="kid-crown">👑</div>
+          <div class="kid-team-mini">${ROLE_ORDER.map((r) => charSpriteHtml(r, 1)).join('')}</div>
+          <strong>다 함께 모이기</strong>
+        </div>
+      </div>`,
   },
 ];
 
+export const INTRO_SLIDE_COUNT = INTRO_SLIDES.length;
+
 export function renderIntroHtml(slideIdx: number): string {
-  const slide = INTRO_SLIDES[Math.min(INTRO_SLIDES.length - 1, Math.max(0, slideIdx))];
-  const isLast = slideIdx >= INTRO_SLIDES.length - 1;
+  const idx = Math.min(INTRO_SLIDES.length - 1, Math.max(0, slideIdx));
+  const slide = INTRO_SLIDES[idx];
+  const isLast = idx >= INTRO_SLIDES.length - 1;
   return `
     <div class="screen-center intro-screen">
-      <div class="panel-box intro-box">
-        <div class="panel-kicker">${slide.kicker}</div>
-        <h2>${slide.title}</h2>
-        <p class="intro-body">${slide.body}</p>
+      <div class="panel-box intro-box kid-intro">
+        <div class="kid-dots" aria-label="${idx + 1} / ${INTRO_SLIDES.length}">
+          ${INTRO_SLIDES.map((_, i) => `<span class="${i === idx ? 'on' : ''}"></span>`).join('')}
+        </div>
+        <div class="kid-stage">${slide.visual()}</div>
+        <h2 class="kid-headline">${slide.title}</h2>
+        <p class="kid-caption">${slide.caption}</p>
         <div class="intro-actions">
           <button class="s-btn" id="btn-intro-skip">[X] 건너뛰기</button>
-          <button class="s-btn primary" id="btn-intro-next">${isLast ? '▶ 박물관 입장하기' : '다음 →'}</button>
+          <button class="s-btn primary big" id="btn-intro-next">${isLast ? '▶ 박물관 들어가기!' : '다음 →'}</button>
         </div>
       </div>
     </div>
@@ -321,11 +399,11 @@ export function renderSettingsModalHtml(): string {
       </div>
       <div class="au-body p-stack">
         <label class="p-card">
-          <div class="p-row-between"><span>🔊 효과음 (SFX)</span><strong id="lbl-sfx">${st.sfxVolume}%</strong></div>
+          <div class="p-row-between"><span>🔊 효과음</span><strong id="lbl-sfx">${st.sfxVolume}%</strong></div>
           <input type="range" min="0" max="100" value="${st.sfxVolume}" id="rng-sfx" style="width:100%;margin-top:8px" />
         </label>
         <label class="p-card">
-          <div class="p-row-between"><span>🎵 배경음악 (BGM)</span><strong id="lbl-bgm">${st.bgmVolume}%</strong></div>
+          <div class="p-row-between"><span>🎵 배경음악</span><strong id="lbl-bgm">${st.bgmVolume}%</strong></div>
           <input type="range" min="0" max="100" value="${st.bgmVolume}" id="rng-bgm" style="width:100%;margin-top:8px" />
         </label>
         <button class="s-btn primary" id="btn-settings-ok">확인 (X / ESC)</button>
@@ -336,55 +414,100 @@ export function renderSettingsModalHtml(): string {
 
 export function renderControlsModalHtml(soloSwitchEnabled: boolean): string {
   return `
-    <div class="au-modal small-modal" role="dialog" aria-modal="true" aria-label="조작 방법">
+    <div class="au-modal small-modal kid-controls" role="dialog" aria-modal="true" aria-label="하는 방법">
       <div class="au-modal-head">
-        <strong>❔ 조작 방법 · 역할 안내</strong>
+        <strong>❔ 이렇게 해요</strong>
         <button class="au-close-x" id="btn-close-overlay">✕</button>
       </div>
       <div class="au-body p-stack">
-        <div class="controls-grid">
-          <div><kbd>W A S D</kbd> / <kbd>방향키</kbd></div><span>캐릭터 이동</span>
-          <div><kbd>E</kbd></div><span>문·계단 이동 및 퍼즐 오브젝트 조사</span>
-          <div><kbd>C</kbd></div><span>C-Menu 2.0 (20토큰 무전 휠 열기/닫기)</span>
-          <div><kbd>M</kbd></div><span>박물관 3층 구조 · 포탈 가이드</span>
-          <div><kbd>H</kbd></div><span>조작 방법 다시 보기</span>
-          <div><kbd>P</kbd></div><span>로비로 나가기 확인</span>
-          ${soloSwitchEnabled ? '<div><kbd>1</kbd> <kbd>2</kbd> <kbd>3</kbd> <kbd>4</kbd></div><span>솔로/시연 모드 4역할 즉시 전환</span>' : ''}
+        <div class="kid-keys">
+          <div class="kid-key kid-key-move">
+            <div class="kid-arrows"><kbd class="kid-kbd">↑</kbd><kbd class="kid-kbd">←</kbd><kbd class="kid-kbd">↓</kbd><kbd class="kid-kbd">→</kbd></div>
+            <div class="kid-key-emoji">🚶</div><div class="kid-key-word">걷기</div>
+          </div>
+          <div class="kid-key"><kbd class="kid-kbd">E</kbd><div class="kid-key-emoji">✋</div><div class="kid-key-word">살펴보기</div></div>
+          <div class="kid-key"><kbd class="kid-kbd">C</kbd><div class="kid-key-emoji">📡</div><div class="kid-key-word">무전</div></div>
+          <div class="kid-key"><kbd class="kid-kbd">M</kbd><div class="kid-key-emoji">🗺</div><div class="kid-key-word">지도</div></div>
+          <div class="kid-key"><kbd class="kid-kbd">H</kbd><div class="kid-key-emoji">❔</div><div class="kid-key-word">도움말</div></div>
+          <div class="kid-key"><kbd class="kid-kbd">P</kbd><div class="kid-key-emoji">🚪</div><div class="kid-key-word">나가기</div></div>
+          ${
+            soloSwitchEnabled
+              ? '<div class="kid-key"><kbd class="kid-kbd">1~4</kbd><div class="kid-key-emoji">🔄</div><div class="kid-key-word">친구 바꾸기</div></div>'
+              : ''
+          }
         </div>
-        <div class="p-grid-2" style="gap:8px">
+        <div class="kid-role-strip">
           ${ROLE_ORDER.map((r) => {
             const m = ROLES[r];
-            return `<div class="p-card" style="border-color:${m.color}">
-              <strong style="color:${m.color}">${m.badge} ${m.name} · ${m.shortRole}</strong>
-              <div style="font-size:12px;color:#C2CFD8;margin-top:4px">${m.passiveDesc}</div>
+            const k = ROLE_KID[r];
+            return `<div class="kid-role-mini" style="--rc:${m.color}" title="${m.passiveName}: ${m.passiveDesc}">
+              ${charSpriteHtml(r, 1.4)}
+              <strong style="color:${m.color}">${m.name}</strong>
+              <span>${k.emoji} ${k.job}</span>
             </div>`;
           }).join('')}
         </div>
-        <button class="s-btn primary" id="btn-controls-ok">탐색 시작 (X / E / ESC)</button>
+        <button class="s-btn primary big" id="btn-controls-ok">▶ 출발! (E)</button>
       </div>
     </div>
   `;
 }
 
-export function renderRoomIntroModalHtml(info: {
-  kicker: string;
-  title: string;
-  body: string;
-  puzzlesHint: string;
-}): string {
+export function renderRoomIntroModalHtml(
+  info: {
+    kicker: string;
+    title: string;
+    body: string;
+    puzzlesHint: string;
+  },
+  pic: {
+    key: string;
+    floor: FloorKey;
+    sceneLabel: string;
+    view: [number, number, number, number] | null;
+    puzzles: PuzzleDef[];
+    solvedPids: number[];
+  }
+): string {
+  const kid = ROOM_KID[pic.key];
+  const title = pic.sceneLabel || info.title;
+  const picHtml = pic.view
+    ? roomPicHtml(pic.floor, pic.view, pic.key, 'kid-room-hero', kid ? `<span class="kid-room-badge">${kid.emoji}</span>` : '')
+    : '';
+  const missions = pic.puzzles.length
+    ? pic.puzzles
+        .map((p) => {
+          const k = PUZZLE_KID[p.id];
+          const done = pic.solvedPids.includes(p.id);
+          return `<div class="kid-mission ${done ? 'done' : ''}">
+            <div class="kid-mission-pic">${puzzlePicHtml(p.id)}</div>
+            <div class="kid-mission-main">
+              <strong>${done ? '✅' : k?.emoji || '🧩'} ${k?.title || escapeHtml(p.title)} <small>${p.code}</small></strong>
+              ${teamFlowHtml(p, 0.8)}
+            </div>
+          </div>`;
+        })
+        .join('')
+    : `<div class="kid-mission kid-mission-gather">
+        <div class="kid-team-mini">${ROLE_ORDER.map((r) => charSpriteHtml(r, 1.2, true)).join('')}</div>
+        <strong>👣 발판 4개에 4명 모두 올라서기!</strong>
+      </div>`;
   return `
-    <div class="au-modal small-modal room-intro-modal" role="dialog" aria-modal="true" aria-label="${escapeHtml(info.title)}">
+    <div class="au-modal small-modal room-intro-modal kid-room" role="dialog" aria-modal="true" aria-label="${escapeHtml(title)}">
       <div class="au-modal-head">
         <span style="color:#E6C886;font-weight:900">🗺 ${escapeHtml(info.kicker)}</span>
         <button class="au-close-x" id="btn-close-overlay">✕</button>
       </div>
       <div class="au-body p-stack">
-        <h2 style="margin:0;font-size:20px;color:#52EFBF">${escapeHtml(info.title)}</h2>
-        <p style="margin:0;color:#DCE6EE;line-height:1.6;font-size:14px">${escapeHtml(info.body)}</p>
-        <div class="p-card" style="border-color:#C89D54;font-size:12px">
-          <strong style="color:#E6C886">연동 복원 목표:</strong> ${escapeHtml(info.puzzlesHint)}
-        </div>
-        <button class="s-btn primary" id="btn-room-intro-ok">조사 시작 (E / X / ESC)</button>
+        ${picHtml}
+        <h2 class="kid-room-title">${escapeHtml(title)}</h2>
+        ${kid ? `<p class="kid-caption">${kid.line}</p>` : ''}
+        <div class="kid-missions">${missions}</div>
+        <details class="kid-more">
+          <summary>📖 이야기 자세히 보기</summary>
+          <p>${escapeHtml(info.body)}</p>
+        </details>
+        <button class="s-btn primary big" id="btn-room-intro-ok">🔍 조사 시작! (E)</button>
       </div>
     </div>
   `;
@@ -394,14 +517,14 @@ export function renderExitConfirmModalHtml(): string {
   return `
     <div class="au-modal small-modal" role="dialog" aria-modal="true" aria-label="나가기 확인">
       <div class="au-modal-head">
-        <strong>🚪 로비로 나갈까요?</strong>
+        <strong>🚪 그만할까요?</strong>
         <button class="au-close-x" id="btn-close-overlay">✕</button>
       </div>
       <div class="au-body p-stack">
-        <p style="margin:0;color:#D5DFE8">타이틀 또는 캐릭터 선택 로비로 돌아갑니다.</p>
+        <div class="kid-exit-pic">🏛 ➜ 🏠</div>
         <div class="p-row-between">
-          <button class="s-btn" id="btn-exit-cancel">[X] 계속 플레이</button>
-          <button class="s-btn danger" id="btn-exit-confirm">[Enter] 로비로 나가기</button>
+          <button class="s-btn" id="btn-exit-cancel">[X] ▶ 계속하기</button>
+          <button class="s-btn danger" id="btn-exit-confirm">[Enter] 🚪 나가기</button>
         </div>
       </div>
     </div>
@@ -411,41 +534,42 @@ export function renderExitConfirmModalHtml(): string {
 export function renderCoronationEndingHtml(room: RoomState, savedToCloud = false): string {
   const solvedCount = room.solvedPids.length;
   const elapsedSec = room.startedAt ? Math.max(0, Math.round((Date.now() - room.startedAt) / 1000)) : null;
-  const elapsedText = elapsedSec !== null ? ` · 소요: <strong>${formatDuration(elapsedSec)}</strong>` : '';
+  const elapsedText = elapsedSec !== null ? ` · ⏱ <strong>${formatDuration(elapsedSec)}</strong>` : '';
   return `
-    <div class="coronation-overlay" role="dialog" aria-modal="true" aria-label="박물관 정식 개관 대관식 엔딩">
+    <div class="coronation-overlay" role="dialog" aria-modal="true" aria-label="박물관 다시 문 열기 성공 엔딩">
       <div class="coronation-card">
-        <div class="coronation-crest">👑 GRAND CORONATION · 16 / 16 RESTORED</div>
-        ${savedToCloud ? '<div class="coro-cloud-badge">☁ Supabase 기록 저장 완료</div>' : ''}
-        <h1>필리핀 역사박물관 정식 개관 대관식</h1>
-        <p class="coronation-lead">
-          1층의 생활사와 도시 기억, 지하 B1의 전력·수압·수장고, 2층의 카티푸난 비밀 헌장과 성곽 도면,
-          그리고 해양 교역 프리즘의 빛이 마침내 <strong>반원 동상 홀 여신상</strong> 위에서 하나로 모였습니다!
-        </p>
+        <div class="coronation-crest">👑 16 / 16 성공!</div>
+        ${savedToCloud ? '<div class="coro-cloud-badge">☁ 기록 저장 완료</div>' : ''}
+        <h1>🎉 박물관이 다시 문을 열었어요!</h1>
+        <p class="coronation-lead">모두 힘을 합쳐 박물관을 구했어요!</p>
 
         <div class="coronation-heroes">
           ${ROLE_ORDER.map((r) => {
             const m = ROLES[r];
-            return `<div class="hero-badge" style="border-color:${m.color}">
-              <div style="color:${m.color};font-weight:900">${m.badge} ${m.name}</div>
-              <small>${m.country} · ${m.title}</small>
+            const k = ROLE_KID[r];
+            return `<div class="hero-badge kid-hero" style="border-color:${m.color}">
+              ${charSpriteHtml(r, 1.6, true)}
+              <div style="color:${m.color};font-weight:900">${m.name}</div>
+              <small>${k.emoji} ${k.job}</small>
             </div>`;
           }).join('')}
         </div>
 
         <div class="coronation-grid">
-          ${PUZZLES.map(
-            (p) => `<div class="coro-item ${room.solvedPids.includes(p.id) ? 'done' : ''}">
-              <span>${p.code}</span> ${p.title}
-            </div>`
-          ).join('')}
+          ${PUZZLES.map((p) => {
+            const k = PUZZLE_KID[p.id];
+            return `<div class="coro-item kid-coro-item ${room.solvedPids.includes(p.id) ? 'done' : ''}" title="${p.code} ${p.title}">
+              ${puzzlePicHtml(p.id, 'kid-obj-sm')}
+              <span>${k ? `${k.emoji} ${k.title}` : p.title}</span>
+            </div>`;
+          }).join('')}
         </div>
 
         <div class="coronation-footer">
-          <div class="coro-stats">복원 완료율: <strong>${solvedCount} / 16</strong> · 무전 교환: <strong>${room.radioLog.length}회</strong>${elapsedText} · PARALLAX UNESCO 프로젝트</div>
+          <div class="coro-stats">🧩 <strong>${solvedCount} / 16</strong> · 📡 <strong>${room.radioLog.length}번</strong>${elapsedText}</div>
           <div class="p-row">
-            <button class="s-btn" id="btn-coro-explore">박물관 자유 둘러보기</button>
-            <button class="s-btn primary" id="btn-coro-replay">↺ 처음부터 다시 플레이</button>
+            <button class="s-btn" id="btn-coro-explore">🏛 박물관 구경하기</button>
+            <button class="s-btn primary" id="btn-coro-replay">↺ 다시 하기</button>
           </div>
         </div>
       </div>

@@ -2035,3 +2035,750 @@ kbd {
     margin-bottom: -110px;
   }
 }
+
+/* =========================================================
+   초등학생용 "그림 위주" UI (kidVisuals.ts)
+   긴 글 대신 캐릭터 스프라이트 · 유물 그림 · 방 그림 · 큰 아이콘
+   ========================================================= */
+.kid-char {
+  display: inline-block;
+  flex: none;
+  width: calc(32px * var(--s, 1));
+  height: calc(64px * var(--s, 1));
+  background-repeat: no-repeat;
+  background-size: calc(640px * var(--s, 1)) calc(256px * var(--s, 1));
+  background-position: calc(-128px * var(--s, 1)) calc(-64px * var(--row, 0) * var(--s, 1));
+  image-rendering: pixelated;
+}
+
+.kid-char.walk {
+  animation: kid-walk 0.8s steps(4) infinite;
+}
+
+@keyframes kid-walk {
+  from {
+    background-position-x: 0;
+  }
+  to {
+    background-position-x: calc(-128px * var(--s, 1));
+  }
+}
+
+@keyframes kid-bob {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-6px);
+  }
+}
+
+@keyframes kid-wave {
+  0%,
+  100% {
+    transform: translateX(-10px);
+  }
+  50% {
+    transform: translateX(10px);
+  }
+}
+
+@keyframes kid-flash {
+  0%,
+  86%,
+  92%,
+  100% {
+    background: rgba(8, 14, 30, 0.58);
+  }
+  88% {
+    background: rgba(220, 232, 255, 0.35);
+  }
+  94% {
+    background: rgba(220, 232, 255, 0.22);
+  }
+}
+
+.kid-team-row {
+  display: flex;
+  justify-content: center;
+  align-items: flex-end;
+  gap: 14px;
+  margin: 14px 0 4px;
+}
+
+.kid-obj {
+  width: 64px;
+  height: 64px;
+  object-fit: contain;
+  image-rendering: pixelated;
+  flex: none;
+}
+
+.kid-obj-xs {
+  width: 22px;
+  height: 22px;
+}
+
+.kid-obj-sm,
+.kid-obj-head {
+  width: 36px;
+  height: 36px;
+}
+
+.kid-room-pic {
+  position: relative;
+  width: 100%;
+  background-repeat: no-repeat;
+  image-rendering: pixelated;
+  border-radius: 12px;
+  border: 3px solid #0b0e13;
+  overflow: hidden;
+}
+
+.kid-room-hero {
+  width: auto;
+  height: 180px;
+  max-width: 100%;
+  margin: 0 auto;
+}
+
+.kid-room-badge {
+  position: absolute;
+  right: 8px;
+  bottom: 8px;
+  font-size: 34px;
+  line-height: 1;
+  padding: 6px 8px;
+  border-radius: 12px;
+  background: rgba(11, 14, 19, 0.78);
+}
+
+/* 큰 무전 토큰 */
+.kid-packet,
+.kid-packets {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.kid-packets {
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 10px;
+}
+
+.kid-tok {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  min-width: 64px;
+  padding: 8px 10px;
+  border-radius: 12px;
+  border: 3px solid var(--tok-color, #52efbf);
+  background: #0d131a;
+  color: var(--tok-color, #52efbf);
+}
+
+.kid-tok-glyph {
+  font-size: 30px;
+  line-height: 1.1;
+}
+
+.kid-tok-word {
+  font-size: 13px;
+  font-weight: 900;
+}
+
+.kid-plus {
+  font-size: 24px;
+  font-weight: 900;
+  color: #fff;
+}
+
+.kid-or {
+  font-size: 12px;
+  font-weight: 800;
+  color: var(--muted);
+}
+
+.kid-bubble {
+  background: #10161d;
+  border: 3px solid var(--mint);
+  border-radius: 18px;
+  padding: 12px 14px;
+}
+
+.kid-bubble-lbl {
+  font-size: 13px;
+  font-weight: 800;
+  color: var(--mint);
+  margin-bottom: 8px;
+  text-align: center;
+}
+
+.kid-flow {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.kid-flow-group {
+  position: relative;
+  display: flex;
+  align-items: flex-end;
+  gap: 2px;
+}
+
+.kid-flow-group.main {
+  padding: 0 6px;
+  border-radius: 8px;
+  background: rgba(82, 239, 191, 0.14);
+}
+
+.kid-flow-star {
+  position: absolute;
+  top: -4px;
+  right: -6px;
+  font-size: 14px;
+  color: var(--brass);
+}
+
+.kid-flow-arrow {
+  font-size: 16px;
+  font-weight: 900;
+  color: var(--brass);
+}
+
+.kid-flow-arrow.big {
+  font-size: 34px;
+}
+
+.kid-kbd {
+  min-width: 42px;
+  padding: 6px 12px;
+  border-width: 2px;
+  border-bottom-width: 4px;
+  border-radius: 8px;
+  font-size: 20px;
+  text-align: center;
+}
+
+details.kid-more {
+  background: #141a22;
+  border: 1px dashed #3c4a59;
+  border-radius: 10px;
+  padding: 6px 10px;
+  font-size: 13px;
+  color: #c2cfd8;
+}
+
+details.kid-more summary {
+  cursor: pointer;
+  font-weight: 800;
+  color: var(--brass);
+  list-style: none;
+}
+
+details.kid-more summary::-webkit-details-marker {
+  display: none;
+}
+
+details.kid-more summary::after {
+  content: ' ▾';
+}
+
+details.kid-more[open] summary {
+  margin-bottom: 8px;
+}
+
+details.kid-more[open] summary::after {
+  content: ' ▴';
+}
+
+details.kid-more p {
+  margin: 0;
+  line-height: 1.6;
+}
+
+.kid-caption {
+  margin: 0 0 18px;
+  font-size: 18px;
+  font-weight: 800;
+  color: #e4ecf2;
+}
+
+/* 인트로 슬라이드 */
+.kid-intro {
+  width: min(880px, 95vw);
+  text-align: center;
+}
+
+.kid-dots {
+  display: flex;
+  justify-content: center;
+  gap: 8px;
+  margin-bottom: 14px;
+}
+
+.kid-dots span {
+  width: 10px;
+  height: 10px;
+  border-radius: 6px;
+  background: #3c4a59;
+  transition: width 0.2s ease;
+}
+
+.kid-dots span.on {
+  width: 28px;
+  background: var(--mint);
+}
+
+.kid-stage {
+  min-height: 300px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+}
+
+.kid-headline {
+  margin: 16px 0 6px;
+  font-size: clamp(24px, 3.4vw, 34px);
+}
+
+.kid-storm {
+  width: min(620px, 100%);
+}
+
+.kid-storm::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  animation: kid-flash 3.2s infinite;
+}
+
+.kid-fx {
+  position: absolute;
+  z-index: 1;
+  font-size: 54px;
+  line-height: 1;
+  filter: drop-shadow(0 4px 8px rgba(0, 0, 0, 0.6));
+}
+
+.kid-fx-rain {
+  left: 6%;
+  top: 8%;
+  animation: kid-bob 2s ease-in-out infinite;
+}
+
+.kid-fx-bulb {
+  right: 7%;
+  top: 8%;
+  opacity: 0.85;
+}
+
+.kid-fx-bulb b {
+  position: absolute;
+  inset: 0;
+  text-align: center;
+  font-size: 58px;
+  color: var(--danger);
+}
+
+.kid-fx-wave {
+  left: 0;
+  right: 0;
+  bottom: -4px;
+  font-size: 40px;
+  letter-spacing: 8px;
+  text-align: center;
+  animation: kid-wave 2.4s ease-in-out infinite;
+}
+
+.kid-storm-team {
+  position: absolute;
+  z-index: 1;
+  left: 50%;
+  bottom: 30px;
+  transform: translateX(-50%);
+  display: flex;
+  gap: 10px;
+}
+
+.kid-intro-team {
+  width: 100%;
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 14px;
+}
+
+.kid-intro-hero {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  padding: 14px 8px;
+  border: 3px solid var(--rc);
+  border-radius: 14px;
+  background: #141a22;
+  font-size: 17px;
+}
+
+.kid-intro-job {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 18px;
+  font-weight: 900;
+}
+
+.kid-intro-job span {
+  font-size: 28px;
+}
+
+.kid-radio-demo,
+.kid-clue-hero {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 16px;
+}
+
+.kid-radio-person {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  font-size: 15px;
+}
+
+.kid-ok {
+  padding: 2px 8px;
+  border: 2px solid var(--mint);
+  border-radius: 10px;
+  background: #10161d;
+  color: var(--mint);
+  font-size: 14px;
+  font-weight: 900;
+}
+
+.kid-radio-key {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: 6px;
+  font-size: 20px;
+  font-weight: 900;
+}
+
+.kid-floor-path {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.kid-floor-step {
+  width: 170px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  font-size: 14px;
+}
+
+.kid-floor-pic {
+  width: 170px;
+}
+
+.kid-count {
+  font-size: 13px;
+  font-weight: 900;
+  color: var(--brass);
+}
+
+.kid-goal {
+  width: 120px;
+}
+
+.kid-crown {
+  font-size: 46px;
+  line-height: 1;
+  animation: kid-bob 1.6s ease-in-out infinite;
+}
+
+.kid-team-mini {
+  display: flex;
+  justify-content: center;
+  align-items: flex-end;
+  gap: 4px;
+}
+
+/* 하는 방법(조작) 모달 */
+.kid-keys {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(96px, 1fr));
+  gap: 10px;
+}
+
+.kid-key {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  padding: 10px 6px;
+  border: 2px solid #2d3947;
+  border-radius: 12px;
+  background: #141a22;
+}
+
+.kid-key-move {
+  grid-column: span 2;
+}
+
+.kid-arrows {
+  display: grid;
+  grid-template-columns: repeat(3, auto);
+  gap: 3px;
+}
+
+.kid-arrows .kid-kbd {
+  min-width: 30px;
+  padding: 2px 8px;
+  font-size: 14px;
+}
+
+.kid-arrows .kid-kbd:first-child {
+  grid-column: 2;
+}
+
+.kid-arrows .kid-kbd:nth-child(2) {
+  grid-column: 1;
+}
+
+.kid-key-emoji {
+  font-size: 30px;
+  line-height: 1.1;
+}
+
+.kid-key-word {
+  font-size: 14px;
+  font-weight: 900;
+}
+
+.kid-role-strip {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 8px;
+}
+
+.kid-role-mini {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 3px;
+  padding: 8px 4px;
+  border: 2px solid var(--rc);
+  border-radius: 10px;
+  background: #141a22;
+  font-size: 13px;
+}
+
+.kid-role-mini span {
+  font-weight: 800;
+}
+
+/* 방 소개 모달 */
+.kid-room-title {
+  margin: 0;
+  text-align: center;
+  font-size: 22px;
+  color: var(--mint);
+}
+
+.kid-room .kid-caption {
+  margin: 0;
+  text-align: center;
+  font-size: 16px;
+}
+
+.kid-missions {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.kid-mission {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 8px 12px;
+  border: 2px solid #2d3947;
+  border-radius: 12px;
+  background: #141a22;
+}
+
+.kid-mission.done {
+  border-color: var(--mint);
+  background: #122d24;
+}
+
+.kid-mission-pic {
+  width: 68px;
+  height: 68px;
+  flex: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 10px;
+  background: #0d1218;
+}
+
+.kid-mission-main {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.kid-mission-main strong {
+  font-size: 16px;
+}
+
+.kid-mission-main small {
+  margin-left: 4px;
+  font-size: 11px;
+  color: var(--muted);
+}
+
+.kid-mission-gather {
+  flex-direction: column;
+  text-align: center;
+}
+
+/* 퍼즐 모달: 힌트 화면 */
+.kid-puzzle-title {
+  font-size: 17px;
+}
+
+.kid-clue-hero {
+  padding: 12px;
+  border-radius: 14px;
+  background: #141a22;
+}
+
+.kid-chips {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 8px;
+}
+
+.kid-chip {
+  padding: 6px 12px;
+  border: 2px solid #3c4a59;
+  border-radius: 999px;
+  background: #10161d;
+  font-size: 14px;
+  font-weight: 800;
+}
+
+.kid-clue-actions {
+  justify-content: center;
+}
+
+/* HUD · 로비 · 팀 모으기 · 엔딩 */
+.kid-hud-role {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.kid-chk-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+}
+
+.kid-chk-mark {
+  font-size: 11px;
+}
+
+.kid-guide-puz {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.kid-card-emoji {
+  font-size: 40px;
+  line-height: 1;
+  margin-bottom: 4px;
+}
+
+.role-card-job {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 18px;
+  font-weight: 900;
+}
+
+.role-card-job-emoji {
+  font-size: 26px;
+}
+
+.role-card .role-card-passive {
+  font-size: 13px;
+  font-weight: 700;
+  color: #c9d5df;
+}
+
+.kid-hero {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+}
+
+.kid-coro-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+}
+
+.kid-exit-pic {
+  font-size: 44px;
+  letter-spacing: 6px;
+  text-align: center;
+}
+
+@media (max-width: 660px) {
+  .kid-intro-team,
+  .kid-role-strip {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  .kid-floor-step,
+  .kid-floor-pic {
+    width: 110px;
+  }
+  .kid-key-move {
+    grid-column: auto;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .kid-char.walk,
+  .kid-fx,
+  .kid-crown,
+  .kid-storm::before {
+    animation: none;
+  }
+}
