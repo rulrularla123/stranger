@@ -10,6 +10,7 @@ import type {
   RoomState,
 } from './types/stranger.ts';
 import { ROLE_ORDER, ROLES, renderTokenPillHtml } from './data/cMenuTokens.ts';
+import { PUZZLES, ROOM_INTROS } from './data/puzzleCatalog.ts';
 import { soundEngine } from './audio/soundEngine.ts';
 import { SessionClient } from './net/sessionClient.ts';
 import { fetchRecentClearRecords, isSupabaseConfigured } from './net/supabaseClient.ts';
@@ -26,6 +27,7 @@ import {
   renderGatherHtml,
   renderIntroHtml,
   renderLobbyHtml,
+  renderRoomIntroModalHtml,
   renderSettingsModalHtml,
   renderSplashHtml,
   renderTitleHtml,
@@ -40,12 +42,14 @@ class StrangerApp {
   private session = new SessionClient();
 
   private phase: GamePhase = 'splash';
-  private nickname = '도윤';
+  private nickname = '서하린';
   private gatherError = '';
   private recentClears: ClearRecord[] = [];
   private recordsLoading = false;
   private introSlide = 0;
-  private overlayMode: 'none' | 'settings' | 'controls' | 'exit' = 'none';
+  private overlayMode: 'none' | 'settings' | 'controls' | 'exit' | 'room_intro' = 'none';
+  private roomIntroKey = '1F:hall';
+  private checklistExpanded = true;
   private showCoronation = false;
   private logExpanded = false;
 
@@ -134,7 +138,8 @@ class StrangerApp {
     }
 
     if (this.phase === 'title') {
-      this.root.innerHTML = renderTitleHtml();
+      const lastCode = this.session.getLastRoomCode();
+      this.root.innerHTML = renderTitleHtml(lastCode);
       const cv = this.root.querySelector<HTMLCanvasElement>('#title-bg-canvas');
       if (cv) this.cleanupScreenAnim = startTitleCanvasAnimation(cv);
       this.mountOverlayLayer();
@@ -146,6 +151,23 @@ class StrangerApp {
         this.gatherError = '';
         this.loadRecentClears();
         this.renderCurrentPhase();
+      });
+      this.root.querySelector('#btn-title-continue')?.addEventListener('click', async () => {
+        if (!lastCode) return;
+        soundEngine.startAmbientBgm();
+        soundEngine.playClick();
+        const res = await this.session.joinRoom(lastCode, this.nickname);
+        if (!res.ok) {
+          this.phase = 'gather';
+          this.gatherError = res.error || '직전 방 이어하기에 실패했습니다.';
+          this.loadRecentClears();
+          this.renderCurrentPhase();
+        } else {
+          const joined = this.session.getRoom();
+          this.phase = joined && (joined.phase === 'playing' || joined.phase === 'ended') ? joined.phase : 'lobby';
+          this.overlayMode = 'none';
+          this.renderCurrentPhase();
+        }
       });
       this.root.querySelector('#btn-title-solo')?.addEventListener('click', async () => {
         soundEngine.startAmbientBgm();
@@ -181,7 +203,7 @@ class StrangerApp {
 
       const nickInput = this.root.querySelector<HTMLInputElement>('#inp-gather-nick');
       nickInput?.addEventListener('input', () => {
-        this.nickname = nickInput.value || '도윤';
+        this.nickname = nickInput.value || '서하린';
       });
 
       this.root.querySelector('#btn-rejoin-last')?.addEventListener('click', async () => {
@@ -366,8 +388,12 @@ class StrangerApp {
               <span id="hud-task-label">TASK 0 / 16</span>
               <div class="au-progress-track"><div class="au-progress-fill" id="hud-task-fill" style="width:0%"></div></div>
             </div>
-            <div class="hud-obj-title" style="margin-top:6px">공용 목표</div>
+            <div class="p-row-between" style="margin-top:6px">
+              <div class="hud-obj-title" style="margin-bottom:0">공용 목표</div>
+              <button class="hud-chk-toggle" id="hud-chk-toggle">${this.checklistExpanded ? '목록 접기 ▴' : '체크리스트 ▾'}</button>
+            </div>
             <div class="hud-obj-line" id="hud-objective">1층 로비 나침반과 전시관을 복원하세요</div>
+            <div class="hud-checklist" id="hud-checklist" style="display:${this.checklistExpanded ? 'flex' : 'none'}"></div>
           </div>
           <div class="hud-box hud-role-banner" id="hud-role-box"></div>
         </div>
@@ -450,9 +476,14 @@ class StrangerApp {
         this.taskModal?.openForObject(obj);
       },
       onStatusToast: (msg, tone) => this.showToast(msg, tone),
-      onSceneEntered: (floor, _scene, label) => {
+      onSceneEntered: (floor, scene, label, firstVisit) => {
         this.showRoomBanner(`${floor} · ${label}`);
         this.refreshHud();
+        const key = `${floor}:${scene}`;
+        if (firstVisit && ROOM_INTROS[key] && !this.isGameplayBlocked()) {
+          this.roomIntroKey = key;
+          this.openOverlay('room_intro');
+        }
       },
       onPromptChange: (text) => {
         if (text) {
@@ -498,6 +529,13 @@ class StrangerApp {
       this.logExpanded = !this.logExpanded;
       this.root.querySelector('#hud-log-box')?.classList.toggle('expanded', this.logExpanded);
     });
+    this.root.querySelector('#hud-chk-toggle')?.addEventListener('click', () => {
+      this.checklistExpanded = !this.checklistExpanded;
+      const list = this.root.querySelector<HTMLElement>('#hud-checklist');
+      const btn = this.root.querySelector('#hud-chk-toggle');
+      if (list) list.style.display = this.checklistExpanded ? 'flex' : 'none';
+      if (btn) btn.textContent = this.checklistExpanded ? '목록 접기 ▴' : '체크리스트 ▾';
+    });
 
     this.root.querySelectorAll<HTMLElement>('[data-pad-key]').forEach((btn) => {
       const k = btn.dataset.padKey!;
@@ -530,7 +568,7 @@ class StrangerApp {
     this.renderOverlay();
   }
 
-  private openOverlay(mode: 'settings' | 'controls' | 'exit') {
+  private openOverlay(mode: 'settings' | 'controls' | 'exit' | 'room_intro') {
     this.overlayMode = mode;
     this.world?.clearHeldKeys();
     this.renderOverlay();
@@ -573,6 +611,14 @@ class StrangerApp {
         this.closeOverlay();
         this.exitToLobby();
       });
+    } else if (this.overlayMode === 'room_intro') {
+      const info = ROOM_INTROS[this.roomIntroKey];
+      if (!info) {
+        this.closeOverlay();
+        return;
+      }
+      this.overlayBackdrop.innerHTML = renderRoomIntroModalHtml(info);
+      this.overlayBackdrop.querySelector('#btn-room-intro-ok')?.addEventListener('click', () => this.closeOverlay());
     }
     this.overlayBackdrop.querySelector('#btn-close-overlay')?.addEventListener('click', () => this.closeOverlay());
   }
@@ -605,7 +651,7 @@ class StrangerApp {
       this.world?.onRadioReceived(pkt);
       this.showRadioBanner(pkt);
       this.refreshSignalLog(room);
-      if (this.taskModal?.isOpen()) this.taskModal.render();
+      this.taskModal?.refreshPinnedRadios();
       return;
     }
 
@@ -618,7 +664,7 @@ class StrangerApp {
         this.renderCoronation();
       }
       this.refreshHud();
-      if (this.taskModal?.isOpen()) this.taskModal.render();
+      this.taskModal?.onPuzzleUpdated(info.pid);
       return;
     }
 
@@ -667,6 +713,32 @@ class StrangerApp {
       } else {
         objEl.textContent = '박물관 전체 복원 및 정식 개관 대관식 완료!';
       }
+    }
+
+    const chkEl = this.root.querySelector<HTMLElement>('#hud-checklist');
+    if (chkEl) {
+      const solvedSet = new Set(room.solvedPids);
+      const act1Done = [1, 2, 3, 4, 5, 6].every((id) => solvedSet.has(id));
+      const act2Done = [7, 8, 9, 10].every((id) => solvedSet.has(id));
+      const act3Done = [11, 12, 13, 14, 15].every((id) => solvedSet.has(id));
+      const activeAct: 1 | 2 | 3 | 4 = !act1Done ? 1 : !act2Done ? 2 : !act3Done ? 3 : 4;
+      const actTitles: Record<1 | 2 | 3 | 4, string> = {
+        1: '1막 · 1F 상설 전시관',
+        2: '2막 · B1 지하 설비·전력',
+        3: '3막 · 2F 아카이브·보존',
+        4: '4막 · 2F 기획전 → 대관식',
+      };
+      const items = PUZZLES.filter((pz) => pz.act === activeAct);
+      chkEl.innerHTML =
+        `<div class="hud-chk-act">${actTitles[activeAct]}</div>` +
+        items
+          .map((pz) => {
+            const done = solvedSet.has(pz.id);
+            return `<div class="hud-chk-row ${done ? 'done' : ''}">
+              <span>${done ? '✔' : '○'} <strong>${pz.code}</strong> ${pz.title}</span>
+            </div>`;
+          })
+          .join('');
     }
 
     const roleBox = this.root.querySelector<HTMLElement>('#hud-role-box');
@@ -841,6 +913,18 @@ class StrangerApp {
           this.closeOverlay();
           return;
         }
+      }
+
+      if (this.cMenu?.isOpen() && key === 'Enter' && !e.repeat) {
+        e.preventDefault();
+        this.cMenu.transmit();
+        return;
+      }
+
+      if (this.overlayMode === 'room_intro' && !e.repeat && (key === 'e' || key === 'Enter' || key === ' ')) {
+        e.preventDefault();
+        this.closeOverlay();
+        return;
       }
 
       if (this.overlayMode === 'exit' && key === 'Enter' && !e.repeat) {

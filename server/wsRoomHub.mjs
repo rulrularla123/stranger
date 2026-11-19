@@ -2,10 +2,10 @@ import { WebSocketServer } from 'ws';
 
 const ROLE_ORDER = ['doyun', 'maria', 'lin', 'aisha'];
 const DEFAULT_NAMES = {
-  doyun: '도윤',
-  maria: '마리아',
+  doyun: '서하린',
+  maria: '이안',
   lin: '린',
-  aisha: '아이샤',
+  aisha: '카이',
 };
 const DEFAULT_SPAWNS = {
   doyun: { floor: '1F', scene: 'hall', x: 922, y: 1550, dir: 'down' },
@@ -34,7 +34,7 @@ export function createInitialPuzzleStates() {
         { syl: 'PA', kudlit: 'down' },
       ],
     },
-    12: { fx: 15, fy: 85, holes: [false, false, false, false], stamped: false },
+    12: { fx: 15, fy: 85, holes: [false, false, false, false], punchGrid: Array(16).fill(false), stamped: false },
     13: { valveOpen: false, cyan: 0, amber: 0, clear: 0, scrubGrid: Array(24).fill(false) },
     14: { rope: [100, 100, 100, 100], waxRot: [90, 180, 270], pressed: false },
     15: { ox: 96, oy: -48, rot: 270 },
@@ -179,7 +179,7 @@ export function attachWsRoomHub(httpServer, { destroyUnmatched = false } = {}) {
       if (msg.type === 'create_room') {
         leaveCurrentRoom(clientId);
         const code = generateRoomCode(rooms);
-        const room = createRoomRecord(code, clientId, (msg.nickname || '').trim() || '도윤');
+        const room = createRoomRecord(code, clientId, (msg.nickname || '').trim() || '서하린');
         if (typeof msg.fillBots === 'boolean') {
           room.fillBots = msg.fillBots;
           for (const r of ROLE_ORDER) {

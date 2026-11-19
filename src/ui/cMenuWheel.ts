@@ -92,7 +92,7 @@ export class CMenuWheel {
               <div class="cw-hub-sel">${selHtml}</div>
               <div class="cw-hub-actions">
                 <button class="s-btn" id="cw-clear">지우기</button>
-                <button class="s-btn primary" id="cw-send" ${this.selected.length ? '' : 'disabled'}>📡 무전 발신</button>
+                <button class="s-btn primary" id="cw-send" ${this.selected.length ? '' : 'disabled'} title="Enter 키로도 즉시 발신">📡 무전 발신</button>
               </div>
             </div>
           </div>

@@ -12,7 +12,7 @@ import type {
   RoomState,
 } from '../types/stranger.ts';
 import { ROLE_ORDER, ROLES, TOKENS_BY_ID } from '../data/cMenuTokens.ts';
-import { PUZZLES_BY_ID } from '../data/puzzleCatalog.ts';
+import { PUZZLES_BY_ID, getPortalLockReason } from '../data/puzzleCatalog.ts';
 import { soundEngine } from '../audio/soundEngine.ts';
 import type { SessionClient } from '../net/sessionClient.ts';
 
@@ -249,6 +249,13 @@ export class WorldEngine {
 
   async transitionViaPortal(slot: CharacterSlot, portal: MapPortal) {
     if (this.transitioning) return;
+    const room = this.session.getRoom();
+    const lockMsg = room ? getPortalLockReason(room, portal) : null;
+    if (lockMsg) {
+      soundEngine.playError();
+      this.callbacks.onStatusToast(lockMsg, 'amber');
+      return;
+    }
     this.transitioning = true;
     this.heldKeys.clear();
     soundEngine.playPortalTransition();
@@ -394,7 +401,8 @@ export class WorldEngine {
     const nearObj = this.getClosestInteractable(slot);
     let nextPrompt: string | null = null;
     if (portal) {
-      nextPrompt = `[E] → ${portal.name}`;
+      const lockMsg = getPortalLockReason(room, portal);
+      nextPrompt = lockMsg ? `[🔒] ${portal.name} (잠김)` : `[E] → ${portal.name}`;
     } else if (nearObj) {
       const pid = nearObj.puzzles?.[0];
       const tag = pid ? `P${String(pid).padStart(2, '0')} ` : '';
@@ -450,9 +458,12 @@ export class WorldEngine {
       this.session.patchPuzzle(16, { pads: nextPads });
     }
 
+    const allPriorSolved = Array.from({ length: 15 }, (_, i) => i + 1).every((id) => room.solvedPids.includes(id));
+
     if (
       !this.coronationDone &&
       !room.solvedPids.includes(16) &&
+      allPriorSolved &&
       p16.beamReachedAtrium &&
       p16.hereSent &&
       nextPads.every(Boolean)
@@ -518,16 +529,39 @@ export class WorldEngine {
 
     // Floor portal highlights (since walls are cleanly unified without forced door sprites)
     const nearbyPortal = this.getNearbyPortal(activeSlot);
+    const p01Solved = room.solvedPids.includes(1);
     for (const pt of fl.portals) {
       if (pt.sourceScene && pt.sourceScene !== activeSlot.scene) continue;
       const [rx, ry, rw, rh] = pt.rect;
       const isNear = nearbyPortal?.id === pt.id;
+      const locked = Boolean(getPortalLockReason(room, pt));
       const pulse = 0.5 + 0.5 * Math.sin(this.animClock * 4);
-      wctx.fillStyle = isNear ? 'rgba(82, 239, 191, 0.28)' : `rgba(230, 200, 134, ${0.09 + pulse * 0.08})`;
+      wctx.fillStyle = locked
+        ? `rgba(255, 110, 110, ${isNear ? 0.25 : 0.1 + pulse * 0.06})`
+        : isNear
+          ? 'rgba(82, 239, 191, 0.28)'
+          : `rgba(230, 200, 134, ${0.09 + pulse * 0.08})`;
       wctx.fillRect(rx, ry, rw, rh);
-      wctx.strokeStyle = isNear ? '#52EFBF' : 'rgba(230, 200, 134, 0.55)';
+      wctx.strokeStyle = locked ? 'rgba(255, 110, 110, 0.7)' : isNear ? '#52EFBF' : 'rgba(230, 200, 134, 0.55)';
       wctx.lineWidth = 1;
       wctx.strokeRect(rx + 0.5, ry + 0.5, rw - 1, rh - 1);
+
+      // P01 field clear effect: mint brass lamps above the 4 exhibition doors
+      if (
+        p01Solved &&
+        activeSlot.floor === '1F' &&
+        activeSlot.scene === 'hall' &&
+        ['life-door', 'time-door', 'craft-door', 'city-door'].includes(pt.id)
+      ) {
+        const lx = Math.round(rx + rw / 2);
+        const ly = Math.round(ry - 6);
+        wctx.fillStyle = 'rgba(82, 239, 191, 0.35)';
+        wctx.beginPath();
+        wctx.arc(lx, ly, 7, 0, Math.PI * 2);
+        wctx.fill();
+        wctx.fillStyle = '#52EFBF';
+        wctx.fillRect(lx - 2, ly - 2, 4, 4);
+      }
     }
 
     // Characters in current floor & scene
@@ -544,6 +578,23 @@ export class WorldEngine {
     for (const obj of visibleObjs) {
       while (pIdx < party.length && party[pIdx].y < obj.order - 2) {
         this.drawPixelCharacter(wctx, party[pIdx++]);
+      }
+      // Solved focus-object field clear glow
+      const solvedFocusPid = obj.puzzles?.find(
+        (pid) => pid <= 15 && room.solvedPids.includes(pid) && PUZZLES_BY_ID[pid]?.focusObj === obj.id
+      );
+      if (solvedFocusPid) {
+        const gx = Math.round(obj.x + obj.width / 2);
+        const gy = Math.round(obj.y + obj.height / 2);
+        const gr = Math.max(obj.width, obj.height) * 0.72;
+        const glow = wctx.createRadialGradient(gx, gy, 2, gx, gy, gr);
+        glow.addColorStop(0, 'rgba(255, 224, 130, 0.42)');
+        glow.addColorStop(0.6, 'rgba(82, 239, 191, 0.2)');
+        glow.addColorStop(1, 'rgba(82, 239, 191, 0)');
+        wctx.fillStyle = glow;
+        wctx.beginPath();
+        wctx.arc(gx, gy, gr, 0, Math.PI * 2);
+        wctx.fill();
       }
       const spImg = this.loadImage(obj.sprite);
       if (spImg.complete && spImg.naturalWidth > 0) {
@@ -686,15 +737,22 @@ export class WorldEngine {
       const [rx, ry, rw, rh] = pt.rect;
       const [sx, sy] = toScreen(rx + rw / 2, ry + rh / 2);
       const isNear = nearbyPortal?.id === pt.id;
-      const label = isNear ? `[E] ${pt.name}` : pt.kind === 'stairs' ? `🪜 ${pt.targetFloor}` : `🚪 ${pt.name}`;
+      const locked = Boolean(getPortalLockReason(room, pt));
+      const label = locked
+        ? `🔒 ${pt.name}`
+        : isNear
+          ? `[E] ${pt.name}`
+          : pt.kind === 'stairs'
+            ? `🪜 ${pt.targetFloor}`
+            : `🚪 ${pt.name}`;
       ctx.font = isNear ? '800 13px "Noto Sans KR", sans-serif' : '700 11px "Noto Sans KR", sans-serif';
       const tw = ctx.measureText(label).width + 16;
       const by = Math.max(22, sy - Math.round((rh * SCALE_X) / 2) - 12);
-      ctx.fillStyle = isNear ? 'rgba(14, 48, 38, 0.94)' : 'rgba(13, 18, 25, 0.82)';
-      ctx.strokeStyle = isNear ? '#52EFBF' : 'rgba(230, 200, 134, 0.7)';
+      ctx.fillStyle = locked ? 'rgba(42, 16, 20, 0.92)' : isNear ? 'rgba(14, 48, 38, 0.94)' : 'rgba(13, 18, 25, 0.82)';
+      ctx.strokeStyle = locked ? '#FF6E6E' : isNear ? '#52EFBF' : 'rgba(230, 200, 134, 0.7)';
       ctx.lineWidth = isNear ? 2 : 1.2;
       this.roundRect(ctx, sx - tw / 2, by - 12, tw, 24, 6, true, true);
-      ctx.fillStyle = isNear ? '#52EFBF' : '#E6C886';
+      ctx.fillStyle = locked ? '#FFB0B0' : isNear ? '#52EFBF' : '#E6C886';
       ctx.textAlign = 'center';
       ctx.textBaseline = 'middle';
       ctx.fillText(label, sx, by);
@@ -741,12 +799,16 @@ export class WorldEngine {
         pads?: boolean[];
       };
       const padsCnt = (p16.pads || []).filter(Boolean).length;
+      const priorDone = Array.from({ length: 15 }, (_, i) => i + 1).filter((id) => room.solvedPids.includes(id)).length;
       const [sx, sy] = toScreen(950, 378);
-      const statusTxt = !p16.beamReachedAtrium
-        ? '2F 기획전시실 프리즘 광선 대기 중'
-        : !p16.hereSent
-          ? '광선 도착! 린 [집결 호출 HERE] 발신 대기'
-          : `대관식 집결 발판 ${padsCnt} / 4 (4인 동시 착지!)`;
+      const statusTxt =
+        priorDone < 15
+          ? `1~3막 선행 복원 필요 (${priorDone}/15) · 먼저 모든 전시실 복구`
+          : !p16.beamReachedAtrium
+            ? '2F 기획전시실 프리즘 광선 대기 중'
+            : !p16.hereSent
+              ? '광선 도착! 린 [집결 호출 HERE] 발신 대기'
+              : `대관식 집결 발판 ${padsCnt} / 4 (4인 동시 착지!)`;
       ctx.font = '800 13px "Noto Sans KR", sans-serif';
       const w = ctx.measureText(statusTxt).width + 20;
       ctx.fillStyle = 'rgba(13, 19, 27, 0.92)';
@@ -811,10 +873,10 @@ export class WorldEngine {
     const h = obj.height * SCALE_X;
 
     if (role === 'doyun') {
-      // Brass gear highlight on mechanical / main operator objects or Doyun clue targets
+      // Brass gear highlight on mechanical / main operator objects or Ha-rin clue targets
       const isMech =
         pDef.mainRole === 'doyun' ||
-        (obj.role && (obj.role.includes('도윤') || obj.role.includes('밸브') || obj.role.includes('로프') || obj.role.includes('배전')));
+        (obj.role && (obj.role.includes('서하린') || obj.role.includes('밸브') || obj.role.includes('로프') || obj.role.includes('배전')));
       if (isMech) {
         ctx.save();
         ctx.strokeStyle = 'rgba(255, 184, 107, 0.85)';
@@ -835,7 +897,7 @@ export class WorldEngine {
       // Parchment translation overlay tags on documents, charts, plaques, timelines
       const isDoc =
         pDef.mainRole === 'maria' ||
-        (obj.role && (obj.role.includes('마리아') || obj.role.includes('번역') || obj.role.includes('사료') || obj.role.includes('방명록')));
+        (obj.role && (obj.role.includes('이안') || obj.role.includes('번역') || obj.role.includes('사료') || obj.role.includes('방명록')));
       if (isDoc) {
         ctx.save();
         ctx.strokeStyle = 'rgba(230, 200, 134, 0.85)';
@@ -856,7 +918,7 @@ export class WorldEngine {
       }
     } else if (role === 'lin') {
       // Spatial bearing lines, pipe headers, tram/optical vectors & exact coords
-      const isNav = pDef.mainRole === 'lin' || (obj.role && obj.role.includes('린'));
+      const isNav = pDef.mainRole === 'lin' || (obj.role && (obj.role.includes('(린)') || obj.role.includes('네비게이터')));
       if (isNav) {
         ctx.save();
         ctx.strokeStyle = 'rgba(82, 239, 191, 0.72)';
@@ -877,7 +939,7 @@ export class WorldEngine {
       }
     } else if (role === 'aisha') {
       // Magnifying loupe reticle & live sensor readout (UV / Thermal / PSI / RH / pH)
-      const isObs = pDef.mainRole === 'aisha' || (obj.role && obj.role.includes('아이샤'));
+      const isObs = pDef.mainRole === 'aisha' || (obj.role && obj.role.includes('카이'));
       if (isObs) {
         ctx.save();
         ctx.strokeStyle = '#7CD8FF';

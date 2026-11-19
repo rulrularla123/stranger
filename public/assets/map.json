@@ -9850,8 +9850,8 @@
           "puzzles": [
             1
           ],
-          "role": "통역(마리아) · 방명록 단서",
-          "description": "P01 [단서] 마리아가 개관 방명록에서 4대 전시관의 방위·문양 짝을 판독합니다.",
+          "role": "통역(이안) · 방명록 단서",
+          "description": "P01 [단서] 이안이 개관 방명록에서 4대 전시관의 방위·문양 짝을 판독합니다.",
           "wall": false,
           "interact": [
             806,
@@ -10039,7 +10039,7 @@
           "puzzles": [
             2
           ],
-          "role": "관측자(아이샤) · 지붕·창문 대조",
+          "role": "관측자(카이) · 지붕·창문 대조",
           "description": "P02 [단서] 바하이 쿠보 가옥 구조의 채광·층위 배치를 루페로 확인합니다.",
           "wall": true,
           "interact": [
@@ -10090,7 +10090,7 @@
           "puzzles": [
             3
           ],
-          "role": "관측자(아이샤) · ★ 주도 조작",
+          "role": "관측자(카이) · ★ 주도 조작",
           "description": "P03 [주도] 360° 턴테이블을 180°로 돌리고 영혼의 배 뚜껑 파편을 조립합니다.",
           "wall": false,
           "interact": [
@@ -10117,8 +10117,8 @@
           "puzzles": [
             3
           ],
-          "role": "엔지니어(도윤) · 받침 톱니 단서",
-          "description": "P03 [단서] 도윤이 받침 톱니의 나선 파도 결합 각도(180°)를 읽습니다.",
+          "role": "엔지니어(서하린) · 받침 톱니 단서",
+          "description": "P03 [단서] 서하린이 받침 톱니의 나선 파도 결합 각도(180°)를 읽습니다.",
           "wall": false,
           "interact": [
             663,
@@ -10144,7 +10144,7 @@
           "puzzles": [
             2
           ],
-          "role": "통역(마리아) · 어휘 단서",
+          "role": "통역(이안) · 어휘 단서",
           "description": "P02 [단서] Silong·Sala·Bubong 타갈로그 3층위 주석을 번역합니다.",
           "wall": false,
           "interact": [
@@ -10213,7 +10213,7 @@
           "puzzles": [
             2
           ],
-          "role": "관측자(아이샤) · ★ 주도 조작",
+          "role": "관측자(카이) · ★ 주도 조작",
           "description": "P02 [주도] 지붕(태양)·마루(파도)·기둥(산맥) 슬롯에 3대 생활 유물을 배치합니다.",
           "wall": false,
           "interact": [
@@ -10255,7 +10255,7 @@
           "puzzles": [
             3
           ],
-          "role": "관측자(아이샤) · 영혼의 배 원형 진열",
+          "role": "관측자(카이) · 영혼의 배 원형 진열",
           "description": "P03 [단서·원형] 마눙굴 항아리의 실제 파도 음각과 뚜껑 비율을 대조합니다.",
           "wall": false,
           "interact": [
@@ -10474,7 +10474,7 @@
           "puzzles": [
             4
           ],
-          "role": "통역(마리아) · 3대 연표 사료",
+          "role": "통역(이안) · 3대 연표 사료",
           "description": "P04 [단서] 1521·1898·1946 3대 역사 연표 사료 순서를 확인합니다.",
           "wall": false,
           "interact": [
@@ -10564,7 +10564,7 @@
           "puzzles": [
             4
           ],
-          "role": "통역(마리아) · ★ 주도 조작",
+          "role": "통역(이안) · ★ 주도 조작",
           "description": "P04 [주도] 2D 군도 해협 핀(X)과 1521·1898·1946 연표(Y)를 3선 교차 결선합니다.",
           "wall": false,
           "interact": [
@@ -10726,8 +10726,8 @@
           "puzzles": [
             5
           ],
-          "role": "관측자(아이샤) · 씨실 배색 루페",
-          "description": "P05 [단서] 아이샤가 직물 루페로 상→중→하 3줄 실 색상(☀→⚡→🌊)을 읽습니다.",
+          "role": "관측자(카이) · 씨실 배색 루페",
+          "description": "P05 [단서] 카이가 직물 루페로 상→중→하 3줄 실 색상(☀→⚡→🌊)을 읽습니다.",
           "wall": true,
           "interact": [
             532,
@@ -10777,7 +10777,7 @@
           "puzzles": [
             5
           ],
-          "role": "관측자(아이샤) · 염료·날실 패턴",
+          "role": "관측자(카이) · 염료·날실 패턴",
           "description": "P05 [단서] 3종광 페달 개방 순서를 함께 확인하는 바구니 패턴 함입니다.",
           "wall": false,
           "interact": [
@@ -10888,7 +10888,7 @@
           "puzzles": [
             5
           ],
-          "role": "엔지니어(도윤) · ★ 주도 조작",
+          "role": "엔지니어(서하린) · ★ 주도 조작",
           "description": "P05 [주도] 3종광 헤들 발판을 밟고 3색 북(황금·진홍·청록)을 교차 직조합니다.",
           "wall": false,
           "interact": [
@@ -11035,7 +11035,7 @@
           "puzzles": [
             6
           ],
-          "role": "통역(마리아) · 전차 노선 푯말",
+          "role": "통역(이안) · 전차 노선 푯말",
           "description": "P06 [단서] 거리화 속 스페인어 전차 푯말(2번 분기→동쪽 도개교)을 판독합니다.",
           "wall": true,
           "interact": [
@@ -11086,7 +11086,7 @@
           "puzzles": [
             6
           ],
-          "role": "통역(마리아) · 배차 시간표",
+          "role": "통역(이안) · 배차 시간표",
           "description": "P06 [단서] 파시그강 도개교 개방 시각과 전차 선로 번호를 확인합니다.",
           "wall": false,
           "interact": [
@@ -21080,8 +21080,10 @@
           "height": 58,
           "order": 476,
           "room": "atrium",
-          "puzzles": [],
-          "role": "",
+          "puzzles": [
+            16
+          ],
+          "role": "4인 전원 · P16 2부 대관식 집결",
           "description": "",
           "wall": false,
           "collision": [
@@ -21089,6 +21091,10 @@
             456,
             20,
             15
+          ],
+          "interact": [
+            885,
+            488
           ]
         },
         {
@@ -21101,8 +21107,10 @@
           "height": 58,
           "order": 476,
           "room": "atrium",
-          "puzzles": [],
-          "role": "",
+          "puzzles": [
+            16
+          ],
+          "role": "4인 전원 · P16 2부 대관식 집결",
           "description": "",
           "wall": false,
           "collision": [
@@ -21110,6 +21118,10 @@
             456,
             20,
             15
+          ],
+          "interact": [
+            1015,
+            488
           ]
         },
         {
@@ -21282,7 +21294,7 @@
         },
         {
           "id": "gather-1",
-          "name": "반원 홀 북서 문장 발판 (도윤)",
+          "name": "반원 홀 북서 문장 발판 (서하린)",
           "sprite": "assets/sprites/inlay-1.png",
           "x": 886,
           "y": 616,
@@ -21293,8 +21305,8 @@
           "puzzles": [
             16
           ],
-          "role": "엔지니어(도윤) · 발판 1/4",
-          "description": "P16 [2부 집결] 엔지니어 도윤 전용 반원 홀 바닥 문장 발판입니다.",
+          "role": "엔지니어(서하린) · 발판 1/4",
+          "description": "P16 [2부 집결] 엔지니어 서하린 전용 반원 홀 바닥 문장 발판입니다.",
           "wall": false,
           "interact": [
             896,
@@ -21303,7 +21315,7 @@
         },
         {
           "id": "gather-2",
-          "name": "반원 홀 북동 문장 발판 (마리아)",
+          "name": "반원 홀 북동 문장 발판 (이안)",
           "sprite": "assets/sprites/inlay-2.png",
           "x": 994,
           "y": 616,
@@ -21314,8 +21326,8 @@
           "puzzles": [
             16
           ],
-          "role": "통역(마리아) · 발판 2/4",
-          "description": "P16 [2부 집결] 고문서학자 마리아 전용 반원 홀 바닥 문장 발판입니다.",
+          "role": "통역(이안) · 발판 2/4",
+          "description": "P16 [2부 집결] 고문서학자 이안 전용 반원 홀 바닥 문장 발판입니다.",
           "wall": false,
           "interact": [
             1004,
@@ -21345,7 +21357,7 @@
         },
         {
           "id": "gather-4",
-          "name": "반원 홀 남동 문장 발판 (아이샤)",
+          "name": "반원 홀 남동 문장 발판 (카이)",
           "sprite": "assets/sprites/inlay-4.png",
           "x": 994,
           "y": 718,
@@ -21356,8 +21368,8 @@
           "puzzles": [
             16
           ],
-          "role": "관측자(아이샤) · 발판 4/4",
-          "description": "P16 [2부 집결] 유물감식가 아이샤 전용 반원 홀 바닥 문장 발판입니다.",
+          "role": "관측자(카이) · 발판 4/4",
+          "description": "P16 [2부 집결] 유물감식가 카이 전용 반원 홀 바닥 문장 발판입니다.",
           "wall": false,
           "interact": [
             1004,
@@ -21518,7 +21530,7 @@
           "puzzles": [
             11
           ],
-          "role": "관측자(아이샤) · UV 모음점 판독",
+          "role": "관측자(카이) · UV 모음점 판독",
           "description": "P11 [단서] UV 돋보기로 지워진 3음절 Kudlit 모음점 위치를 스캔합니다.",
           "wall": true,
           "interact": [
@@ -21569,7 +21581,7 @@
           "puzzles": [
             11
           ],
-          "role": "엔지니어(도윤) · 바이바이인 기준 각도",
+          "role": "엔지니어(서하린) · 바이바이인 기준 각도",
           "description": "P11 [단서] 3음절(KA-LA-YA) 목판 대조 기준 각도(태양 인장)를 확인합니다.",
           "wall": false,
           "interact": [
@@ -21593,8 +21605,10 @@
           "height": 60,
           "order": 118,
           "room": "archive",
-          "puzzles": [],
-          "role": "",
+          "puzzles": [
+            12
+          ],
+          "role": "통역(이안) · 기증 등록대장 원본",
           "description": "",
           "wall": false,
           "collision": [
@@ -21602,6 +21616,10 @@
             102,
             36,
             15
+          ],
+          "interact": [
+            465,
+            126
           ]
         },
         {
@@ -21614,8 +21632,10 @@
           "height": 46,
           "order": 112,
           "room": "archive",
-          "puzzles": [],
-          "role": "",
+          "puzzles": [
+            11
+          ],
+          "role": "엔지니어(서하린) · 바이바이인 기준 각도",
           "description": "",
           "wall": false,
           "collision": [
@@ -21623,6 +21643,10 @@
             97,
             50,
             15
+          ],
+          "interact": [
+            718,
+            124
           ]
         },
         {
@@ -21638,7 +21662,7 @@
           "puzzles": [
             12
           ],
-          "role": "통역(마리아) · ★ 주도 조작",
+          "role": "통역(이안) · ★ 주도 조작",
           "description": "P12 [주도] 린의 좌표 신호에 맞춰 4열 천공 카드를 타공·인장 찍기합니다.",
           "wall": false,
           "interact": [
@@ -21755,7 +21779,7 @@
           "puzzles": [
             11
           ],
-          "role": "통역(마리아) · ★ 주도 조작",
+          "role": "통역(이안) · ★ 주도 조작",
           "description": "P11 [주도] 바이바이인 자음·모음 이중 디코더 휠로 KA-LA-YA를 해독합니다.",
           "wall": false,
           "interact": [
@@ -21917,7 +21941,7 @@
           "puzzles": [
             13
           ],
-          "role": "통역(마리아) · pH 시약 번역",
+          "role": "통역(이안) · pH 시약 번역",
           "description": "P13 [단서] 스페인어 공정 노트에서 청록2·호박1 pH 7.0 배합비를 읽습니다.",
           "wall": true,
           "interact": [
@@ -21968,7 +21992,7 @@
           "puzzles": [
             13
           ],
-          "role": "엔지니어(도윤) · 시약 밸브 개방",
+          "role": "엔지니어(서하린) · 시약 밸브 개방",
           "description": "P13 [보조] 약품 보관장 안전 잠금 밸브를 열어 스포이드 공급을 허용합니다.",
           "wall": false,
           "interact": [
@@ -21992,8 +22016,10 @@
           "height": 58,
           "order": 116,
           "room": "preserve",
-          "puzzles": [],
-          "role": "",
+          "puzzles": [
+            13
+          ],
+          "role": "엔지니어(서하린) · 시약 밸브 개방",
           "description": "",
           "wall": false,
           "collision": [
@@ -22001,6 +22027,10 @@
             100,
             40,
             15
+          ],
+          "interact": [
+            1176,
+            126
           ]
         },
         {
@@ -22163,7 +22193,7 @@
           "puzzles": [
             13
           ],
-          "role": "관측자(아이샤) · ★ 주도 조작",
+          "role": "관측자(카이) · ★ 주도 조작",
           "description": "P13 [주도] 3색 시약 스포이드 pH 7.0 적정 + 청동 유물 초음파 세척을 수행합니다.",
           "wall": false,
           "interact": [
@@ -22205,7 +22235,7 @@
           "puzzles": [
             14
           ],
-          "role": "관측자(아이샤) · ★ 주도 조작",
+          "role": "관측자(카이) · ★ 주도 조작",
           "description": "P14 [주도] 4점 대각선 도르래 이완 후 깨진 밀랍 인장 3조각을 압착 복원합니다.",
           "wall": false,
           "interact": [
@@ -22232,7 +22262,7 @@
           "puzzles": [
             13
           ],
-          "role": "관측자(아이샤) · 초음파 세척 수조",
+          "role": "관측자(카이) · 초음파 세척 수조",
           "description": "P13 [보조] 중화 시약 처리 후 청동 유물 부식층을 세척하는 보존 수조입니다.",
           "wall": false,
           "interact": [
@@ -22259,8 +22289,8 @@
           "puzzles": [
             14
           ],
-          "role": "엔지니어(도윤) · 로프 순서 단서",
-          "description": "P14 [단서] 도윤이 1→3 대각선 이완 순서를 확인해 ⇄ 무전합니다.",
+          "role": "엔지니어(서하린) · 로프 순서 단서",
+          "description": "P14 [단서] 서하린이 1→3 대각선 이완 순서를 확인해 ⇄ 무전합니다.",
           "wall": false,
           "interact": [
             1144,
@@ -22304,8 +22334,10 @@
           "height": 40,
           "order": 320,
           "room": "preserve",
-          "puzzles": [],
-          "role": "",
+          "puzzles": [
+            14
+          ],
+          "role": "엔지니어(서하린) · 로프 순서 단서",
           "description": "",
           "wall": false,
           "collision": [
@@ -22313,6 +22345,10 @@
             294,
             40,
             22
+          ],
+          "interact": [
+            1478,
+            272
           ]
         },
         {
@@ -22478,7 +22514,7 @@
           "puzzles": [
             15
           ],
-          "role": "통역(마리아) · 스페인어 지명 대조",
+          "role": "통역(이안) · 스페인어 지명 대조",
           "description": "P15 [단서] 옛 성문(Puerta Real·Baluarte) 지명 3곳을 식별합니다.",
           "wall": false,
           "interact": [
@@ -22502,8 +22538,10 @@
           "height": 58,
           "order": 764,
           "room": "reading",
-          "puzzles": [],
-          "role": "",
+          "puzzles": [
+            15
+          ],
+          "role": "통역(이안) · 고서 지명 색인",
           "description": "",
           "wall": false,
           "collision": [
@@ -22511,6 +22549,10 @@
             724,
             22,
             34
+          ],
+          "interact": [
+            155,
+            735
           ]
         },
         {
@@ -22547,7 +22589,7 @@
           "puzzles": [
             15
           ],
-          "role": "통역(마리아) · ★ 주도 조작",
+          "role": "통역(이안) · ★ 주도 조작",
           "description": "P15 [주도] 반투명 성곽 도면 트레이싱지를 X·Y·90° 포개어 3개 앵커를 맞춥니다.",
           "wall": false,
           "interact": [
@@ -22589,7 +22631,7 @@
           "puzzles": [
             15
           ],
-          "role": "통역(마리아) · 도면 트레이싱 제도판",
+          "role": "통역(이안) · 도면 트레이싱 제도판",
           "description": "P15 [보조] 성곽 청사진 도면과 반투명 트레이싱지를 포개는 전용 제도판입니다.",
           "wall": false,
           "interact": [
@@ -22715,7 +22757,7 @@
           "puzzles": [
             16
           ],
-          "role": "통역(마리아) · 고대 항로 비문",
+          "role": "통역(이안) · 고대 항로 비문",
           "description": "P16 [단서] 해양 교역 나침반 비문에서 동→(90°) 프리즘 반사 방향을 읽습니다.",
           "wall": true,
           "interact": [
@@ -22766,7 +22808,7 @@
           "puzzles": [
             16
           ],
-          "role": "엔지니어(도윤) · 1차 미러 거치",
+          "role": "엔지니어(서하린) · 1차 미러 거치",
           "description": "P16 [1부 협동] 목선 상부 1차 크리스탈 프리즘 미러를 조립·조준합니다.",
           "wall": false,
           "interact": [
@@ -30540,7 +30582,7 @@
           "puzzles": [
             7
           ],
-          "role": "엔지니어(도윤) · ★ 1번 밸브",
+          "role": "엔지니어(서하린) · ★ 1번 밸브",
           "description": "P07 [주도] 1번 구역 주 급수 밸브 핸드휠을 25%로 감압 조절합니다.",
           "wall": true,
           "interact": [
@@ -30582,7 +30624,7 @@
           "puzzles": [
             7
           ],
-          "role": "엔지니어(도윤) · ★ 2번 밸브",
+          "role": "엔지니어(서하린) · ★ 2번 밸브",
           "description": "P07 [주도] 2번 구역 중앙 밸브를 50% 중간 개방으로 유지합니다.",
           "wall": true,
           "interact": [
@@ -30600,10 +30642,16 @@
           "height": 26,
           "order": 842,
           "room": "maintenance",
-          "puzzles": [],
-          "role": "",
+          "puzzles": [
+            7
+          ],
+          "role": "네비게이터(린) · 수압 계통도 단서",
           "description": "",
-          "wall": true
+          "wall": true,
+          "interact": [
+            1458,
+            868
+          ]
         },
         {
           "id": "maint-pipe-header-3",
@@ -30618,7 +30666,7 @@
           "puzzles": [
             7
           ],
-          "role": "엔지니어(도윤) · ★ 3번 밸브",
+          "role": "엔지니어(서하린) · ★ 3번 밸브",
           "description": "P07 [주도] 3번 구역 분기 밸브를 100% 완전 개방해 수압을 평형화합니다.",
           "wall": true,
           "interact": [
@@ -30657,8 +30705,10 @@
           "height": 44,
           "order": 882,
           "room": "maintenance",
-          "puzzles": [],
-          "role": "",
+          "puzzles": [
+            7
+          ],
+          "role": "조작자(서하린) · 바이패스 가압 펌프",
           "description": "",
           "wall": false,
           "collision": [
@@ -30666,6 +30716,10 @@
             868,
             52,
             14
+          ],
+          "interact": [
+            1636,
+            892
           ]
         },
         {
@@ -30681,7 +30735,7 @@
           "puzzles": [
             8
           ],
-          "role": "엔지니어(도윤) · 보일러 압력계",
+          "role": "엔지니어(서하린) · 보일러 압력계",
           "description": "P08 [주도] 보일러 내부 압력 게이지를 안전 녹색 대역(70~90 PSI)으로 관리합니다.",
           "wall": false,
           "interact": [
@@ -30753,7 +30807,7 @@
           "puzzles": [
             8
           ],
-          "role": "엔지니어(도윤) · ★ 증기 배출 밸브",
+          "role": "엔지니어(서하린) · ★ 증기 배출 밸브",
           "description": "P08 [주도] 적색 증기 감압 핸드휠을 열어 보일러 과압을 낮춥니다.",
           "wall": false,
           "interact": [
@@ -30780,8 +30834,8 @@
           "puzzles": [
             8
           ],
-          "role": "관측자(아이샤) · 실시간 센서 단서",
-          "description": "P08 [단서] 아이샤가 보일러 열화상과 복식 펌프 목표 1200 RPM을 관측합니다.",
+          "role": "관측자(카이) · 실시간 센서 단서",
+          "description": "P08 [단서] 카이가 보일러 열화상과 복식 펌프 목표 1200 RPM을 관측합니다.",
           "wall": false,
           "interact": [
             674,
@@ -30807,7 +30861,7 @@
           "puzzles": [
             8
           ],
-          "role": "엔지니어(도윤) · ★ 듀얼 RPM 동기화",
+          "role": "엔지니어(서하린) · ★ 듀얼 RPM 동기화",
           "description": "P08 [주도] 1·2호 순환 펌프를 ±30 RPM 오차 내(1200 RPM)로 동기 잠금합니다.",
           "wall": false,
           "interact": [
@@ -30834,8 +30888,8 @@
           "puzzles": [
             9
           ],
-          "role": "관측자(아이샤) · 코일 주파수 60Hz",
-          "description": "P09 [단서] 아이샤가 발전기 예열 코일 60Hz 정상 Reaching을 확인합니다.",
+          "role": "관측자(카이) · 코일 주파수 60Hz",
+          "description": "P09 [단서] 카이가 발전기 예열 코일 60Hz 정상 Reaching을 확인합니다.",
           "wall": true,
           "interact": [
             1736,
@@ -30870,7 +30924,7 @@
           "puzzles": [
             9
           ],
-          "role": "엔지니어(도윤) · ★ 3베이 모선 라우팅",
+          "role": "엔지니어(서하린) · ★ 3베이 모선 라우팅",
           "description": "P09 [주도] Bus 1·2 단락 회로를 끄고 3번 우회 모선 연결 후 주 차단기를 투입합니다.",
           "wall": false,
           "interact": [
@@ -30942,8 +30996,10 @@
           "height": 64,
           "order": 1044,
           "room": "power",
-          "puzzles": [],
-          "role": "",
+          "puzzles": [
+            9
+          ],
+          "role": "네비게이터(린) · 우회 모선 단서",
           "description": "",
           "wall": false,
           "collision": [
@@ -30951,6 +31007,10 @@
             1016,
             22,
             24
+          ],
+          "interact": [
+            1958,
+            1012
           ]
         },
         {
@@ -30987,7 +31047,7 @@
           "puzzles": [
             9
           ],
-          "role": "엔지니어(도윤) · ★ 예열·크랭크 시동",
+          "role": "엔지니어(서하린) · ★ 예열·크랭크 시동",
           "description": "P09 [주도] 비상 디젤 발전기를 예열하고 크랭크 레버로 60Hz 기동합니다.",
           "wall": false,
           "interact": [
@@ -31014,7 +31074,7 @@
           "puzzles": [
             10
           ],
-          "role": "관측자(아이샤) · 이슬점 45% / 18°C",
+          "role": "관측자(카이) · 이슬점 45% / 18°C",
           "description": "P10 [보조] 제습 목표(45% RH / 18°C) 설정 후 침수 회피 경로를 무전합니다.",
           "wall": false,
           "interact": [
@@ -31188,7 +31248,7 @@
           "puzzles": [
             10
           ],
-          "role": "엔지니어(도윤) · 방수 걸쇠 체결",
+          "role": "엔지니어(서하린) · 방수 걸쇠 체결",
           "description": "P10 [단서] 크레이트 방수 걸쇠 및 중량 중심을 확인해 1번 상자 체결을 보고합니다.",
           "wall": false,
           "interact": [
@@ -31212,8 +31272,10 @@
           "height": 31,
           "order": 1373,
           "room": "rescue",
-          "puzzles": [],
-          "role": "",
+          "puzzles": [
+            10
+          ],
+          "role": "엔지니어(서하린) · 방수 걸쇠 체결",
           "description": "",
           "wall": false,
           "collision": [
@@ -31221,6 +31283,10 @@
             1356,
             29,
             14
+          ],
+          "interact": [
+            1774,
+            1334
           ]
         }
       ],
@@ -31478,7 +31544,7 @@
     "inspectRadius": 42,
     "characters": [
       {
-        "name": "도윤",
+        "name": "서하린",
         "sprite": "assets/characters/portrait_0.png",
         "frame": [
           1,
@@ -31488,7 +31554,7 @@
         ]
       },
       {
-        "name": "마리아",
+        "name": "이안",
         "sprite": "assets/characters/portrait_1.png",
         "frame": [
           1,
@@ -31508,7 +31574,7 @@
         ]
       },
       {
-        "name": "아이샤",
+        "name": "카이",
         "sprite": "assets/characters/portrait_3.png",
         "frame": [
           1,

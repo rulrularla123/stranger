@@ -13,7 +13,7 @@ export function renderSplashHtml(): string {
   `;
 }
 
-export function renderTitleHtml(): string {
+export function renderTitleHtml(lastRoomCode: string | null = null): string {
   return `
     <div class="title-screen">
       <canvas id="title-bg-canvas" class="title-bg-canvas"></canvas>
@@ -26,6 +26,11 @@ export function renderTitleHtml(): string {
         </div>
         <nav class="title-menu" aria-label="메인 메뉴">
           <button class="title-item primary" id="btn-title-start">▶ 시작하기 (팀 모으기 / 로비)</button>
+          ${
+            lastRoomCode
+              ? `<button class="title-item" id="btn-title-continue">↺ 직전 방 이어하기 (${escapeHtml(lastRoomCode)})</button>`
+              : ''
+          }
           <button class="title-item" id="btn-title-solo">⚡ 솔로 · 4인 역할 전환 즉시 시연</button>
           <button class="title-item" id="btn-title-settings">⚙ 설정 (효과음 / 배경음악)</button>
           <button class="title-item" id="btn-title-controls">❔ 조작 방법</button>
@@ -141,7 +146,7 @@ export function renderGatherHtml(
         <h2>팀 모으기</h2>
         <div class="gather-top-row">
           <label class="field-label" style="margin-bottom:0">내 닉네임
-            <input class="s-input" id="inp-gather-nick" maxlength="12" value="${escapeHtml(nickname)}" placeholder="예: 도윤" />
+            <input class="s-input" id="inp-gather-nick" maxlength="12" value="${escapeHtml(nickname)}" placeholder="예: 서하린" />
           </label>
           ${
             lastRoomCode
@@ -274,7 +279,7 @@ const INTRO_SLIDES = [
   {
     kicker: 'PROLOGUE 1 / 3 · 필리핀 역사박물관 긴급 복원 임무',
     title: '태풍이 지나간 밤, 정전과 침수에 잠긴 박물관',
-    body: '유네스코 동아리 PARALLAX 현장 조사단 도윤·마리아·린·아이샤가 마닐라 역사박물관에 도착했습니다. 1층 전시실의 잠금 장치, 지하 B1의 침수된 배전반과 보일러, 2층 아카이브의 훼손된 사료까지 모두 복원해야 합니다.',
+    body: '유네스코 동아리 PARALLAX 현장 조사단 서하린·이안·린·카이가 마닐라 역사박물관에 도착했습니다. 1층 전시실의 잠금 장치, 지하 B1의 침수된 배전반과 보일러, 2층 아카이브의 훼손된 사료까지 모두 복원해야 합니다.',
   },
   {
     kicker: 'PROLOGUE 2 / 3 · 4인 고정 역할과 C-Menu 2.0 무전',
@@ -356,6 +361,30 @@ export function renderControlsModalHtml(soloSwitchEnabled: boolean): string {
           }).join('')}
         </div>
         <button class="s-btn primary" id="btn-controls-ok">탐색 시작 (X / E / ESC)</button>
+      </div>
+    </div>
+  `;
+}
+
+export function renderRoomIntroModalHtml(info: {
+  kicker: string;
+  title: string;
+  body: string;
+  puzzlesHint: string;
+}): string {
+  return `
+    <div class="au-modal small-modal room-intro-modal" role="dialog" aria-modal="true" aria-label="${escapeHtml(info.title)}">
+      <div class="au-modal-head">
+        <span style="color:#E6C886;font-weight:900">🗺 ${escapeHtml(info.kicker)}</span>
+        <button class="au-close-x" id="btn-close-overlay">✕</button>
+      </div>
+      <div class="au-body p-stack">
+        <h2 style="margin:0;font-size:20px;color:#52EFBF">${escapeHtml(info.title)}</h2>
+        <p style="margin:0;color:#DCE6EE;line-height:1.6;font-size:14px">${escapeHtml(info.body)}</p>
+        <div class="p-card" style="border-color:#C89D54;font-size:12px">
+          <strong style="color:#E6C886">연동 복원 목표:</strong> ${escapeHtml(info.puzzlesHint)}
+        </div>
+        <button class="s-btn primary" id="btn-room-intro-ok">조사 시작 (E / X / ESC)</button>
       </div>
     </div>
   `;

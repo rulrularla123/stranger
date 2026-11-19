@@ -1872,12 +1872,157 @@ kbd {
   font-weight: 800;
 }
 
+@keyframes au-shake {
+  0%, 100% { transform: translateX(0); }
+  20% { transform: translateX(-8px); }
+  40% { transform: translateX(7px); }
+  60% { transform: translateX(-5px); }
+  80% { transform: translateX(4px); }
+}
+
+.au-modal.au-shake {
+  animation: au-shake 0.34s ease-in-out;
+}
+
+.au-vtab:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.hud-chk-toggle {
+  background: transparent;
+  border: 1px solid #354756;
+  border-radius: 5px;
+  color: var(--muted);
+  font-size: 10px;
+  font-weight: 800;
+  padding: 2px 7px;
+  cursor: pointer;
+}
+
+.hud-chk-toggle:hover {
+  border-color: var(--mint);
+  color: var(--mint);
+}
+
+.hud-checklist {
+  margin-top: 8px;
+  padding-top: 7px;
+  border-top: 1px solid #283442;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.hud-chk-act {
+  font-size: 10px;
+  font-weight: 900;
+  color: var(--mint);
+  margin-bottom: 2px;
+}
+
+.hud-chk-row {
+  font-size: 11px;
+  color: #c5d1dc;
+  line-height: 1.35;
+}
+
+.hud-chk-row.done {
+  color: var(--mint);
+  text-decoration: line-through;
+  opacity: 0.85;
+}
+
+.p-hold-bar {
+  width: 100%;
+  height: 9px;
+  margin-top: 6px;
+  background: #0d131a;
+  border: 1px solid #2b3846;
+  border-radius: 999px;
+  overflow: hidden;
+}
+
+.p-hold-fill {
+  height: 100%;
+  background: linear-gradient(90deg, var(--amber), var(--mint));
+  transition: width 0.05s linear;
+}
+
+.p-map-cross-grid {
+  display: grid;
+  grid-template-columns: 185px 1fr;
+  gap: 12px;
+  align-items: center;
+}
+
+.p-map-svg {
+  width: 100%;
+  height: 220px;
+  border: 2px solid #2c3b4a;
+  border-radius: 9px;
+}
+
+.p-punch-grid-4x4 {
+  display: grid;
+  grid-template-columns: 74px repeat(4, 1fr);
+  gap: 5px;
+  align-items: center;
+}
+
+.p-punch-colhead {
+  text-align: center;
+  font: 900 11px ui-monospace, monospace;
+  color: #2f2314;
+}
+
+.p-punch-rowhead {
+  font: 800 11px 'Noto Sans KR', sans-serif;
+  color: #2f2314;
+}
+
+.p-punch-cell {
+  height: 30px;
+  border-radius: 6px;
+  border: 2px solid #8c704c;
+  background: #f5ebd5;
+  cursor: pointer;
+  position: relative;
+}
+
+.p-punch-cell.punched::after {
+  content: '';
+  position: absolute;
+  inset: 5px;
+  margin: auto;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: #1a140d;
+}
+
+.room-intro-modal {
+  border-color: var(--brass);
+}
+
+@media (max-width: 960px) {
+  .hud-bottom-center {
+    bottom: 100px;
+    max-width: calc(100vw - 32px);
+  }
+  .interact-prompt-btn {
+    font-size: 13px;
+    padding: 8px 14px;
+  }
+}
+
 @media (max-width: 660px) {
   .gather-grid,
   .lobby-cards,
   .p-grid-2,
   .p-grid-3,
   .p-grid-4,
+  .p-map-cross-grid,
   .cw-body,
   .guide-grid,
   .coronation-heroes,

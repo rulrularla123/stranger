@@ -165,14 +165,16 @@ export class MinimapController {
             <img src="/assets/guides/STRANGER-${this.activeFloorTab}.png" alt="${fl.label} 구조" />
           </div>
           <div class="guide-list-col">
-            <div class="guide-sec-title">${fl.label} 구역 및 빠른 이동 (테스트/시연용)</div>
-            <div class="guide-room-btns">
-              ${Object.values(fl.scenes)
-                .map(
-                  (sc) => `<button class="s-btn" data-go-scene="${sc.id}">📍 ${sc.label}</button>`
-                )
-                .join('')}
-            </div>
+            <div class="guide-sec-title">${fl.label} 구역 ${room.soloSwitchEnabled ? '및 빠른 이동 (시연용)' : '안내'}</div>
+            ${
+              room.soloSwitchEnabled
+                ? `<div class="guide-room-btns">
+                    ${Object.values(fl.scenes)
+                      .map((sc) => `<button class="s-btn" data-go-scene="${sc.id}">📍 ${sc.label}</button>`)
+                      .join('')}
+                  </div>`
+                : '<p style="margin:0;font-size:12px;color:#9BB0BE">고정 역할 협동 모드에서는 박물관 내 문과 계단([E])을 통해 이동합니다.</p>'
+            }
             <div class="guide-sec-title" style="margin-top:12px">${this.activeFloorTab} 퍼즐 현황</div>
             <div class="guide-puz-list">
               ${floorPuzzles

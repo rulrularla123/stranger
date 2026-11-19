@@ -17,7 +17,7 @@ fs.mkdirSync(PREVIEW_DIR, { recursive: true });
 const CHARACTER_SPECS = [
   {
     id: 'doyun',
-    name: '도윤',
+    name: '서하린',
     roleTitle: '엔지니어 · 조작자',
     color: '#FFB86B',
     badge: '⚙',
@@ -31,7 +31,7 @@ const CHARACTER_SPECS = [
   },
   {
     id: 'maria',
-    name: '마리아',
+    name: '이안',
     roleTitle: '고문서학자 · 통역',
     color: '#E6C886',
     badge: '📜',
@@ -59,7 +59,7 @@ const CHARACTER_SPECS = [
   },
   {
     id: 'aisha',
-    name: '아이샤',
+    name: '카이',
     roleTitle: '유물감식가 · 관측자',
     color: '#7CD8FF',
     badge: '🔍',

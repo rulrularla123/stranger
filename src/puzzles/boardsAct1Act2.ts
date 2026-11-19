@@ -1,4 +1,5 @@
-import type { PuzzleDef } from '../types/stranger.ts';
+import type { PuzzleDef, RoleId } from '../types/stranger.ts';
+import type { DifficultyConfig } from '../data/puzzleCatalog.ts';
 import { soundEngine } from '../audio/soundEngine.ts';
 
 export interface BoardHelpers {
@@ -7,6 +8,11 @@ export interface BoardHelpers {
   setErr: (msg: string) => void;
   setInfo: (msg: string) => void;
   rerender: () => void;
+  registerCleanup: (fn: () => void) => void;
+  difficulty: DifficultyConfig;
+  myRole: RoleId;
+  soloMode: boolean;
+  isSolved: boolean;
 }
 
 export function renderAct1Act2Board(
@@ -57,6 +63,7 @@ function boardP01(stage: HTMLElement, s: Record<string, unknown>, h: BoardHelper
   const innerDeg = Number(s.innerDeg ?? 180);
   const locked = Boolean(s.locked);
   const aligned = outerDeg % 360 === 0 && innerDeg % 360 === 0;
+  const hint = h.difficulty.showTargetHints;
 
   stage.innerHTML = `
     <div class="au-board p-grid-2">
@@ -78,20 +85,20 @@ function boardP01(stage: HTMLElement, s: Record<string, unknown>, h: BoardHelper
             <text x="74" y="124" text-anchor="middle" fill="#D49B6A" font-size="11" font-weight="700">⛰ 공예</text>
           </g>
           <polygon points="120,6 113,18 127,18" fill="#FF6E6E"/>
-          <circle cx="120" cy="120" r="24" fill="${locked ? '#27BA74' : aligned ? '#1E7A5D' : '#3A4858'}" stroke="#0B0E13" stroke-width="4"/>
+          <circle cx="120" cy="120" r="24" fill="${locked ? '#27BA74' : aligned && hint ? '#1E7A5D' : '#3A4858'}" stroke="#0B0E13" stroke-width="4"/>
           <text x="120" y="124" text-anchor="middle" fill="#fff" font-size="11" font-weight="900">${locked ? 'OPEN' : 'PIN'}</text>
         </svg>
       </div>
       <div class="p-stack">
         <div class="p-card">
-          <div class="p-card-lbl" style="color:#52EFBF">① 외륜 방위 베젤 (현재 ${outerDeg}° · 목표 북↑ 0°)</div>
+          <div class="p-card-lbl" style="color:#52EFBF">① 외륜 방위 베젤 (현재 ${outerDeg}°${hint ? ' · 목표 북↑ 0°' : ''})</div>
           <div class="p-row">
             <button class="s-btn" id="p1-ol">↺ -90°</button>
             <button class="s-btn" id="p1-or">↻ +90°</button>
           </div>
         </div>
         <div class="p-card">
-          <div class="p-card-lbl" style="color:#E6C886">② 내륜 전시관 문양 링 (현재 ${innerDeg}° · 목표 ☀ 0°)</div>
+          <div class="p-card-lbl" style="color:#E6C886">② 내륜 전시관 문양 링 (현재 ${innerDeg}°${hint ? ' · 목표 ☀ 0°' : ''})</div>
           <div class="p-row">
             <button class="s-btn" id="p1-il">↺ -90°</button>
             <button class="s-btn" id="p1-ir">↻ +90°</button>
@@ -126,7 +133,11 @@ function boardP01(stage: HTMLElement, s: Record<string, unknown>, h: BoardHelper
     if (aligned) {
       h.solve(1, { outerDeg: 0, innerDeg: 0, locked: true }, '로비 나침반 정렬 완료! 1F 4대 전시관의 황동 잠금이 해제되었습니다.');
     } else {
-      h.setErr(`방위(${outerDeg}°) 또는 문양(${innerDeg}°)이 마리아의 방명록 기준(0°)과 어긋납니다. 다시 돌려 보세요.`);
+      h.setErr(
+        hint
+          ? `방위(${outerDeg}°) 또는 문양(${innerDeg}°)이 이안의 방명록 기준(0°)과 어긋납니다. 다시 돌려 보세요.`
+          : '표시된 무전 신호와 다른 방향/문양입니다. 이안의 방명록 단서를 확인해 다시 맞춰 보세요.'
+      );
     }
   };
 }
@@ -139,11 +150,12 @@ function boardP02(stage: HTMLElement, s: Record<string, unknown>, h: BoardHelper
     stilt: rawSlots.stilt ?? null,
   };
   const picked = (s.picked as string | null) || null;
+  const hint = h.difficulty.showTargetHints;
   const cards = [
     { id: 'grain_jar', label: '🌾 건조 곡식 단지' },
     { id: 'basket', label: '🧺 대나무 직조 바구니' },
     { id: 'mortar', label: '🪨 돌절구' },
-    { id: 'lamp', label: '🏮 등유 램프 (미끼)' },
+    { id: 'lamp', label: '🏮 등유 램프' },
   ];
   const tiers = [
     { id: 'roof', name: '① 지붕 다락 (Bubong · ☀ 태양)' },
@@ -232,7 +244,11 @@ function boardP02(stage: HTMLElement, s: Record<string, unknown>, h: BoardHelper
         stilt: slots.stilt === 'mortar' ? 'mortar' : null,
       };
       h.patchState(2, { slots: cleaned });
-      h.setErr('일치하지 않는 층위의 유물만 트레이로 돌려보냈습니다. Bubong-Sala-Silong 순서를 확인하세요!');
+      h.setErr(
+        hint
+          ? '일치하지 않는 층위의 유물만 트레이로 돌려보냈습니다. Bubong-Sala-Silong 순서를 확인하세요!'
+          : '일치하지 않는 층위의 유물만 트레이로 돌려보냈습니다. 이안의 무전 단서를 확인해 다시 배치해 보세요.'
+      );
     }
   };
 }
@@ -242,6 +258,7 @@ function boardP03(stage: HTMLElement, s: Record<string, unknown>, h: BoardHelper
   const lidTiltDeg = Number(s.lidTiltDeg ?? -15);
   const seated = Boolean(s.seated);
   const aligned = turntableDeg % 360 === 180 && lidTiltDeg === 0;
+  const hint = h.difficulty.showTargetHints;
 
   stage.innerHTML = `
     <div class="au-board p-grid-auto-1">
@@ -255,13 +272,13 @@ function boardP03(stage: HTMLElement, s: Record<string, unknown>, h: BoardHelper
           </g>
           <ellipse cx="90" cy="112" rx="44" ry="38" fill="#8B5438" stroke="#0B0E13" stroke-width="3"/>
           <path d="M${56 + Math.sin((turntableDeg * Math.PI) / 180) * 14} 110 Q90 ${100 + Math.cos((turntableDeg * Math.PI) / 180) * 10} ${124 + Math.sin((turntableDeg * Math.PI) / 180) * 14} 110"
-            fill="none" stroke="${turntableDeg === 180 ? '#52EFBF' : '#FFB86B'}" stroke-width="4"/>
+            fill="none" stroke="${turntableDeg === 180 && hint ? '#52EFBF' : '#FFB86B'}" stroke-width="4"/>
           <text x="90" y="172" text-anchor="middle" fill="#89EFD0" font-size="11" font-weight="800">${turntableDeg}° · 틸트 ${lidTiltDeg}°</text>
         </svg>
       </div>
       <div class="p-stack">
         <div class="p-card">
-          <div class="p-card-lbl" style="color:#7CD8FF">① 원통 턴테이블 회전 각도: ${turntableDeg}° (목표 180°)</div>
+          <div class="p-card-lbl" style="color:#7CD8FF">① 원통 턴테이블 회전 각도: ${turntableDeg}°${hint ? ' (목표 180°)' : ''}</div>
           <div class="p-row">
             <button class="s-btn" id="p3-rot-l">↺ -30°</button>
             <input type="range" min="0" max="330" step="30" value="${turntableDeg}" id="p3-rot-r" class="p-range"/>
@@ -269,14 +286,14 @@ function boardP03(stage: HTMLElement, s: Record<string, unknown>, h: BoardHelper
           </div>
         </div>
         <div class="p-card">
-          <div class="p-card-lbl" style="color:#FFB86B">② 영혼의 배 뚜껑 수평 기울기: ${lidTiltDeg}° (목표 0°)</div>
+          <div class="p-card-lbl" style="color:#FFB86B">② 영혼의 배 뚜껑 수평 기울기: ${lidTiltDeg}°${hint ? ' (목표 0°)' : ''}</div>
           <div class="p-row">
             <button class="s-btn" id="p3-tl">-5°</button>
             <input type="range" min="-30" max="30" step="5" value="${lidTiltDeg}" id="p3-tr" class="p-range"/>
             <button class="s-btn" id="p3-tp">+5°</button>
           </div>
         </div>
-        <button class="s-btn primary" id="p3-seat">${aligned ? '✨ 뚜껑 안착 결합 (준비 완료)' : '🔒 뚜껑 안착 결합 시도'}</button>
+        <button class="s-btn primary" id="p3-seat">${aligned && hint ? '✨ 뚜껑 안착 결합 (준비 완료)' : '🔒 뚜껑 안착 결합 시도'}</button>
       </div>
     </div>
   `;
@@ -291,7 +308,7 @@ function boardP03(stage: HTMLElement, s: Record<string, unknown>, h: BoardHelper
     h.patchState(3, { turntableDeg: (turntableDeg + 30) % 360 });
     h.rerender();
   };
-  stage.querySelector<HTMLInputElement>('#p3-rot-r')!.oninput = (e) => {
+  stage.querySelector<HTMLInputElement>('#p3-rot-r')!.onchange = (e) => {
     h.patchState(3, { turntableDeg: Number((e.target as HTMLInputElement).value) });
     h.rerender();
   };
@@ -305,7 +322,7 @@ function boardP03(stage: HTMLElement, s: Record<string, unknown>, h: BoardHelper
     h.patchState(3, { lidTiltDeg: Math.min(30, lidTiltDeg + 5) });
     h.rerender();
   };
-  stage.querySelector<HTMLInputElement>('#p3-tr')!.oninput = (e) => {
+  stage.querySelector<HTMLInputElement>('#p3-tr')!.onchange = (e) => {
     h.patchState(3, { lidTiltDeg: Number((e.target as HTMLInputElement).value) });
     h.rerender();
   };
@@ -313,7 +330,11 @@ function boardP03(stage: HTMLElement, s: Record<string, unknown>, h: BoardHelper
     if (aligned) {
       h.solve(3, { turntableDeg: 180, lidTiltDeg: 0, seated: true }, '마눙굴 항아리 톱니(180°)와 영혼의 배 뚜껑(0°) 결합 복원 완료!');
     } else {
-      h.setErr(`톱니(${turntableDeg}° → 180°) 또는 뚜껑 기울기(${lidTiltDeg}° → 0°)가 어긋나 톱니가 물리지 않습니다.`);
+      h.setErr(
+        hint
+          ? `톱니(${turntableDeg}° → 180°) 또는 뚜껑 기울기(${lidTiltDeg}° → 0°)가 어긋나 톱니가 물리지 않습니다.`
+          : `톱니 각도 차이(${Math.abs(180 - turntableDeg)}°) 또는 뚜껑 기울기(${lidTiltDeg}°)가 물리지 않습니다. 서하린의 기어 실측 단서를 확인하세요.`
+      );
     }
   };
 }
@@ -321,41 +342,75 @@ function boardP03(stage: HTMLElement, s: Record<string, unknown>, h: BoardHelper
 function boardP04(stage: HTMLElement, s: Record<string, unknown>, h: BoardHelpers) {
   const links = { '1521': null, '1898': null, '1946': null, ...((s.links as Record<string, string | null>) || {}) };
   const selectedLeft = (s.selectedLeft as string | null) || null;
+  const checkedWrong = Array.isArray(s.checkedWrong) ? (s.checkedWrong as string[]) : [];
+  const hint = h.difficulty.showTargetHints;
+
   const leftNodes = [
-    { id: '1521', label: '① 1521 막탄 항해', y: 40, color: '#FFD86B' },
-    { id: '1898', label: '② 1898 말롤로스 헌법', y: 110, color: '#52EFBF' },
+    { id: '1521', label: '① 1521 막탄 항해', y: 44, color: '#FFD86B' },
+    { id: '1898', label: '② 1898 말롤로스 헌법', y: 112, color: '#52EFBF' },
     { id: '1946', label: '③ 1946 공화국 독립', y: 180, color: '#7CD8FF' },
   ];
-  const rightNodes = [
-    { id: 'manila_north', label: '마닐라 북부 (북 ↑)', y: 40 },
-    { id: 'malolos', label: '말롤로스 성당 (서 ←)', y: 110 },
-    { id: 'visayas', label: '비사야 해협 (동남)', y: 180 },
+  const mapPins = [
+    { id: 'manila_north', label: '마닐라 북부 (북↑)', x: 256, y: 58 },
+    { id: 'malolos', label: '말롤로스 성당 (서←)', x: 204, y: 98 },
+    { id: 'visayas', label: '비사야 해협 (동남)', x: 288, y: 162 },
   ];
 
   const wires = leftNodes
     .map((ln) => {
       const rid = links[ln.id as keyof typeof links];
-      const rn = rightNodes.find((r) => r.id === rid);
-      return rn ? `<line x1="10" y1="${ln.y}" x2="210" y2="${rn.y}" stroke="${ln.color}" stroke-width="5" stroke-linecap="round"/>` : '';
+      const pin = mapPins.find((p) => p.id === rid);
+      if (!pin) return '';
+      const isBad = checkedWrong.includes(ln.id);
+      return `<line x1="12" y1="${ln.y}" x2="${pin.x}" y2="${pin.y}" stroke="${isBad ? '#FF6E6E' : ln.color}" stroke-width="${
+        isBad ? 4 : 5
+      }" ${isBad ? 'stroke-dasharray="7 5"' : ''} stroke-linecap="round"/>`;
     })
     .join('');
 
   stage.innerHTML = `
     <div class="au-board">
-      <div class="p-subhead" style="color:#E6C886">왼쪽 연표 노드를 클릭(또는 드래그)한 뒤 오른쪽 해협 핀과 크로스라인을 연결하세요</div>
-      <div class="p-wires-grid">
+      <div class="p-subhead" style="color:#E6C886">왼쪽 연표 노드를 클릭(또는 드래그)한 뒤 2D 필리핀 군도 고지도 위 거점 핀과 연결하세요</div>
+      <div class="p-map-cross-grid">
         <div class="p-stack-lg">
           ${leftNodes
             .map(
               (n) =>
-                `<button class="s-btn" data-ln="${n.id}" draggable="true" style="border-color:${selectedLeft === n.id ? '#fff' : n.color};background:${selectedLeft === n.id ? '#364654' : '#202A34'};text-align:left">${n.label}</button>`
+                `<button class="s-btn" data-ln="${n.id}" draggable="true" style="border-color:${
+                  selectedLeft === n.id ? '#fff' : checkedWrong.includes(n.id) ? '#FF6E6E' : n.color
+                };background:${selectedLeft === n.id ? '#364654' : '#202A34'};text-align:left">${n.label}</button>`
             )
             .join('')}
         </div>
-        <svg viewBox="0 0 220 220" width="220" height="220" class="p-wire-svg">${wires}</svg>
-        <div class="p-stack-lg">
-          ${rightNodes.map((r) => `<button class="s-btn" data-rn="${r.id}" style="text-align:right">${r.label}</button>`).join('')}
-        </div>
+        <svg viewBox="0 0 360 220" class="p-map-svg">
+          <defs>
+            <pattern id="seaGrid" width="24" height="24" patternUnits="userSpaceOnUse">
+              <path d="M 24 0 L 0 0 0 24" fill="none" stroke="rgba(124,216,255,0.08)" stroke-width="1"/>
+            </pattern>
+          </defs>
+          <rect x="0" y="0" width="360" height="220" rx="8" fill="#0B1520"/>
+          <rect x="0" y="0" width="360" height="220" rx="8" fill="url(#seaGrid)"/>
+          <text x="16" y="18" fill="rgba(124,216,255,0.65)" font-size="10" font-weight="700">SULU · ARCHIPELAGO MAP</text>
+          <!-- Stylized Philippine archipelago landmasses (Luzon, Visayas, Mindanao) -->
+          <path d="M225 22 L272 28 L280 70 L264 102 L236 105 L206 96 L212 62 Z" fill="#2A3A47" stroke="#5D7486" stroke-width="2"/>
+          <path d="M238 124 L268 120 L312 138 L302 162 L262 158 L242 142 Z" fill="#2A3A47" stroke="#5D7486" stroke-width="2"/>
+          <path d="M250 172 L308 168 L328 198 L284 208 L248 196 Z" fill="#2A3A47" stroke="#5D7486" stroke-width="2"/>
+          <text x="334" y="24" text-anchor="end" fill="#52EFBF" font-size="10" font-weight="800">N ↑</text>
+          ${wires}
+          ${mapPins
+            .map((pin) => {
+              const linkedNode = leftNodes.find((n) => links[n.id as keyof typeof links] === pin.id);
+              const isBad = linkedNode && checkedWrong.includes(linkedNode.id);
+              const col = isBad ? '#FF6E6E' : linkedNode ? linkedNode.color : '#E6C886';
+              return `<g class="p-map-pin" data-rn="${pin.id}" style="cursor:pointer">
+                <circle cx="${pin.x}" cy="${pin.y}" r="14" fill="rgba(11,14,19,0.72)" stroke="${col}" stroke-width="2.2"/>
+                <circle cx="${pin.x}" cy="${pin.y}" r="5" fill="${col}"/>
+                <rect x="${pin.x - 52}" y="${pin.y + 16}" width="104" height="17" rx="4" fill="rgba(11,16,23,0.9)" stroke="rgba(230,200,134,0.4)"/>
+                <text x="${pin.x}" y="${pin.y + 28}" text-anchor="middle" fill="#F1F5F9" font-size="9.5" font-weight="800">${pin.label}</text>
+              </g>`;
+            })
+            .join('')}
+        </svg>
       </div>
       <div class="p-row-end" style="margin-top:12px">
         <button class="s-btn primary" id="p4-verify">✔ 3대 연표 결선 확인</button>
@@ -381,7 +436,8 @@ function boardP04(stage: HTMLElement, s: Record<string, unknown>, h: BoardHelper
         return;
       }
       soundEngine.playClick();
-      h.patchState(4, { links: { ...links, [ln]: b.dataset.rn }, selectedLeft: null });
+      const nextWrong = checkedWrong.filter((id) => id !== ln);
+      h.patchState(4, { links: { ...links, [ln]: b.dataset.rn }, selectedLeft: null, checkedWrong: nextWrong });
       h.rerender();
     };
     b.onclick = () => connect(selectedLeft);
@@ -392,10 +448,21 @@ function boardP04(stage: HTMLElement, s: Record<string, unknown>, h: BoardHelper
     };
   });
   stage.querySelector<HTMLElement>('#p4-verify')!.onclick = () => {
-    if (links['1521'] === 'visayas' && links['1898'] === 'malolos' && links['1946'] === 'manila_north') {
-      h.solve(4, { links }, '군도 해협과 3대 독립 연표 크로스 결선 완벽 일치!');
+    const expected: Record<string, string> = {
+      '1521': 'visayas',
+      '1898': 'malolos',
+      '1946': 'manila_north',
+    };
+    const wrong = Object.keys(expected).filter((k) => links[k as keyof typeof links] !== expected[k]);
+    if (wrong.length === 0) {
+      h.solve(4, { links, checkedWrong: [] }, '군도 해협과 3대 독립 연표 크로스 결선 완벽 일치!');
     } else {
-      h.setErr('잘못 연결된 노선이 있습니다. 린의 방위 신호(2번 말롤로스=서←, 3번 마닐라=북↑)를 대조하세요.');
+      h.patchState(4, { checkedWrong: wrong });
+      h.setErr(
+        hint
+          ? '적색 점선으로 표시된 노선이 어긋났습니다. (2번 말롤로스=서←, 3번 마닐라=북↑) 다시 연결하세요.'
+          : '적색 점선으로 표시된 노선이 린의 해협 측량 좌표와 일치하지 않습니다. 해당 선만 다시 연결하세요.'
+      );
     }
   };
 }
@@ -403,10 +470,11 @@ function boardP04(stage: HTMLElement, s: Record<string, unknown>, h: BoardHelper
 function boardP05(stage: HTMLElement, s: Record<string, unknown>, h: BoardHelpers) {
   const rows = ((s.rows as (string | null)[]) || [null, null, null]).slice(0, 3);
   const heddleOpen = ((s.heddleOpen as boolean[]) || [false, false, false]).slice(0, 3);
+  const hint = h.difficulty.showTargetHints;
   const shuttles = [
-    { id: 'gold', label: '☀ 황금 실 (1줄)', hex: '#E6C886' },
-    { id: 'crimson', label: '⚡ 진홍 실 (2줄)', hex: '#E35B5B' },
-    { id: 'cyan', label: '🌊 청록 실 (3줄)', hex: '#52D7E8' },
+    { id: 'gold', label: hint ? '☀ 황금 실 (1줄)' : '☀ 황금 실', hex: '#E6C886' },
+    { id: 'crimson', label: hint ? '⚡ 진홍 실 (2줄)' : '⚡ 진홍 실', hex: '#E35B5B' },
+    { id: 'cyan', label: hint ? '🌊 청록 실 (3줄)' : '🌊 청록 실', hex: '#52D7E8' },
   ];
 
   stage.innerHTML = `
@@ -473,7 +541,11 @@ function boardP05(stage: HTMLElement, s: Record<string, unknown>, h: BoardHelper
     if (rows[0] === 'gold' && rows[1] === 'crimson' && rows[2] === 'cyan') {
       h.solve(5, { rows }, '이푸가오 3색 씨실·날실 직조 완료! 전통 직물 전시가 복원되었습니다.');
     } else {
-      h.setErr('상단(황금)→중단(진홍)→하단(청록) 순서가 어긋났습니다. 잘못된 줄만 되감기 후 다시 엮어 보세요.');
+      h.setErr(
+        hint
+          ? '상단(황금)→중단(진홍)→하단(청록) 순서가 어긋났습니다. 잘못된 줄만 되감기 후 다시 엮어 보세요.'
+          : '카이의 직물 루페 무전 순서와 어긋납니다. 잘못된 줄만 되감기 후 다시 엮어 보세요.'
+      );
     }
   };
 }
@@ -483,13 +555,14 @@ function boardP06(stage: HTMLElement, s: Record<string, unknown>, h: BoardHelper
   const dir = String(s.dir || 'N');
   const dispatched = Boolean(s.dispatched);
   const routeOk = switches[0] === 'B' && switches[1] === 'B' && switches[2] === 'A';
+  const hint = h.difficulty.showTargetHints;
 
   stage.innerHTML = `
     <div class="au-board p-stack">
       <svg viewBox="0 0 460 120" class="p-tram-svg">
         <text x="16" y="20" fill="#89EFD0" font-size="11" font-weight="700">Intramuros 출발</text>
         <text x="200" y="108" fill="#E6C886" font-size="11" font-weight="700">2번 비논도 우회선</text>
-        <text x="346" y="20" fill="#52EFBF" font-size="11" font-weight="700">동→ 파시그강 도개교</text>
+        <text x="346" y="20" fill="#52EFBF" font-size="11" font-weight="700">파시그강 도개교</text>
         <path d="M20 40 L140 40 L290 40 L430 40" stroke="#303D4A" stroke-width="6" fill="none"/>
         <path d="M140 40 L200 84 L320 84 L360 40" stroke="#303D4A" stroke-width="6" fill="none"/>
         <path d="${routeOk ? 'M20 40 L140 40 L200 84 L320 84 L360 40 L430 40' : 'M20 40 L140 40'}" stroke="${routeOk ? '#52EFBF' : '#FF6E6E'}" stroke-width="6" fill="none" stroke-linecap="round"/>
@@ -499,7 +572,7 @@ function boardP06(stage: HTMLElement, s: Record<string, unknown>, h: BoardHelper
         ${[0, 1, 2]
           .map(
             (i) =>
-              `<button class="s-btn ${switches[i] === (i < 2 ? 'B' : 'A') ? 'amber' : ''}" data-sw="${i}">레버 S${i + 1}: <strong>${switches[i]} 분기</strong></button>`
+              `<button class="s-btn ${hint && switches[i] === (i < 2 ? 'B' : 'A') ? 'amber' : ''}" data-sw="${i}">레버 S${i + 1}: <strong>${switches[i]} 분기</strong></button>`
           )
           .join('')}
       </div>
@@ -539,7 +612,11 @@ function boardP06(stage: HTMLElement, s: Record<string, unknown>, h: BoardHelper
     if (routeOk && dir === 'E') {
       h.solve(6, { switches, dir: 'E', dispatched: true }, '전차가 2번 우회선로를 따라 동쪽 파시그강 도개교를 무사히 건넜습니다!');
     } else {
-      h.setErr('선로 조합(S1=B, S2=B, S3=A) 또는 뷰파인더 방위(동 →)가 맞지 않아 완충기에 정지했습니다.');
+      h.setErr(
+        hint
+          ? '선로 조합(S1=B, S2=B, S3=A) 또는 뷰파인더 방위(동 →)가 맞지 않아 완충기에 정지했습니다.'
+          : '선로 연결 또는 뷰파인더 방위가 이안의 노선표 무전과 일치하지 않아 완충기에 정지했습니다.'
+      );
     }
   };
 }
@@ -551,6 +628,7 @@ function boardP07(stage: HTMLElement, s: Record<string, unknown>, h: BoardHelper
   const p3 = Math.round(20 + 0.4 * valves[2]);
   const psis = [p1, p2, p3];
   const allGreen = psis.every((v) => v >= 55 && v <= 65);
+  const hint = h.difficulty.showTargetHints;
 
   stage.innerHTML = `
     <div class="au-board p-stack">
@@ -605,24 +683,30 @@ function boardP07(stage: HTMLElement, s: Record<string, unknown>, h: BoardHelper
     if (allGreen) {
       h.solve(7, { valves }, 'B1 주 급수관 3구역 모두 60 PSI 평형 달성! 통로 배수가 완료되었습니다.');
     } else {
-      h.setErr(`현재 수압 [${psis.join(', ')}] PSI. 3구역 모두 55~65 PSI 녹색 대역에 맞추세요 (1:25%, 2:50%, 3:100%).`);
+      h.setErr(
+        hint
+          ? `현재 수압 [${psis.join(', ')}] PSI. 3구역 모두 55~65 PSI 녹색 대역에 맞추세요 (1:25%, 2:50%, 3:100%).`
+          : `현재 수압 [${psis.join(', ')}] PSI. 세 압력계 바늘을 모두 중앙 녹색 대역(55~65 PSI)에 맞추세요.`
+      );
     }
   };
 }
 
 function boardP08(stage: HTMLElement, s: Record<string, unknown>, h: BoardHelpers) {
-  const boilerPsi = Number(s.boilerPsi ?? 145);
-  const pump1Rpm = Number(s.pump1Rpm ?? 800);
-  const pump2Rpm = Number(s.pump2Rpm ?? 1560);
-  const psiOk = boilerPsi >= 70 && boilerPsi <= 90;
-  const rpmOk = Math.abs(pump1Rpm - pump2Rpm) <= 30 && pump1Rpm >= 1150 && pump1Rpm <= 1250;
+  let livePsi = Number(s.boilerPsi ?? 145);
+  let pump1Rpm = Number(s.pump1Rpm ?? 800);
+  let pump2Rpm = Number(s.pump2Rpm ?? 1560);
+  const tol = h.difficulty.p08RpmTolerance;
+  const hint = h.difficulty.showTargetHints;
+  const psiOk = (v: number) => v >= 70 && v <= 90;
+  const isPsiOk = psiOk(livePsi);
 
   stage.innerHTML = `
     <div class="au-board p-stack">
-      <div class="p-card ${psiOk ? 'ok' : 'warn'}" style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px">
+      <div class="p-card ${isPsiOk ? 'ok' : 'warn'}" id="p8-psi-card" style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px">
         <div>
-          <div style="font:800 13px sans-serif;color:${psiOk ? '#52EFBF' : '#FF6E6E'}">① 보일러 증기 압력: ${boilerPsi} PSI (안전 대역 70~90 PSI)</div>
-          <div class="p-meter-track"><div class="p-meter-fill" style="width:${Math.min(100, Math.round((boilerPsi / 160) * 100))}%;background:${psiOk ? '#52EFBF' : '#FF6E6E'}"></div></div>
+          <div id="p8-psi-lbl" style="font:800 13px sans-serif;color:${isPsiOk ? '#52EFBF' : '#FF6E6E'}">① 보일러 증기 압력: ${Math.round(livePsi)} PSI (안전 대역 70~90 PSI${h.difficulty.p08DriftPerSec > 0 ? ' · 실시간 상승 중!' : ''})</div>
+          <div class="p-meter-track"><div id="p8-psi-bar" class="p-meter-fill" style="width:${Math.min(100, Math.round((livePsi / 160) * 100))}%;background:${isPsiOk ? '#52EFBF' : '#FF6E6E'}"></div></div>
         </div>
         <div class="p-row">
           <button class="s-btn danger" id="p8-bleed">💨 증기 배출 (-15 PSI)</button>
@@ -631,11 +715,11 @@ function boardP08(stage: HTMLElement, s: Record<string, unknown>, h: BoardHelper
       </div>
       <div class="p-grid-2">
         <div class="p-card">
-          <div style="font:800 12px monospace;color:#FFB86B">펌프 1호기: ${pump1Rpm} RPM (목표 ~1200)</div>
+          <div id="p8-r1-lbl" style="font:800 12px monospace;color:#FFB86B">펌프 1호기: ${pump1Rpm} RPM${hint ? ' (목표 ~1200)' : ''}</div>
           <input type="range" min="700" max="1600" step="20" value="${pump1Rpm}" id="p8-r1" style="width:100%;margin-top:8px"/>
         </div>
         <div class="p-card">
-          <div style="font:800 12px monospace;color:#7CD8FF">펌프 2호기: ${pump2Rpm} RPM (차이: ${Math.abs(pump1Rpm - pump2Rpm)} RPM)</div>
+          <div id="p8-r2-lbl" style="font:800 12px monospace;color:#7CD8FF">펌프 2호기: ${pump2Rpm} RPM (차이: ${Math.abs(pump1Rpm - pump2Rpm)} RPM · 허용 ±${tol})</div>
           <input type="range" min="700" max="1600" step="20" value="${pump2Rpm}" id="p8-r2" style="width:100%;margin-top:8px"/>
         </div>
       </div>
@@ -643,56 +727,114 @@ function boardP08(stage: HTMLElement, s: Record<string, unknown>, h: BoardHelper
     </div>
   `;
 
+  const syncPsiDom = () => {
+    const rounded = Math.round(livePsi);
+    const ok = psiOk(rounded);
+    const card = stage.querySelector('#p8-psi-card');
+    const lbl = stage.querySelector<HTMLElement>('#p8-psi-lbl');
+    const bar = stage.querySelector<HTMLElement>('#p8-psi-bar');
+    if (card) {
+      card.classList.toggle('ok', ok);
+      card.classList.toggle('warn', !ok);
+    }
+    if (lbl) {
+      lbl.style.color = ok ? '#52EFBF' : '#FF6E6E';
+      lbl.textContent = `① 보일러 증기 압력: ${rounded} PSI (안전 대역 70~90 PSI${h.difficulty.p08DriftPerSec > 0 ? ' · 실시간 상승 중!' : ''})`;
+    }
+    if (bar) {
+      bar.style.width = `${Math.min(100, Math.round((rounded / 160) * 100))}%`;
+      bar.style.background = ok ? '#52EFBF' : '#FF6E6E';
+    }
+  };
+
+  if (h.difficulty.p08DriftPerSec > 0 && !h.isSolved) {
+    let tickCount = 0;
+    const timer = window.setInterval(() => {
+      if (livePsi < 160) {
+        livePsi = Math.min(160, livePsi + h.difficulty.p08DriftPerSec * 0.25);
+        syncPsiDom();
+        tickCount++;
+        if (tickCount % 4 === 0) {
+          h.patchState(8, { boilerPsi: Math.round(livePsi) });
+        }
+      }
+    }, 250);
+    h.registerCleanup(() => window.clearInterval(timer));
+  }
+
   stage.querySelector<HTMLElement>('#p8-bleed')!.onclick = () => {
     soundEngine.playClick();
-    h.patchState(8, { boilerPsi: Math.max(50, boilerPsi - 15) });
-    h.rerender();
+    livePsi = Math.max(50, Math.round(livePsi) - 15);
+    h.patchState(8, { boilerPsi: livePsi });
+    syncPsiDom();
   };
   stage.querySelector<HTMLElement>('#p8-add')!.onclick = () => {
     soundEngine.playClick();
-    h.patchState(8, { boilerPsi: Math.min(160, boilerPsi + 10) });
-    h.rerender();
+    livePsi = Math.min(160, Math.round(livePsi) + 10);
+    h.patchState(8, { boilerPsi: livePsi });
+    syncPsiDom();
   };
   stage.querySelector<HTMLInputElement>('#p8-r1')!.oninput = (e) => {
-    h.patchState(8, { pump1Rpm: Number((e.target as HTMLInputElement).value) });
-    h.rerender();
+    pump1Rpm = Number((e.target as HTMLInputElement).value);
+    const l1 = stage.querySelector('#p8-r1-lbl');
+    const l2 = stage.querySelector('#p8-r2-lbl');
+    if (l1) l1.textContent = `펌프 1호기: ${pump1Rpm} RPM${hint ? ' (목표 ~1200)' : ''}`;
+    if (l2) l2.textContent = `펌프 2호기: ${pump2Rpm} RPM (차이: ${Math.abs(pump1Rpm - pump2Rpm)} RPM · 허용 ±${tol})`;
+  };
+  stage.querySelector<HTMLInputElement>('#p8-r1')!.onchange = (e) => {
+    pump1Rpm = Number((e.target as HTMLInputElement).value);
+    h.patchState(8, { pump1Rpm });
   };
   stage.querySelector<HTMLInputElement>('#p8-r2')!.oninput = (e) => {
-    h.patchState(8, { pump2Rpm: Number((e.target as HTMLInputElement).value) });
-    h.rerender();
+    pump2Rpm = Number((e.target as HTMLInputElement).value);
+    const l2 = stage.querySelector('#p8-r2-lbl');
+    if (l2) l2.textContent = `펌프 2호기: ${pump2Rpm} RPM (차이: ${Math.abs(pump1Rpm - pump2Rpm)} RPM · 허용 ±${tol})`;
+  };
+  stage.querySelector<HTMLInputElement>('#p8-r2')!.onchange = (e) => {
+    pump2Rpm = Number((e.target as HTMLInputElement).value);
+    h.patchState(8, { pump2Rpm });
   };
   stage.querySelector<HTMLElement>('#p8-sync')!.onclick = () => {
-    if (psiOk && rpmOk) {
-      h.solve(8, { boilerPsi, pump1Rpm, pump2Rpm, synced: true }, '보일러 압력 정상(70~90 PSI) & 복식 순환 펌프 1200 RPM 동기 잠금 완료!');
+    const curPsi = Math.round(livePsi);
+    const curRpmOk = Math.abs(pump1Rpm - pump2Rpm) <= tol && pump1Rpm >= 1150 && pump1Rpm <= 1250;
+    if (psiOk(curPsi) && curRpmOk) {
+      h.solve(8, { boilerPsi: curPsi, pump1Rpm, pump2Rpm, synced: true }, '보일러 압력 정상(70~90 PSI) & 복식 순환 펌프 1200 RPM 동기 잠금 완료!');
     } else {
-      h.setErr('보일러 압력을 70~90 PSI로 낮추고, 두 펌프를 1150~1250 RPM 사이(오차 ±30 이내)로 맞추세요.');
+      h.setErr(
+        hint
+          ? `보일러(${curPsi} PSI → 70~90 PSI)와 1·2호기 펌프(1150~1250 RPM, 차이 ±${tol} 이내)를 모두 맞춘 뒤 잠그세요.`
+          : `릴리프 밸브 작동! 보일러 압력(70~90 PSI)을 유지한 채 카이의 안정 RPM 대역(±${tol} 이내)에 동기화하세요.`
+      );
     }
   };
 }
 
 function boardP09(stage: HTMLElement, s: Record<string, unknown>, h: BoardHelpers) {
-  const heat = Number(s.heat ?? 0);
+  let heat = Number(s.heat ?? 0);
   const genRunning = Boolean(s.genRunning);
   const bus = ((s.bus as boolean[]) || [true, true, false]).slice(0, 3);
   const busOk = !bus[0] && !bus[1] && bus[2];
+  const hint = h.difficulty.showTargetHints;
+  const holdSec = (h.difficulty.p09HoldMs / 1000).toFixed(1);
 
   stage.innerHTML = `
     <div class="au-board p-stack">
       <div class="p-card ${genRunning ? 'ok' : 'warn'}" style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px">
-        <div>
-          <div style="font:800 13px sans-serif;color:#FFB86B">① 비상 디젤 발전기 (${genRunning ? '60Hz 정상 가동 중 ✔' : `예열 ${heat}% / 정지`})</div>
-          <div style="font-size:12px;color:#9BB0BE">코일을 100%까지 예열한 뒤 크랭크를 당겨 60Hz 발전을 시작하세요.</div>
+        <div style="flex:1;min-width:220px">
+          <div id="p9-heat-lbl" style="font:800 13px sans-serif;color:#FFB86B">① 비상 디젤 발전기 (${genRunning ? '60Hz 정상 가동 중 ✔' : `예열 ${Math.round(heat)}% / 정지`})</div>
+          <div style="font-size:12px;color:#9BB0BE">예열 스위치를 ${holdSec}초간 꾹 눌러 코일을 100% 예열한 뒤 크랭크를 기동하세요.</div>
+          <div class="p-hold-bar"><div id="p9-heat-fill" class="p-hold-fill" style="width:${Math.min(100, Math.round(heat))}%"></div></div>
         </div>
         <div class="p-row">
-          <button class="s-btn amber" id="p9-heat">🔥 코일 예열 (+50%)</button>
-          <button class="s-btn primary" id="p9-crank" ${heat < 100 ? 'disabled' : ''}>🔑 크랭크 기동</button>
+          <button class="s-btn amber" id="p9-heat" ${heat >= 100 || genRunning ? 'disabled' : ''}>🔥 ${heat >= 100 ? '예열 완료 ✔' : `코일 예열 (${holdSec}초 꾹 누르기)`}</button>
+          <button class="s-btn primary" id="p9-crank" ${heat < 100 || genRunning ? 'disabled' : ''}>🔑 크랭크 기동</button>
         </div>
       </div>
       <div class="p-grid-3">
         ${[0, 1, 2]
           .map(
-            (i) => `<button class="s-btn ${bus[i] ? (i < 2 ? 'danger' : 'primary') : ''}" data-bus="${i}">
-              베이 ${i + 1} (${i < 2 ? '침수 단락 위험!' : '예비 우회 모선'})<br>
+            (i) => `<button class="s-btn ${bus[i] ? (hint && i < 2 ? 'danger' : i < 2 ? 'amber' : 'primary') : ''}" data-bus="${i}">
+              베이 ${i + 1} (${hint ? (i < 2 ? '침수 단락 위험!' : '예비 우회 모선') : `고압 모선 #${i + 1}`})<br>
               <strong>${bus[i] ? '🔌 ON (투입)' : '⬜ OFF (차단)'}</strong>
             </button>`
           )
@@ -702,15 +844,46 @@ function boardP09(stage: HTMLElement, s: Record<string, unknown>, h: BoardHelper
     </div>
   `;
 
-  stage.querySelector<HTMLElement>('#p9-heat')!.onclick = () => {
-    soundEngine.playClick();
-    h.patchState(9, { heat: Math.min(100, heat + 50) });
-    h.rerender();
+  const heatBtn = stage.querySelector<HTMLButtonElement>('#p9-heat')!;
+  let holdTimer: number | null = null;
+  const stopHold = (commitIfPartial: boolean) => {
+    if (holdTimer === null) return;
+    window.clearInterval(holdTimer);
+    holdTimer = null;
+    if (commitIfPartial && heat < 100) {
+      h.patchState(9, { heat: Math.round(heat) });
+    }
   };
+  h.registerCleanup(() => {
+    if (holdTimer !== null) window.clearInterval(holdTimer);
+  });
+
+  heatBtn.addEventListener('pointerdown', () => {
+    if (heat >= 100 || genRunning || holdTimer !== null) return;
+    const stepPer50Ms = (100 / h.difficulty.p09HoldMs) * 50;
+    soundEngine.playClick();
+    holdTimer = window.setInterval(() => {
+      heat = Math.min(100, heat + stepPer50Ms);
+      const fill = stage.querySelector<HTMLElement>('#p9-heat-fill');
+      const lbl = stage.querySelector('#p9-heat-lbl');
+      if (fill) fill.style.width = `${Math.round(heat)}%`;
+      if (lbl) lbl.textContent = `① 비상 디젤 발전기 (예열 ${Math.round(heat)}% / 정지)`;
+      if (heat >= 100) {
+        stopHold(false);
+        soundEngine.playClick();
+        h.patchState(9, { heat: 100 });
+        h.rerender();
+      }
+    }, 50);
+  });
+  heatBtn.addEventListener('pointerup', () => stopHold(true));
+  heatBtn.addEventListener('pointerleave', () => stopHold(true));
+  heatBtn.addEventListener('pointercancel', () => stopHold(true));
+
   stage.querySelector<HTMLElement>('#p9-crank')!.onclick = () => {
     soundEngine.playPowerOn();
     h.patchState(9, { genRunning: true });
-    h.setInfo('디젤 발전기 60Hz 기동 성공! 이제 침수 단락된 1·2번을 OFF하고 3번 우회 모선만 ON으로 두세요.');
+    h.setInfo('디젤 발전기 60Hz 기동 성공! 이제 린의 점검표 무전에 맞춰 배전반 모선(1~3)을 라우팅하세요.');
   };
   stage.querySelectorAll<HTMLElement>('[data-bus]').forEach((b) => {
     b.onclick = () => {
@@ -724,14 +897,18 @@ function boardP09(stage: HTMLElement, s: Record<string, unknown>, h: BoardHelper
   });
   stage.querySelector<HTMLElement>('#p9-main')!.onclick = () => {
     if (!genRunning) {
-      h.setErr('먼저 디젤 발전기를 예열(100%) 후 크랭크 기동하세요.');
+      h.setErr('먼저 디젤 발전기를 끝까지 예열(100%)한 뒤 크랭크 기동하세요.');
       return;
     }
     if (busOk) {
       soundEngine.playPowerOn();
       h.solve(9, { heat: 100, genRunning: true, bus, breaker: true }, '비상 전력 복구 완료! 박물관 1F·2F·B1 전체 정식 조명이 점등되었습니다!');
     } else {
-      h.setErr('과전류 트립! 단락된 1·2번 모선을 OFF로 끄고, 3번 예비 우회 모선만 ON 상태로 투입하세요.');
+      h.setErr(
+        hint
+          ? '과전류 트립! 단락된 1·2번 모선을 OFF로 끄고, 3번 예비 우회 모선만 ON 상태로 투입하세요.'
+          : '과전류 트립! 침수 단락된 모선을 차단하고 린의 무전([3번]+[반전 ⇄])대로 우회 모선만 투입하세요.'
+      );
     }
   };
 }
@@ -739,12 +916,14 @@ function boardP09(stage: HTMLElement, s: Record<string, unknown>, h: BoardHelper
 function boardP10(stage: HTMLElement, s: Record<string, unknown>, h: BoardHelpers) {
   const rh = Number(s.rh ?? 72);
   const temp = Number(s.temp ?? 24);
+  const crateLatch = Boolean(s.crateLatch);
   const crane = ((s.crane as number[]) || [0, 1]).slice(0, 2);
   const cratePos = ((s.cratePos as number[]) || [1, 3]).slice(0, 2);
   const holding = Boolean(s.holding);
   const dewOk = rh === 45 && temp === 18;
   const puddles = new Set(['2,2', '3,2', '2,3']);
   const targetKey = '4,1';
+  const hint = h.difficulty.showTargetHints;
 
   let cells = '';
   for (let y = 1; y <= 4; y++) {
@@ -764,7 +943,7 @@ function boardP10(stage: HTMLElement, s: Record<string, unknown>, h: BoardHelper
     <div class="au-board p-grid-1-auto">
       <div class="p-stack">
         <div class="p-card ${dewOk ? 'ok' : ''}">
-          <div style="font:800 13px sans-serif;color:${dewOk ? '#52EFBF' : '#7CD8FF'}">① 제습 공조 이슬점 설정 ${dewOk ? '✔ 안개 제거됨' : '(목표 45% RH / 18°C)'}</div>
+          <div style="font:800 13px sans-serif;color:${dewOk ? '#52EFBF' : '#7CD8FF'}">① 카이 · 제습 공조 ${dewOk ? '✔ 안개 제거됨' : hint ? '(목표 45% RH / 18°C)' : '(적정 이슬점 필요)'}</div>
           <div class="p-row" style="margin-top:6px">
             <button class="s-btn" id="p10-rhd">-9% RH</button><strong class="p-mono">${rh}% RH</strong><button class="s-btn" id="p10-rhu">+9%</button>
           </div>
@@ -772,8 +951,18 @@ function boardP10(stage: HTMLElement, s: Record<string, unknown>, h: BoardHelper
             <button class="s-btn" id="p10-td">-2°C</button><strong class="p-mono">${temp}°C</strong><button class="s-btn" id="p10-tu">+2°C</button>
           </div>
         </div>
+        <div class="p-card ${crateLatch ? 'ok' : 'warn'}">
+          <div class="p-row-between">
+            <span style="font:800 12px sans-serif;color:#FFB86B">② 서하린 · 1번 방수 크레이트 걸쇠: ${crateLatch ? '체결 완료 ✔' : '미체결 🔒'}</span>
+            ${
+              h.soloMode && !crateLatch
+                ? '<button class="s-btn amber" id="p10-latch-btn" style="padding:4px 9px;font-size:11px">⚙ 걸쇠 체결</button>'
+                : ''
+            }
+          </div>
+        </div>
         <div class="p-stack">
-          <div style="font:800 12px sans-serif;color:#52EFBF">② 2축 호이스트 크레인 조작 ((1,3) 📦 → (4,1) 선반)</div>
+          <div style="font:800 12px sans-serif;color:#52EFBF">③ 린 · 2축 호이스트 크레인 조작 ((1,3) 📦 → (4,1) 선반)</div>
           <div class="p-row">
             <button class="s-btn" data-mv="-1,0">◀</button>
             <button class="s-btn" data-mv="0,-1">▲</button>
@@ -807,6 +996,11 @@ function boardP10(stage: HTMLElement, s: Record<string, unknown>, h: BoardHelper
     h.patchState(10, { temp: Math.min(28, temp + 2) });
     h.rerender();
   };
+  stage.querySelector<HTMLElement>('#p10-latch-btn')?.addEventListener('click', () => {
+    soundEngine.playClick();
+    h.patchState(10, { crateLatch: true });
+    h.rerender();
+  });
   stage.querySelectorAll<HTMLElement>('[data-mv]').forEach((b) => {
     b.onclick = () => {
       const [dx, dy] = (b.dataset.mv || '0,0').split(',').map(Number);
@@ -823,6 +1017,10 @@ function boardP10(stage: HTMLElement, s: Record<string, unknown>, h: BoardHelper
   });
   stage.querySelector<HTMLElement>('#p10-hook')!.onclick = () => {
     if (!holding) {
+      if (!crateLatch) {
+        h.setErr('먼저 서하린이 1번 방수 크레이트 걸쇠(rescue-crate-sw1/2)를 체결해야 인양할 수 있습니다.');
+        return;
+      }
       if (crane[0] === cratePos[0] && crane[1] === cratePos[1]) {
         soundEngine.playClick();
         h.patchState(10, { holding: true });
@@ -833,10 +1031,10 @@ function boardP10(stage: HTMLElement, s: Record<string, unknown>, h: BoardHelper
     } else {
       h.patchState(10, { holding: false });
       if (dewOk && cratePos[0] === 4 && cratePos[1] === 1) {
-        h.solve(10, { rh, temp, crane, cratePos: [4, 1], holding: false }, '제습 45%/18°C 안정화 및 스틸 선반(4,1) 방수 상자 안전 안착 완료!');
+        h.solve(10, { rh, temp, crateLatch, crane, cratePos: [4, 1], holding: false }, '제습 45%/18°C 안정화 및 스틸 선반(4,1) 방수 상자 안전 안착 완료!');
       } else {
         h.rerender();
-        if (!dewOk) h.setErr('제습 공조 설정을 45% RH / 18°C로 맞춘 뒤 선반에 내려놓으세요!');
+        if (!dewOk) h.setErr('제습 공조(카이 단서 기준) 설정을 맞춘 뒤 선반에 내려놓으세요!');
       }
     }
   };
