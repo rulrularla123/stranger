@@ -1,0 +1,9 @@
+<svg preserveAspectRatio="none" overflow="visible" style="display: block;" width="200" height="120" viewBox="0 0 200 120" fill="none" xmlns="http://www.w3.org/2000/svg">
+<g id="ultrasonic-pen">
+<path id="Vector" d="M20 100L150 30" stroke-width="30" stroke-linecap="round" stroke="#0B0E13"/>
+<path id="Vector_2" d="M20 100L150 30" stroke-width="20" stroke-linecap="round" stroke="#C9D3DE"/>
+<path id="Vector_3" d="M150 30L182 14" stroke-width="12" stroke-linecap="round" stroke="#0B0E13"/>
+<path id="Vector_4" d="M150 30L182 14" stroke-width="5" stroke-linecap="round" stroke="#7CD8FF"/>
+<path id="Vector_5" d="M176 4C185.333 6.66667 192 12 196 20M170 30C178 30 184.667 32.6667 190 38" stroke-width="4" stroke-linecap="round" stroke="#7CD8FF"/>
+</g>
+</svg>

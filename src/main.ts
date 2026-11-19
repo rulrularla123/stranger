@@ -1,4 +1,5 @@
 import './styles/main.css';
+import './styles/puzzleFigma.css';
 import type {
   AnimationsMeta,
   ClearRecord,
@@ -112,6 +113,85 @@ class StrangerApp {
       openPuzzle: (pid: number) => this.taskModal?.openPuzzleDirect(pid),
       summonAll: () => this.world?.summonAllTeammatesToActive(),
     };
+
+    // DEV-only URL hash harness for Playwright QA without page.evaluate()
+    if (import.meta.env.DEV && window.location.search.includes('qa=1')) {
+      await this.session.createRoom(this.nickname, true);
+      this.session.updateLobby({ fillBots: true, soloSwitchEnabled: true });
+      this.session.startGame();
+      this.phase = 'playing';
+      this.overlayMode = 'none';
+      this.renderCurrentPhase();
+
+      let metricsTimer: number | null = null;
+      const getOrCreateMetricsEl = (): HTMLElement => {
+        let el = document.getElementById('qa-metrics');
+        if (!el) {
+          el = document.createElement('div');
+          el.id = 'qa-metrics';
+          el.style.display = 'none';
+          document.body.appendChild(el);
+        }
+        return el;
+      };
+
+      const applyQaHash = () => {
+        const m = window.location.hash.match(/^#qa\/(doyun|maria|lin|aisha)\/(\d+)(?:\/(clue))?$/);
+        if (!m) return;
+        const role = m[1] as RoleId;
+        const pid = Number(m[2]);
+        const mode: 'main' | 'clue' = m[3] === 'clue' ? 'clue' : 'main';
+
+        if (metricsTimer !== null) {
+          window.clearTimeout(metricsTimer);
+          metricsTimer = null;
+        }
+        const metricsEl = getOrCreateMetricsEl();
+        metricsEl.setAttribute('data-ready', '0');
+        metricsEl.setAttribute('data-pid', String(pid));
+        metricsEl.setAttribute('data-role', role);
+        metricsEl.setAttribute('data-mode', mode);
+
+        this.switchRole(role);
+        this.taskModal?.openPuzzleDirect(pid);
+        const tabSelector = mode === 'clue' ? '#fg-tab-clue' : '#fg-tab-main';
+        const tabBtn = this.root.querySelector<HTMLElement>(tabSelector);
+        if (tabBtn) tabBtn.click();
+
+        metricsTimer = window.setTimeout(() => {
+          const shell = this.root.querySelector<HTMLElement>('.fg-modal-shell');
+          const well = this.root.querySelector<HTMLElement>('.fg-board-well');
+          const imgs = shell ? Array.from(shell.querySelectorAll('img')) : [];
+          const brokenImgs = imgs.filter((im) => !im.complete || im.naturalWidth === 0);
+          const figmaUrls = shell
+            ? shell.querySelectorAll('img[src*="figma.com"], image[href*="figma.com"]').length
+            : 0;
+          const locked = this.root.querySelector('.fg-locked-well') ? '1' : '0';
+
+          metricsEl.setAttribute('data-shell-w', String(shell ? Math.round(shell.getBoundingClientRect().width) : 0));
+          metricsEl.setAttribute('data-shell-h', String(shell ? Math.round(shell.getBoundingClientRect().height) : 0));
+          metricsEl.setAttribute('data-viewport-h', String(window.innerHeight));
+          metricsEl.setAttribute(
+            'data-overflow-x',
+            shell && shell.scrollWidth > shell.clientWidth + 2 ? '1' : '0'
+          );
+          metricsEl.setAttribute('data-well-scroll-h', String(well ? well.scrollHeight : 0));
+          metricsEl.setAttribute('data-well-client-h', String(well ? well.clientHeight : 0));
+          metricsEl.setAttribute('data-img-count', String(imgs.length));
+          metricsEl.setAttribute('data-broken-imgs', String(brokenImgs.length));
+          metricsEl.setAttribute(
+            'data-broken-srcs',
+            brokenImgs.map((im) => im.getAttribute('src') || '').join(',')
+          );
+          metricsEl.setAttribute('data-figma-urls', String(figmaUrls));
+          metricsEl.setAttribute('data-locked', locked);
+          metricsEl.setAttribute('data-ready', '1');
+        }, 250);
+      };
+
+      window.addEventListener('hashchange', applyQaHash);
+      applyQaHash();
+    }
   }
 
   private clearScreenAnim() {

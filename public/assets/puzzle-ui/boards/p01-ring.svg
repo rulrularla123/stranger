@@ -1,0 +1,32 @@
+<svg preserveAspectRatio="none" overflow="visible" style="display: block;" width="640" height="640" viewBox="0 0 640 640" fill="none" xmlns="http://www.w3.org/2000/svg">
+<g id="ring" clip-path="url(#clip0_0_692)">
+<path id="Vector" d="M320 638C495.627 638 638 495.627 638 320C638 144.373 495.627 2 320 2C144.373 2 2 144.373 2 320C2 495.627 144.373 638 320 638Z" fill="#C9A45C" stroke-width="5" stroke="#0B0E13"/>
+<path id="Vector_2" d="M320 624C487.895 624 624 487.895 624 320C624 152.105 487.895 16 320 16C152.105 16 16 152.105 16 320C16 487.895 152.105 624 320 624Z" fill="#3A4656" stroke-width="4" stroke="#0B0E13"/>
+<path id="Vector_3" d="M60 230C73.9336 190.818 96.42 155.231 125.826 125.826C155.231 96.42 190.818 73.9336 230 60" stroke-width="10" stroke-linecap="round" stroke="white" stroke-opacity="0.12"/>
+<path id="Vector_4" d="M395.1 39.9L397.6 30.2" stroke-width="3" stroke-linecap="round" stroke="#9AA7B4"/>
+<path id="Vector_5" d="M465 68.9L470 60.2" stroke-width="3" stroke-linecap="round" stroke="#9AA7B4"/>
+<path id="Vector_6" d="M525.1 114.9L532.1 107.9" stroke-width="3" stroke-linecap="round" stroke="#9AA7B4"/>
+<path id="Vector_7" d="M571.1 175L579.8 170" stroke-width="3" stroke-linecap="round" stroke="#9AA7B4"/>
+<path id="Vector_8" d="M600.1 244.9L609.8 242.4" stroke-width="3" stroke-linecap="round" stroke="#9AA7B4"/>
+<path id="Vector_9" d="M600.1 395.1L609.8 397.6" stroke-width="3" stroke-linecap="round" stroke="#9AA7B4"/>
+<path id="Vector_10" d="M571.1 465L579.8 470" stroke-width="3" stroke-linecap="round" stroke="#9AA7B4"/>
+<path id="Vector_11" d="M525.1 525.1L532.1 532.1" stroke-width="3" stroke-linecap="round" stroke="#9AA7B4"/>
+<path id="Vector_12" d="M465 571.1L470 579.8" stroke-width="3" stroke-linecap="round" stroke="#9AA7B4"/>
+<path id="Vector_13" d="M395.1 600.1L397.6 609.8" stroke-width="3" stroke-linecap="round" stroke="#9AA7B4"/>
+<path id="Vector_14" d="M244.9 600.1L242.4 609.8" stroke-width="3" stroke-linecap="round" stroke="#9AA7B4"/>
+<path id="Vector_15" d="M175 571.1L170 579.8" stroke-width="3" stroke-linecap="round" stroke="#9AA7B4"/>
+<path id="Vector_16" d="M114.9 525.1L107.9 532.1" stroke-width="3" stroke-linecap="round" stroke="#9AA7B4"/>
+<path id="Vector_17" d="M68.9 465L60.2 470" stroke-width="3" stroke-linecap="round" stroke="#9AA7B4"/>
+<path id="Vector_18" d="M39.9 395.1L30.2 397.6" stroke-width="3" stroke-linecap="round" stroke="#9AA7B4"/>
+<path id="Vector_19" d="M39.9 244.9L30.2 242.4" stroke-width="3" stroke-linecap="round" stroke="#9AA7B4"/>
+<path id="Vector_20" d="M68.9 175L60.2 170" stroke-width="3" stroke-linecap="round" stroke="#9AA7B4"/>
+<path id="Vector_21" d="M114.9 114.9L107.9 107.9" stroke-width="3" stroke-linecap="round" stroke="#9AA7B4"/>
+<path id="Vector_22" d="M175 68.9L170 60.2" stroke-width="3" stroke-linecap="round" stroke="#9AA7B4"/>
+<path id="Vector_23" d="M244.9 39.9L242.4 30.2" stroke-width="3" stroke-linecap="round" stroke="#9AA7B4"/>
+</g>
+<defs>
+<clipPath id="clip0_0_692">
+<rect width="640" height="640" fill="white"/>
+</clipPath>
+</defs>
+</svg>

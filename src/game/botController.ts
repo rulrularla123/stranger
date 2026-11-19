@@ -130,12 +130,12 @@ const BOT_HELPER_SCRIPTS: Record<number, Partial<Record<RoleId, BotHelpScript>>>
   },
   16: {
     maria: {
-      tokens: ['DIR_E', 'ACT_ROT', 'VAL:45/135'],
-      note: '항로 비문: 프리즘 M1=45°, M2=135°로 맞추세요 (M3는 서하린 확인)',
+      tokens: ['DIR_E', 'DIR_S', 'ACT_ROT'],
+      note: '항로 비문: 화살표 프리즘 M1=동(→), M2=남(↓)으로 맞추세요 (M3는 서하린 확인)',
     },
     doyun: {
-      tokens: ['COOP_OK', 'NUM_3', 'VAL:90'],
-      note: '거치대 베어링 잠금 해제 완료! 마지막 프리즘 각인 M3=90° 입니다',
+      tokens: ['COOP_OK', 'NUM_3', 'DIR_W'],
+      note: '거치대 베어링 잠금 해제 완료! 3번 프리즘 방향은 M3=서(←) 아치문 쪽입니다',
       statePatch: { mountUnlocked: true },
     },
   },

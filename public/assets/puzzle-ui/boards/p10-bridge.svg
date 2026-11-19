@@ -1,0 +1,24 @@
+<svg preserveAspectRatio="none" overflow="visible" style="display: block;" width="70" height="712" viewBox="0 0 70 712" fill="none" xmlns="http://www.w3.org/2000/svg">
+<g id="crane/bridge (x&#236;&#182;&#149; &#236;&#157;&#180;&#235;&#143;&#153;)" clip-path="url(#clip0_0_496)">
+<path id="Vector" d="M44 10H26C21.5817 10 18 13.5817 18 18V694C18 698.418 21.5817 702 26 702H44C48.4183 702 52 698.418 52 694V18C52 13.5817 48.4183 10 44 10Z" fill="#FFB86B" stroke-width="5" stroke="#0B0E13"/>
+<path id="Vector_2" d="M20 40L50 66" stroke-width="4" stroke="#0B0E13" stroke-opacity="0.5"/>
+<path id="Vector_3" d="M20 92L50 118" stroke-width="4" stroke="#0B0E13" stroke-opacity="0.5"/>
+<path id="Vector_4" d="M20 144L50 170" stroke-width="4" stroke="#0B0E13" stroke-opacity="0.5"/>
+<path id="Vector_5" d="M20 196L50 222" stroke-width="4" stroke="#0B0E13" stroke-opacity="0.5"/>
+<path id="Vector_6" d="M20 248L50 274" stroke-width="4" stroke="#0B0E13" stroke-opacity="0.5"/>
+<path id="Vector_7" d="M20 300L50 326" stroke-width="4" stroke="#0B0E13" stroke-opacity="0.5"/>
+<path id="Vector_8" d="M20 352L50 378" stroke-width="4" stroke="#0B0E13" stroke-opacity="0.5"/>
+<path id="Vector_9" d="M20 404L50 430" stroke-width="4" stroke="#0B0E13" stroke-opacity="0.5"/>
+<path id="Vector_10" d="M20 456L50 482" stroke-width="4" stroke="#0B0E13" stroke-opacity="0.5"/>
+<path id="Vector_11" d="M20 508L50 534" stroke-width="4" stroke="#0B0E13" stroke-opacity="0.5"/>
+<path id="Vector_12" d="M20 560L50 586" stroke-width="4" stroke="#0B0E13" stroke-opacity="0.5"/>
+<path id="Vector_13" d="M20 612L50 638" stroke-width="4" stroke="#0B0E13" stroke-opacity="0.5"/>
+<path id="Vector_14" d="M58 0H12C7.58172 0 4 3.58172 4 8V18C4 22.4183 7.58172 26 12 26H58C62.4183 26 66 22.4183 66 18V8C66 3.58172 62.4183 0 58 0Z" fill="#E6A23C" stroke-width="5" stroke="#0B0E13"/>
+<path id="Vector_15" d="M58 686H12C7.58172 686 4 689.582 4 694V704C4 708.418 7.58172 712 12 712H58C62.4183 712 66 708.418 66 704V694C66 689.582 62.4183 686 58 686Z" fill="#E6A23C" stroke-width="5" stroke="#0B0E13"/>
+</g>
+<defs>
+<clipPath id="clip0_0_496">
+<rect width="70" height="712" fill="white"/>
+</clipPath>
+</defs>
+</svg>

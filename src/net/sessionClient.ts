@@ -74,7 +74,7 @@ export function createInitialPuzzleStatesClient(): Record<number, Record<string,
     14: { rope: [100, 100, 100, 100], waxRot: [90, 180, 270], pressed: false },
     15: { ox: 96, oy: -48, rot: 270 },
     16: {
-      prisms: [0, 45, 45],
+      prisms: ['S', 'W', 'N'],
       mountUnlocked: false,
       beamReachedAtrium: false,
       hereSent: false,
@@ -90,6 +90,14 @@ function normalizePuzzleStates(room: RoomState): RoomState {
     if (!Number.isNaN(pid) && v && typeof v === 'object') {
       base[pid] = { ...(base[pid] || {}), ...v };
     }
+  }
+  const p16 = base[16] as { prisms?: unknown[] };
+  if (
+    !Array.isArray(p16.prisms) ||
+    p16.prisms.length !== 3 ||
+    p16.prisms.some((dir) => typeof dir !== 'string' || !['N', 'E', 'S', 'W'].includes(dir))
+  ) {
+    p16.prisms = ['S', 'W', 'N'];
   }
   room.puzzleStates = base;
   return room;

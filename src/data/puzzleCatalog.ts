@@ -896,26 +896,26 @@ export const PUZZLES: PuzzleDef[] = [
     focusObj: 'special-table',
     answerTokens: [['DIR_E', 'ACT_ROT'], ['COOP_HERE']],
     clueTitle: '이안 & 서하린 · 항로 비문 + 거치대 잠금 해제',
-    clueSummary: '1부: 거치대 잠금 해제 + M1=45°, M2=135°, M3=90° → 2부: 4/4 집결',
-    clueHtml: `<div class="clue-card"><p>이안은 항로 비문 각도를 해독하고, 서하린은 목선 거치대 잠금을 해제해 린에게 보냅니다.</p></div>`,
+    clueSummary: '1부: 거치대 잠금 해제 + M1=동(→), M2=남(↓), M3=서(←) → 2부: 4/4 집결',
+    clueHtml: `<div class="clue-card"><p>이안은 항로 비문(M1=동, M2=남)을 해독하고, 서하린은 목선 거치대 잠금을 해제해 M3=서를 린에게 보냅니다.</p></div>`,
     roleClues: {
       maria: {
-        title: '이안 · 고대 항로 비문 해독 (1·2번 프리즘 각도)',
+        title: '이안 · 고대 항로 비문 해독 (1·2번 화살표 프리즘)',
         bodyHtml: `
           <div class="clue-card">
             <p class="clue-lead">📜 <strong>해양 교류 벽화 비문 번역 (special-wall-art)</strong>:</p>
-            <p>태양 광선이 서쪽 아치문을 향해 꺾이려면 앞선 2개의 프리즘이 <strong>M1 = 45°</strong>, <strong>M2 = 135°</strong>로 교차 굴절되어야 합니다. (마지막 3번 각도는 서하린이 보유)</p>
-            <p class="clue-note"><strong>[C] 무전 휠</strong>로 린에게 <code>[동 →]+[회전 ↻]+[45/135]</code>를 발신하세요.</p>
+            <p>햇빛 창에서 내려온 빛이 서쪽 아치문을 향해 꺾이려면 앞선 2개의 화살표 프리즘이 <strong>M1 = 동(→)</strong>, <strong>M2 = 남(↓)</strong>을 가리켜야 합니다. (마지막 3번 방향은 서하린이 보유)</p>
+            <p class="clue-note"><strong>[C] 무전 휠</strong>로 린에게 <code>[동 →]+[남 ↓]+[회전 ↻]</code>를 발신하세요.</p>
           </div>
         `,
       },
       doyun: {
-        title: '서하린 · 1차 목선 진열장 프리즘 거치대 잠금 해제 (3번 프리즘 각인)',
+        title: '서하린 · 1차 목선 진열장 프리즘 거치대 잠금 해제 (3번 프리즘 방향)',
         bodyHtml: `
           <div class="clue-card">
             <p class="clue-lead">⚙ <strong>목선 진열장 프리즘 거치대 (special-boat-nw)</strong>:</p>
-            <p>중앙 전시대(<code>special-table</code>)의 프리즘 베어링이 잠겨 있습니다. 아래 버튼으로 거치대 잠금을 해제해야 린이 프리즘을 회전할 수 있습니다. 또한 거치대 금속 명판에 최종 반사 각인 <strong>M3 = 90°</strong>가 새겨져 있습니다.</p>
-            <p class="clue-note">잠금 해제 후 린에게 <code>[준비 완료 ✔] + [3번] + [90]</code>을 발신하세요.</p>
+            <p>중앙 전시대(<code>special-table</code>)의 프리즘 베어링이 잠겨 있습니다. 아래 버튼으로 거치대 잠금을 해제해야 린이 프리즘을 회전할 수 있습니다. 또한 거치대 금속 명판에 최종 출구 방향 <strong>M3 = 서(←) 아치문</strong>이 새겨져 있습니다.</p>
+            <p class="clue-note">잠금 해제 후 린에게 <code>[준비 완료 ✔] + [3번] + [서 ←]</code>을 발신하세요.</p>
           </div>
         `,
       },
@@ -924,7 +924,7 @@ export const PUZZLES: PuzzleDef[] = [
       'special-boat-nw': {
         roleId: 'doyun',
         title: '서하린 · 1차 목선 진열장 프리즘 거치대',
-        bodyHtml: `<div class="clue-card"><p>⚙ 아래 버튼으로 중앙 전시대 프리즘 회전 베어링 잠금을 해제하세요. 거치대 명판에는 최종 반사 각도 <strong>M3 = 90°</strong>가 각인되어 있습니다.</p></div>`,
+        bodyHtml: `<div class="clue-card"><p>⚙ 아래 버튼으로 중앙 전시대 프리즘 회전 베어링 잠금을 해제하세요. 거치대 명판에는 최종 아치문 방향 <strong>M3 = 서(←)</strong>가 각인되어 있습니다.</p></div>`,
       },
     },
   },

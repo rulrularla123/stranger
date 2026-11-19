@@ -647,20 +647,22 @@ export class WorldEngine {
         wctx.fill();
       }
       const spImg = this.loadImage(obj.sprite);
-      if (spImg.complete && spImg.naturalWidth > 0) {
-        // Keep crisp pixel rendering at all times
-        wctx.imageSmoothingEnabled = false;
-        wctx.drawImage(spImg, obj.x, obj.y, obj.width, obj.height);
-      }
-      // P16 atrium pad glow when active
+      // P16 2F atrium gather pads use authentic Figma pad-1..4 off/on SVG sprites
       if (obj.id.startsWith('gather-')) {
         const padIdx = Number(obj.id.split('-')[1]) - 1;
         const p16 = (room.puzzleStates[16] || {}) as { pads?: boolean[] };
-        if (p16.pads?.[padIdx]) {
-          wctx.strokeStyle = '#52EFBF';
-          wctx.lineWidth = 1;
-          wctx.strokeRect(obj.x - 1, obj.y - 1, obj.width + 2, obj.height + 2);
+        const padOn = Boolean(p16.pads?.[padIdx]);
+        const padImg = this.loadImage(`/assets/puzzle-ui/boards/p16-pad-${padIdx + 1}-${padOn ? 'on' : 'off'}.svg`);
+        if (padImg.complete && padImg.naturalWidth > 0) {
+          wctx.drawImage(padImg, obj.x - 4, obj.y - 4, obj.width + 8, obj.height + 8);
+        } else if (spImg.complete && spImg.naturalWidth > 0) {
+          wctx.imageSmoothingEnabled = false;
+          wctx.drawImage(spImg, obj.x, obj.y, obj.width, obj.height);
         }
+      } else if (spImg.complete && spImg.naturalWidth > 0) {
+        // Keep crisp pixel rendering at all times
+        wctx.imageSmoothingEnabled = false;
+        wctx.drawImage(spImg, obj.x, obj.y, obj.width, obj.height);
       }
     }
     while (pIdx < party.length) {

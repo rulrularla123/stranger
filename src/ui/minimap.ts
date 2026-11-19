@@ -194,8 +194,8 @@ export class MinimapController {
             ${
               room.soloSwitchEnabled
                 ? `<div class="guide-room-btns">
-                    ${Object.values(fl.scenes)
-                      .map((sc) => `<button class="s-btn" data-go-scene="${sc.id}">📍 ${sc.label}</button>`)
+                    ${Object.entries(fl.scenes)
+                      .map(([sid, sc]) => `<button class="s-btn" data-go-scene="${sid}">📍 ${sc.label}</button>`)
                       .join('')}
                   </div>`
                 : '<p style="margin:0;font-size:12px;color:#9BB0BE">🚪 문과 계단에서 [E] 로 이동해요</p>'

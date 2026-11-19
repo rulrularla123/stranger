@@ -1,0 +1,8 @@
+<svg preserveAspectRatio="none" overflow="visible" style="display: block;" width="200" height="110" viewBox="0 0 200 110" fill="none" xmlns="http://www.w3.org/2000/svg">
+<g id="volt-meter">
+<path id="Vector" d="M178 10H22C15.3726 10 10 15.3726 10 22V88C10 94.6274 15.3726 100 22 100H178C184.627 100 190 94.6274 190 88V22C190 15.3726 184.627 10 178 10Z" fill="#F4F7FA" stroke-width="4" stroke="#0B0E13"/>
+<path id="Vector_2" d="M30 80C30 61.4348 37.375 43.6301 50.5025 30.5025C63.6301 17.375 81.4348 10 100 10C118.565 10 136.37 17.375 149.497 30.5025C162.625 43.6301 170 61.4348 170 80" stroke-width="3" stroke="#0B0E13"/>
+<path id="Vector_3" d="M100 84L140 40" stroke-width="5" stroke-linecap="round" stroke="#E04848"/>
+<path id="Vector_4" d="M100 91C103.866 91 107 87.866 107 84C107 80.134 103.866 77 100 77C96.134 77 93 80.134 93 84C93 87.866 96.134 91 100 91Z" fill="#3A4656" stroke-width="3" stroke="#0B0E13"/>
+</g>
+</svg>

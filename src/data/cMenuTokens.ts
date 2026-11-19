@@ -140,7 +140,7 @@ export function renderTokenPillHtml(
     if (rm) {
       const nick = slots?.[rm.id]?.nickname || rm.name;
       return `<span class="s-tok s-tok-role" style="--tok-color:${rm.color}">
-        <span class="s-tok-glyph">${rm.badge}</span>
+        <img class="s-tok-icon" src="/assets/puzzle-ui/icons/role-${rm.id}.svg" alt="" />
         <span class="s-tok-label">@${escapeTokenText(nick)}</span>
       </span>`;
     }
@@ -148,7 +148,7 @@ export function renderTokenPillHtml(
   const tok = TOKENS_BY_ID[tokenId];
   if (!tok) return `<span class="s-tok">${escapeTokenText(tokenId)}</span>`;
   return `<span class="s-tok" style="--tok-color:${tok.color}">
-    <span class="s-tok-glyph">${tok.glyph}</span>
+    <img class="s-tok-icon" src="/assets/puzzle-ui/icons/tok-${tok.id}.svg" alt="" />
     <span class="s-tok-label">${tok.label}</span>
   </span>`;
 }

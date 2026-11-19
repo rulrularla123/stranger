@@ -150,8 +150,8 @@ export class CMenuWheel {
               .map(
                 (t) => `<button class="cw-tile ${this.selected.includes(t.id) ? 'selected' : ''}" data-tok="${t.id}"
                   style="--tok-color:${t.color}" title="${escapeTokenText(t.sub)}">
-                  <span class="cw-tile-glyph">${t.glyph}</span>
-                  <span class="cw-tile-label">${t.label}</span>
+                  <img class="cw-tile-icon" src="/assets/puzzle-ui/icons/tok-${t.id}.svg" alt="" />
+                  <span class="cw-tile-label">${t.label.replace(/\s*[↑→↓←↻☀🌊⛰★⚡🛡]\s*$/u, '')}</span>
                 </button>`
               )
               .join('')}
@@ -165,10 +165,13 @@ export class CMenuWheel {
         <div class="cw-head">
           <div class="cw-head-who">
             ${charSpriteHtml(myRole, 0.85)}
-            <span class="cw-badge" style="color:${rMeta.color};border-color:${rMeta.color}">${rMeta.badge} ${rMeta.name}</span>
-            <strong>📡 무전 보내기</strong>
+            <span class="cw-badge" style="color:${rMeta.color};border-color:${rMeta.color}">
+              <img class="cw-badge-ico" src="/assets/puzzle-ui/icons/role-${myRole}.svg" alt="" />
+              보내는 사람 · ${rMeta.name}
+            </span>
+            <strong>📡 C-Menu 2.0 무전 보내기</strong>
           </div>
-          <button class="au-close-x" id="cw-close" aria-label="닫기">✕</button>
+          <button class="fg-cw-close" id="cw-close" aria-label="닫기"><img src="/assets/puzzle-ui/parts/close-btn.svg" alt="✕" /></button>
         </div>
 
         <div class="cw-target-bar">

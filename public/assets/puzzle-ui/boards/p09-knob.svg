@@ -1,0 +1,9 @@
+<svg preserveAspectRatio="none" overflow="visible" style="display: block;" width="200" height="200" viewBox="0 0 200 200" fill="none" xmlns="http://www.w3.org/2000/svg">
+<g id="breaker-knob (rotate -45 OFF / +45 ON)">
+<path id="Vector" d="M100 188C148.601 188 188 148.601 188 100C188 51.3989 148.601 12 100 12C51.3989 12 12 51.3989 12 100C12 148.601 51.3989 188 100 188Z" fill="#3A4656" stroke-width="6" stroke="#0B0E13"/>
+<path id="Vector_2" d="M100 168C134.242 168 162 140.242 162 106C162 71.7583 134.242 44 100 44C65.7583 44 38 71.7583 38 106C38 140.242 65.7583 168 100 168Z" fill="#9C2F2F" stroke-width="5" stroke="#0B0E13"/>
+<path id="Vector_3" d="M100 160C134.242 160 162 132.242 162 98C162 63.7583 134.242 36 100 36C65.7583 36 38 63.7583 38 98C38 132.242 65.7583 160 100 160Z" fill="#E04848" stroke-width="5" stroke="#0B0E13"/>
+<path id="Vector_4" d="M78.7868 59.8162C74.1005 55.1299 66.5025 55.1299 61.8162 59.8162C57.1299 64.5025 57.1299 72.1005 61.8162 76.7868L121.213 136.184C125.899 140.87 133.497 140.87 138.184 136.184C142.87 131.497 142.87 123.899 138.184 119.213L78.7868 59.8162Z" fill="#F4F7FA" stroke-width="5" stroke="#0B0E13"/>
+<path id="Vector_5" d="M60 70C65.6861 59.7351 74.9355 51.9087 86 48" stroke-width="7" stroke-linecap="round" stroke="white" stroke-opacity="0.45"/>
+</g>
+</svg>

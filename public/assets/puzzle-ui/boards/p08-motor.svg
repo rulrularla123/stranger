@@ -1,0 +1,8 @@
+<svg preserveAspectRatio="none" overflow="visible" style="display: block;" width="110" height="90" viewBox="0 0 110 90" fill="none" xmlns="http://www.w3.org/2000/svg">
+<g id="motor">
+<path id="Vector" d="M54 20H18C11.3726 20 6 25.3726 6 32V64C6 70.6274 11.3726 76 18 76H54C60.6274 76 66 70.6274 66 64V32C66 25.3726 60.6274 20 54 20Z" fill="#5B6B80" stroke-width="4" stroke="#0B0E13"/>
+<path id="Vector_2" d="M80 76C95.464 76 108 63.464 108 48C108 32.536 95.464 20 80 20C64.536 20 52 32.536 52 48C52 63.464 64.536 76 80 76Z" fill="#7CD8FF" stroke-width="4" stroke="#0B0E13"/>
+<path id="Vector_3" d="M80 24C90.6667 40 90.6667 56 80 72C69.3333 56 69.3333 40 80 24ZM56 48C72 37.3333 88 37.3333 104 48C88 58.6667 72 58.6667 56 48Z" fill="white" fill-opacity="0.65" stroke-width="3" stroke="#0B0E13"/>
+<path id="Vector_4" d="M80 54C83.3137 54 86 51.3137 86 48C86 44.6863 83.3137 42 80 42C76.6863 42 74 44.6863 74 48C74 51.3137 76.6863 54 80 54Z" fill="#3A4656" stroke-width="3" stroke="#0B0E13"/>
+</g>
+</svg>
