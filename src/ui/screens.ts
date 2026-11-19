@@ -312,6 +312,22 @@ export function startLobbyCharacterPreviewLoop(container: HTMLElement, anims: An
 
 export const INTRO_SLIDE_COUNT = STORY_SLIDE_COUNT;
 
+const STORY_BG_URLS = [
+  '/assets/story/classroom.png',
+  '/assets/story/school-road.jpg',
+  '/assets/story/bayani-camp.jpg',
+] as const;
+
+let storyBgsPreloaded = false;
+function preloadStoryBackgrounds(): void {
+  if (storyBgsPreloaded || typeof Image === 'undefined') return;
+  storyBgsPreloaded = true;
+  for (const url of STORY_BG_URLS) {
+    const img = new Image();
+    img.src = url;
+  }
+}
+
 function renderStorySceneBackdrop(scene: StorySceneId): string {
   if (scene === 'cafeteria') {
     return `
@@ -335,65 +351,25 @@ function renderStorySceneBackdrop(scene: StorySceneId): string {
   }
   if (scene === 'classroom') {
     return `
-      <div class="vn-art vn-art-classroom">
-        <div class="vn-chalkboard">
-          <div class="vn-chalk-title">사회 · 조별 과제</div>
-          <div class="vn-chalk-sub">「다문화 사회, 우리 주변의 이야기」</div>
-        </div>
-        <div class="vn-art-windows"><span></span><span></span></div>
-        <div class="vn-desk-cluster">
-          ${charSpriteHtml('doyun', 1.8, false)}
-          <span class="vn-sil-person p1"></span>
-          <span class="vn-sil-person p2"></span>
-          <span class="vn-jiho-fig"></span>
-        </div>
+      <div class="vn-art vn-art-photo vn-art-classroom-pixil">
+        <img class="vn-bg-img vn-bg-pixelated" src="/assets/story/classroom.png" alt="교실 배경" draggable="false" decoding="async" />
+        <div class="vn-bg-vignette"></div>
       </div>
     `;
   }
   if (scene === 'crosswalk') {
     return `
-      <div class="vn-art vn-art-crosswalk">
-        <div class="vn-sunset-sky"></div>
-        <div class="vn-school-gate">
-          <span>🏫 교문</span>
-        </div>
-        <div class="vn-traffic-light"><span>🔴</span><span class="on">🟢</span></div>
-        <div class="vn-stripes">
-          <span></span><span></span><span></span><span></span><span></span>
-        </div>
-        <div class="vn-crosswalk-actors">
-          ${charSpriteHtml('doyun', 1.9, true)}
-          <span class="vn-teacher-fig"></span>
-        </div>
+      <div class="vn-art vn-art-photo vn-art-crosswalk-pixil">
+        <img class="vn-bg-img" src="/assets/story/school-road.jpg" alt="하굣길 학교 앞 횡단보도 배경" draggable="false" decoding="async" />
+        <div class="vn-bg-vignette"></div>
       </div>
     `;
   }
   if (scene === 'camp') {
     return `
-      <div class="vn-art vn-art-camp">
-        <div class="vn-camp-sky">
-          <span class="vn-cloud c1"></span>
-          <span class="vn-cloud c2"></span>
-        </div>
-        <div class="vn-palms">🌴 🌴 🌴</div>
-        <div class="vn-camp-building">
-          <div class="vn-camp-roof"></div>
-          <div class="vn-camp-banner">
-            <strong>☀ BAYANI CAMP</strong>
-            <small>Together for a Brighter Tomorrow</small>
-          </div>
-          <div class="vn-camp-flags">
-            <span class="vn-ph-flag" title="필리핀">🇵🇭</span>
-            <span class="vn-tent">⛺</span>
-            <span class="vn-sign">NEW FRIENDS · SAME WORLD</span>
-          </div>
-        </div>
-        <div class="vn-camp-cast">
-          ${ROLE_ORDER.map((r) => charSpriteHtml(r, 1.8, false)).join('')}
-        </div>
-        <div class="vn-camp-road">
-          <div class="vn-bus">🚌</div>
-        </div>
+      <div class="vn-art vn-art-photo vn-art-camp-pixil">
+        <img class="vn-bg-img" src="/assets/story/bayani-camp.jpg" alt="BAYANI CAMP 배경" draggable="false" decoding="async" />
+        <div class="vn-bg-vignette"></div>
       </div>
     `;
   }
@@ -443,6 +419,7 @@ function getSpeakerColor(slide: StorySlide): string {
 }
 
 export function renderIntroHtml(slideIdx: number): string {
+  preloadStoryBackgrounds();
   const idx = Math.min(STORY_SLIDE_COUNT - 1, Math.max(0, slideIdx));
   const slide = STORY_SLIDES[idx];
   const isLast = idx >= STORY_SLIDE_COUNT - 1;
