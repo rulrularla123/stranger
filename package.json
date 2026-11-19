@@ -7,6 +7,7 @@
   "scripts": {
     "setup:assets": "node scripts/setup-assets.mjs",
     "build:chars": "node scripts/build-characters.mjs",
+    "build:outlines": "node scripts/add-object-outlines.mjs",
     "dev": "vite",
     "build": "tsc --noEmit && vite build",
     "start": "node server/index.mjs"

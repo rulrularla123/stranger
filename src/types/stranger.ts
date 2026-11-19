@@ -125,6 +125,8 @@ export interface MapObject {
   wall?: boolean;
   interact?: [number, number];
   collision?: [number, number, number, number];
+  /** Sprite already has a baked-in 1px outline (see scripts/add-object-outlines.mjs). */
+  outlined?: boolean;
 }
 
 export interface MapFloor {
