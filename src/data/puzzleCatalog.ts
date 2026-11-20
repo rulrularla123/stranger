@@ -299,6 +299,13 @@ export const PUZZLES: PuzzleDef[] = [
         `,
       },
     },
+    objectRoleClues: {
+      'life-wall-art': {
+        roleId: 'aisha',
+        title: '카이 · 전통 바하이 쿠보 구조 루페 스캔',
+        bodyHtml: `<div class="clue-card"><p>🔍 전통 가옥 회화 루페 스캔: <strong>지붕(Bubong) · 마루(Sala) · 기둥 아래(Silong)</strong> 3단 단면과 6종 유물 도상을 대조할 수 있습니다. <strong>이안(통역)</strong>에게 타갈로그어 층위 주석 무전을 받아 중앙 모형을 맞추세요.</p></div>`,
+      },
+    },
   },
   {
     id: 3,
@@ -333,6 +340,13 @@ export const PUZZLES: PuzzleDef[] = [
             <p class="clue-note"><strong>[C] 무전 휠</strong>의 숫자 기능으로 카이에게 <code>180</code>과 <code>0</code>을 전달하세요!</p>
           </div>
         `,
+      },
+    },
+    objectRoleClues: {
+      'life-heritage-jar': {
+        roleId: 'aisha',
+        title: '카이 · 마눙굴 국보 항아리 원형 진열대 대조',
+        bodyHtml: `<div class="clue-card"><p>🔍 국보 항아리 실물: 적철석 채색의 나선 파도 음각과 뚜껑 위 영혼의 배 사공 조각이 훼손 없이 남아 있습니다. <strong>서하린(기계공학)</strong>에게 받침 기어 각도·수평 실측치를 받아 턴테이블을 정렬하세요.</p></div>`,
       },
     },
   },
@@ -380,6 +394,13 @@ export const PUZZLES: PuzzleDef[] = [
             <p class="clue-note"><strong>[C] 무전 휠</strong>로 이안에게 연도 순서와 방위(<code>[2번]+[서 ←]</code>, <code>[3번]+[북 ↑]</code>)를 알려주세요.</p>
           </div>
         `,
+      },
+    },
+    objectRoleClues: {
+      'time-long-shelf-ne': {
+        roleId: 'maria',
+        title: '이안 · 역사 연표 문헌 서가 색인',
+        bodyHtml: `<div class="clue-card"><p>📜 역사 사료 3건 식별: <strong>① 1521 막탄 항해</strong> · <strong>② 1898 말롤로스 헌법</strong> · <strong>③ 1946 공화국 독립</strong>. <strong>린(네비게이터)</strong>에게 고지도 해협 방위 측량 무전을 받아 중앙 전시대에서 선을 잇세요.</p></div>`,
       },
     },
   },
@@ -743,6 +764,13 @@ export const PUZZLES: PuzzleDef[] = [
         `,
       },
     },
+    objectRoleClues: {
+      'archive-shelf-nw2': {
+        roleId: 'maria',
+        title: '이안 · 기증 등록대장 분류 보관장',
+        bodyHtml: `<div class="clue-card"><p>📜 기증 등록대장 색인: 손상된 4열 천공 카드 복원에는 <strong>2열·4열 정확한 문양</strong> 판독이 필요합니다. <strong>린(네비게이터)</strong>에게 마이크로필름 초점 스캔 결과를 무전 받아 타공하세요.</p></div>`,
+      },
+    },
   },
   {
     id: 13,
@@ -877,7 +905,12 @@ export const PUZZLES: PuzzleDef[] = [
       'reading-side-desk-w': {
         roleId: 'maria',
         title: '이안 · 고서 지명 색인 대조표',
-        bodyHtml: `<div class="clue-card"><p>📜 옛 스페인어 성곽 지명 3곳 식별 완료: <strong>성벽 종탑(좌상)</strong> · <strong>Puerta Real(우상)</strong> · <strong>Baluarte(하단)</strong>. 린의 축선 측량 무전에 맞춰 열람대 트레이싱지를 겹치세요.</p></div>`,
+        bodyHtml: `<div class="clue-card"><p>📜 옛 스페인어 성곽 지명 3곳 식별 완료: <strong>종탑 · Campanario(중앙 십자 탑)</strong> · <strong>Baluarte(좌하단 원형 보루)</strong> · <strong>Puerta Real(하단 성문)</strong>. 린의 축선 측량 무전에 맞춰 열람대 트레이싱지를 겹치세요.</p></div>`,
+      },
+      'reading-side-shelf-w': {
+        roleId: 'maria',
+        title: '이안 · 인트라무로스 지명 색인 서가',
+        bodyHtml: `<div class="clue-card"><p>📜 성곽 지명 색인 3앵커: <strong>종탑 · Campanario(중앙 십자 탑)</strong> · <strong>Baluarte(좌하단 원형 보루)</strong> · <strong>Puerta Real(하단 성문)</strong>. 린의 축선·각도 측량에 맞춰 도면을 포개세요.</p></div>`,
       },
     },
   },

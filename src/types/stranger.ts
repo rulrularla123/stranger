@@ -90,6 +90,7 @@ export interface MapRoom {
   id: string;
   name: string;
   rect: [number, number, number, number];
+  extraRects?: [number, number, number, number][];
   outline?: [number, number][];
 }
 

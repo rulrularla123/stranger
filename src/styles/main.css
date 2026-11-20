@@ -2762,6 +2762,20 @@ kbd {
   padding-top: 6px;
 }
 
+.vn-portrait.hero {
+  overflow: hidden;
+  padding: 0;
+}
+
+.vn-ld-portrait {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center 16%;
+  display: block;
+  border-radius: 10px;
+}
+
 .vn-portrait.sil {
   align-items: center;
   padding-top: 0;

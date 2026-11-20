@@ -104,10 +104,10 @@ function normalizePuzzleStates(room: RoomState): RoomState {
 }
 
 const DEFAULT_SPAWNS: Record<RoleId, { floor: FloorKey; scene: string; x: number; y: number; dir: Direction }> = {
-  doyun: { floor: '1F', scene: 'hall', x: 922, y: 1550, dir: 'down' },
-  maria: { floor: '1F', scene: 'hall', x: 942, y: 1556, dir: 'down' },
-  lin: { floor: '1F', scene: 'hall', x: 962, y: 1556, dir: 'down' },
-  aisha: { floor: '1F', scene: 'hall', x: 982, y: 1550, dir: 'down' },
+  doyun: { floor: '1F', scene: 'hall', x: 913, y: 1552, dir: 'down' },
+  maria: { floor: '1F', scene: 'hall', x: 939, y: 1552, dir: 'down' },
+  lin: { floor: '1F', scene: 'hall', x: 965, y: 1552, dir: 'down' },
+  aisha: { floor: '1F', scene: 'hall', x: 991, y: 1552, dir: 'down' },
 };
 
 function createLocalRoom(code: string, clientId: string, nickname: string, fillBots = true): RoomState {
@@ -407,6 +407,9 @@ export class SessionClient {
           if (payload.p16) {
             this.room.puzzleStates[16] = payload.p16 as Record<string, unknown>;
           }
+          if (entry.tokenIds.includes('COOP_HERE') && this.room.puzzleStates[16]?.beamReachedAtrium) {
+            this.room.puzzleStates[16].hereSent = true;
+          }
           this.emit('radio_broadcast', entry);
         })
         .on('broadcast', { event: 'puzzle_updated' }, ({ payload }) => {
@@ -537,7 +540,7 @@ export class SessionClient {
       const data = ev.data;
       if (!data || data.sender === this.clientId) return;
       if (data.type === 'bc_room_sync' && data.room) {
-        this.room = data.room as RoomState;
+        this.room = normalizePuzzleStates(data.room as RoomState);
         this.emit('room_state');
       } else if (data.type === 'bc_move' && this.room) {
         const slot = this.room.slots[data.roleId as RoleId];

@@ -6,6 +6,7 @@ import {
   renderTokenPillHtml,
 } from '../data/cMenuTokens.ts';
 import {
+  MAIN_OPERATOR_OBJECT_IDS,
   PUZZLES_BY_ID,
   getDifficultyConfig,
   getObjectOwnerRole,
@@ -101,7 +102,14 @@ export class TaskModal {
     this.justSolved = null;
     const p = PUZZLES_BY_ID[pid];
     const myRole = this.session.getMyRole();
-    this.activeTab = p && p.helperRoles.includes(myRole) && myRole !== p.mainRole ? 'clue' : 'main';
+    const isMainSecondaryClue = Boolean(
+      obj &&
+        !MAIN_OPERATOR_OBJECT_IDS.has(obj.id) &&
+        p?.objectRoleClues?.[obj.id]?.roleId === myRole &&
+        myRole === p.mainRole
+    );
+    this.activeTab =
+      (p && p.helperRoles.includes(myRole) && myRole !== p.mainRole) || isMainSecondaryClue ? 'clue' : 'main';
     this.open = true;
     this.root.classList.add('open');
     this.render();
@@ -416,6 +424,18 @@ export class TaskModal {
   }
 
   private renderMainClueSummaryView(stage: HTMLElement, room: RoomState, p: PuzzleDef, isSolved: boolean) {
+    const curObjClue =
+      this.currentObj && p.objectRoleClues?.[this.currentObj.id]?.roleId === p.mainRole
+        ? p.objectRoleClues[this.currentObj.id]
+        : Object.values(p.objectRoleClues || {}).find((c) => c.roleId === p.mainRole);
+
+    const selfClueHtml = curObjClue
+      ? `<div class="fg-panel">
+          <div class="fg-panel-title">🔎 현장 조사 단서 (${escapeTokenText(curObjClue.title)})</div>
+        </div>
+        <div class="fg-parchment">${curObjClue.bodyHtml}</div>`
+      : '';
+
     const cards = p.helperRoles
       .map((hr) => {
         const rm = ROLES[hr];
@@ -439,6 +459,7 @@ export class TaskModal {
 
     stage.innerHTML = `
       <div class="fg-stack">
+        ${selfClueHtml}
         <div class="fg-panel">
           <div class="fg-panel-title">🤝 도움이 필요한 동료</div>
           <div class="fg-panel-sub">단서 내용은 각 동료만 볼 수 있습니다. 무전 핑이나 AI 협동 요청으로 신호를 받아 조립하세요!</div>
@@ -478,6 +499,7 @@ export class TaskModal {
     stage.innerHTML = '';
     stage.appendChild(boardHost);
 
+    const priorDone = Array.from({ length: 15 }, (_, i) => i + 1).filter((id) => room.solvedPids.includes(id)).length;
     const handled =
       renderAct1Act2Board(this.pid, boardHost, p, s, helpers) ||
       renderAct3Act4Board(this.pid, boardHost, p, s, helpers, {
@@ -487,6 +509,7 @@ export class TaskModal {
         },
         gotoAtrium: () => this.host.onJumpToAtrium(),
         closeModal: () => this.close(),
+        priorDone,
       });
 
     if (!handled) {

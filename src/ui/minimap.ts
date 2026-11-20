@@ -76,6 +76,12 @@ export class MinimapController {
       ctx.lineWidth = isCur ? 1.6 : 1;
       ctx.fillRect(rx * sx, ry * sy, rw * sx, rh * sy);
       ctx.strokeRect(rx * sx, ry * sy, rw * sx, rh * sy);
+      if (r.extraRects) {
+        for (const [ex, ey, ew, eh] of r.extraRects) {
+          ctx.fillRect(ex * sx, ey * sy, ew * sx, eh * sy);
+          ctx.strokeRect(ex * sx, ey * sy, ew * sx, eh * sy);
+        }
+      }
 
       // Room short label
       ctx.font = 'bold 8px "Noto Sans KR", sans-serif';

@@ -318,11 +318,18 @@ const STORY_BG_URLS = [
   '/assets/story/bayani-camp.jpg',
 ] as const;
 
+const ROLE_LD_PORTRAITS: Record<RoleId, string> = {
+  doyun: '/assets/characters/ld/korean_harin_ld.png',
+  maria: '/assets/characters/ld/phil_ian_ld.png',
+  lin: '/assets/characters/ld/vietnam_lin_ld.png',
+  aisha: '/assets/characters/ld/south_africa_kai_ld.png',
+};
+
 let storyBgsPreloaded = false;
 function preloadStoryBackgrounds(): void {
   if (storyBgsPreloaded || typeof Image === 'undefined') return;
   storyBgsPreloaded = true;
-  for (const url of STORY_BG_URLS) {
+  for (const url of [...STORY_BG_URLS, ...Object.values(ROLE_LD_PORTRAITS)]) {
     const img = new Image();
     img.src = url;
   }
@@ -395,7 +402,7 @@ function renderVnPortrait(kind: StorySpeakerKind): string {
   if (kind === 'doyun' || kind === 'maria' || kind === 'lin' || kind === 'aisha') {
     const meta = ROLES[kind];
     return `<div class="vn-portrait hero" style="border-color:${meta.color}">
-      ${charSpriteHtml(kind, 2.0, false, 'vn-bust-sprite')}
+      <img class="vn-ld-portrait" src="${ROLE_LD_PORTRAITS[kind]}" alt="${escapeHtml(meta.name)}" draggable="false" />
     </div>`;
   }
   const silMeta: Record<'jiho' | 'friend1' | 'friend2' | 'teacher' | 'staff', { glyph: string; label: string; tone: string }> = {
