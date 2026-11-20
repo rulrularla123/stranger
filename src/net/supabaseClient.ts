@@ -77,6 +77,12 @@ export function roomStateToRow(room: RoomState): RoomsRow {
   for (const [k, v] of Object.entries(room.puzzleStates)) {
     puzzleStates[String(k)] = v;
   }
+  if (Array.isArray(room.introSkipVotes) || room.introStarted) {
+    puzzleStates.__meta_skip_votes = {
+      roles: room.introSkipVotes || [],
+      introStarted: Boolean(room.introStarted),
+    };
+  }
   return {
     code: room.code,
     host_client_id: room.hostClientId,
@@ -97,8 +103,18 @@ export function roomStateToRow(room: RoomState): RoomsRow {
 /** Converts a public.rooms Postgres row into a normalized RoomState. */
 export function rowToRoomState(row: RoomsRow): RoomState {
   const puzzleStates: Record<number, Record<string, unknown>> = {};
+  let introSkipVotes: RoleId[] = [];
+  let introStarted = false;
   if (row.puzzle_states && typeof row.puzzle_states === 'object') {
     for (const [k, v] of Object.entries(row.puzzle_states)) {
+      if (k === '__meta_skip_votes' && v && typeof v === 'object') {
+        const meta = v as { roles?: unknown; introStarted?: unknown };
+        if (Array.isArray(meta.roles)) {
+          introSkipVotes = meta.roles.filter((r): r is RoleId => ROLE_ORDER.includes(r as RoleId));
+        }
+        introStarted = Boolean(meta.introStarted);
+        continue;
+      }
       const pid = Number(k);
       if (!Number.isNaN(pid) && v && typeof v === 'object') {
         puzzleStates[pid] = v;
@@ -118,6 +134,8 @@ export function rowToRoomState(row: RoomsRow): RoomState {
     powerRestored: Boolean(row.power_restored),
     coronationTriggered: Boolean(row.coronation_triggered),
     radioLog: Array.isArray(row.radio_log) ? row.radio_log : [],
+    introStarted,
+    introSkipVotes,
     startedAt: row.started_at ? Date.parse(row.started_at) : null,
   };
 }

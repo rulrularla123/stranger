@@ -16,7 +16,7 @@ import {
   escapeTokenText,
   renderRadioBannerContentHtml,
   renderRadioContentHtml,
-  renderRadioTargetHtml,
+  roleIconImgHtml,
 } from './data/cMenuTokens.ts';
 import { PUZZLES, ROOM_INTROS } from './data/puzzleCatalog.ts';
 import { soundEngine } from './audio/soundEngine.ts';
@@ -31,7 +31,6 @@ import { PUZZLE_KID, ROLE_KID, charSpriteHtml } from './ui/kidVisuals.ts';
 import {
   INTRO_SLIDE_COUNT,
   renderClearRecordsHtml,
-  renderControlsModalHtml,
   renderCoronationEndingHtml,
   renderExitConfirmModalHtml,
   renderGatherHtml,
@@ -40,6 +39,7 @@ import {
   renderRoomIntroModalHtml,
   renderSettingsModalHtml,
   renderSplashHtml,
+  renderStatusWindowModalHtml,
   renderTitleHtml,
   startLobbyCharacterPreviewLoop,
   startTitleCanvasAnimation,
@@ -57,7 +57,7 @@ class StrangerApp {
   private recentClears: ClearRecord[] = [];
   private recordsLoading = false;
   private introSlide = 0;
-  private overlayMode: 'none' | 'settings' | 'controls' | 'exit' | 'room_intro' = 'none';
+  private overlayMode: 'none' | 'settings' | 'status' | 'exit' | 'room_intro' = 'none';
   private roomIntroKey = '1F:hall';
   private checklistExpanded = true;
   private showCoronation = false;
@@ -76,7 +76,8 @@ class StrangerApp {
   private roomBannerEl!: HTMLElement;
   private promptBtnEl!: HTMLButtonElement;
   private toastEl!: HTMLElement;
-  private radioBannerTimer: number | null = null;
+  private radioBannerFadeTimer: number | null = null;
+  private radioBannerHideTimer: number | null = null;
   private roomBannerTimer: number | null = null;
   private toastTimer: number | null = null;
 
@@ -274,7 +275,7 @@ class StrangerApp {
       });
       this.root.querySelector('#btn-title-controls')?.addEventListener('click', () => {
         soundEngine.playClick();
-        this.openOverlay('controls');
+        this.openOverlay('status');
       });
       return;
     }
@@ -430,13 +431,15 @@ class StrangerApp {
         soundEngine.playClick();
         this.introSlide = 0;
         this.phase = 'intro';
+        this.session.startIntro();
         this.renderCurrentPhase();
       });
       return;
     }
 
     if (this.phase === 'intro') {
-      this.root.innerHTML = renderIntroHtml(this.introSlide);
+      const skipStatus = this.session.getIntroSkipStatus();
+      this.root.innerHTML = renderIntroHtml(this.introSlide, skipStatus);
       this.mountOverlayLayer();
       const advanceIntro = () => {
         soundEngine.playClick();
@@ -444,10 +447,10 @@ class StrangerApp {
           this.introSlide++;
           this.renderCurrentPhase();
         } else {
-          this.finishIntro();
+          this.voteStorySkip();
         }
       };
-      this.root.querySelector('#btn-intro-skip')?.addEventListener('click', () => this.finishIntro());
+      this.root.querySelector('#btn-intro-skip')?.addEventListener('click', () => this.voteStorySkip());
       this.root.querySelector('#btn-intro-prev')?.addEventListener('click', () => {
         if (this.introSlide > 0) {
           soundEngine.playClick();
@@ -481,12 +484,20 @@ class StrangerApp {
     this.mountGameShell();
   }
 
-  private finishIntro() {
-    soundEngine.playClick();
-    this.session.startGame();
+  private enterGameFromIntro() {
     this.phase = 'playing';
-    this.overlayMode = 'controls';
+    this.overlayMode = 'none';
     this.renderCurrentPhase();
+  }
+
+  private voteStorySkip() {
+    soundEngine.playClick();
+    const res = this.session.voteIntroSkip();
+    if (res.allSkipped) {
+      this.enterGameFromIntro();
+    } else {
+      this.renderCurrentPhase();
+    }
   }
 
   private mountGameShell() {
@@ -500,47 +511,69 @@ class StrangerApp {
         <div class="hud-top-left">
           <div class="hud-box hud-mission-card">
             <div class="hud-task-row">
-              <span id="hud-task-label">🧩 0 / 16</span>
+              <span id="hud-task-label">0 / 16</span>
               <div class="au-progress-track"><div class="au-progress-fill" id="hud-task-fill" style="width:0%"></div></div>
-              <button class="hud-chk-toggle" id="hud-chk-toggle">${this.checklistExpanded ? '접기 ▴' : '목록 ▾'}</button>
+              <button class="hud-chk-toggle" id="hud-chk-toggle">${this.checklistExpanded ? '접기' : '목록'}</button>
             </div>
-            <div class="hud-obj-line" id="hud-objective">🧭 1층 나침반부터 풀어요!</div>
+            <div class="hud-obj-line" id="hud-objective">1층과 지하를 조사해 불을 켜세요</div>
             <div class="hud-checklist" id="hud-checklist" style="display:${this.checklistExpanded ? 'flex' : 'none'}"></div>
-            <div class="hud-role-strip" id="hud-role-box"></div>
-          </div>
-          <div class="signal-log-box ${this.logExpanded ? 'expanded' : ''}" id="hud-log-box">
-            <div class="signal-log-bar">
-              <button class="signal-log-head" id="hud-log-toggle">
-                <span>📡 팀 채팅</span>
-                <span class="signal-log-cnt" id="hud-log-cnt">0</span>
-                <span id="hud-log-chev">${this.logExpanded ? '▴' : '▾'}</span>
-              </button>
-              <button class="hud-chk-toggle primary-mini" id="hud-log-send" title="무전 보내기 (C)">+ 보내기 (C)</button>
-            </div>
-            <div class="signal-log-list" id="hud-log-list">
-              <div class="signal-log-empty">📭 아직 무전이 없어요 · <strong>[C]</strong> 키로 보내세요</div>
-            </div>
           </div>
         </div>
 
         <div class="hud-top-center">
-          <div class="shared-radio-banner" id="hud-radio-banner" style="display:none"></div>
+          <div class="shared-radio-banner speech-bubble" id="hud-radio-banner" style="display:none"></div>
           <div class="room-banner" id="hud-room-banner" style="display:none"></div>
         </div>
 
         <div class="hud-top-right">
+          <div class="hud-status-bar" id="hud-status-bar" role="button" tabindex="0" title="상태창 및 도움말 열기 (H)"></div>
           <div class="hud-btn-row">
             <span class="room-code-pill" style="padding:4px 9px;font-size:11px">방 <strong>${room.code}</strong></span>
-            <button class="s-btn primary" id="hud-c-btn">📡 [C] 무전</button>
-            <button class="s-btn" id="hud-m-btn">🗺 [M] 지도</button>
-            <button class="s-btn" id="hud-h-btn">❔ [H] 도움말</button>
-            <button class="s-btn danger" id="hud-p-btn">🚪 [P]</button>
+            <button class="s-btn primary hud-icon-btn" id="hud-c-btn">
+              <img class="hud-btn-ico" src="/assets/ui-icons/radio.svg" alt="" />
+              <span>[C] 무전</span>
+            </button>
+            <button class="s-btn hud-icon-btn" id="hud-m-btn" style="display:none">
+              <img class="hud-btn-ico" src="/assets/ui-icons/map.svg" alt="" />
+              <span>[M] 지도</span>
+            </button>
+            <button class="s-btn hud-icon-btn" id="hud-status-btn">
+              <img class="hud-btn-ico" src="/assets/ui-icons/status.svg" alt="" />
+              <span>[H] 상태창</span>
+            </button>
+            <button class="s-btn danger hud-icon-btn" id="hud-p-btn">
+              <img class="hud-btn-ico" src="/assets/ui-icons/exit.svg" alt="" />
+              <span>[P] 나가기</span>
+            </button>
           </div>
-          <div class="hud-minimap-wrap" id="hud-minimap-wrap" title="클릭하거나 M 키를 눌러 전체 층 안내도 열기">
-            <canvas id="minimap-canvas"></canvas>
-            <div class="hud-minimap-lbl" id="hud-minimap-lbl">1F · 중앙 복도</div>
+          <div class="hud-minimap-wrap" id="hud-minimap-wrap" style="display:none">
+            <div class="hud-minimap-head">
+              <div class="hud-minimap-lbl" id="hud-minimap-lbl">1F · 중앙 홀</div>
+              <div class="hud-mini-zoom-row">
+                <button type="button" class="hud-mini-zbtn" id="hud-mini-zout" title="미니맵 축소">−</button>
+                <button type="button" class="hud-mini-zbtn" id="hud-mini-zin" title="미니맵 확대">+</button>
+                <button type="button" class="hud-mini-zbtn wide" id="hud-mini-open" title="전체 지도 (M)">전체</button>
+              </div>
+            </div>
+            <canvas id="minimap-canvas" title="클릭하거나 M 키를 눌러 전체 지도 열기"></canvas>
           </div>
-          <div class="hud-role-switcher" id="hud-role-switcher"></div>
+        </div>
+
+        <div class="hud-chat-dock" id="hud-chat-dock">
+          <div class="signal-log-box ${this.logExpanded ? 'expanded' : ''}" id="hud-log-box">
+            <div class="signal-log-bar">
+              <button class="signal-log-head" id="hud-log-toggle">
+                <img class="hud-btn-ico" src="/assets/ui-icons/radio.svg" alt="" />
+                <span>팀 채팅</span>
+                <span class="signal-log-cnt" id="hud-log-cnt">0</span>
+                <span id="hud-log-chev">${this.logExpanded ? '▾' : '▴'}</span>
+              </button>
+              <button class="hud-chk-toggle primary-mini" id="hud-log-send" title="무전 보내기 (C)">+ 무전 (C)</button>
+            </div>
+            <div class="signal-log-list" id="hud-log-list">
+              <div class="signal-log-empty">아직 무전이 없습니다 · [C] 키로 보내세요</div>
+            </div>
+          </div>
         </div>
 
         <div class="hud-bottom-center">
@@ -581,11 +614,11 @@ class StrangerApp {
           };
           const padsCnt = (p16.pads || []).filter(Boolean).length;
           if (!p16.beamReachedAtrium) {
-            this.showToast('🌈 먼저 기획전시실에서 빛을 쏘아요!', 'amber');
+            this.showToast('먼저 기획전시실에서 빛을 쏘세요.', 'amber');
           } else if (!p16.hereSent) {
-            this.showToast('✨ 빛 도착! 린이 [C] ➜ 📍 모여라!', 'mint');
+            this.showToast('빛 도착! 린이 [C] 집결 신호를 보내세요.', 'mint');
           } else {
-            this.showToast(`👣 발판 ${padsCnt} / 4 · 4명 모두 올라서요!`, 'mint');
+            this.showToast(`발판 ${padsCnt} / 4 · 4명 모두 올라서세요.`, 'mint');
           }
           return;
         }
@@ -632,13 +665,22 @@ class StrangerApp {
     this.bots.start();
 
     this.root.querySelector('#hud-c-btn')?.addEventListener('click', () => this.cMenu?.toggle());
-    this.root.querySelector('#hud-m-btn')?.addEventListener('click', () =>
-      this.minimap?.toggleGuide(undefined, this.session.getRoom() || undefined, this.session.getMyRole())
-    );
-    this.root.querySelector('#hud-minimap-wrap')?.addEventListener('click', () =>
-      this.minimap?.toggleGuide(true, this.session.getRoom() || undefined, this.session.getMyRole())
-    );
-    this.root.querySelector('#hud-h-btn')?.addEventListener('click', () => this.openOverlay('controls'));
+    this.root.querySelector('#hud-m-btn')?.addEventListener('click', () => this.openNavigatorMap());
+    this.root.querySelector('#hud-mini-open')?.addEventListener('click', (e) => {
+      e.stopPropagation();
+      this.openNavigatorMap(true);
+    });
+    this.root.querySelector('#minimap-canvas')?.addEventListener('click', () => this.openNavigatorMap(true));
+    this.root.querySelector('#hud-mini-zin')?.addEventListener('click', (e) => {
+      e.stopPropagation();
+      this.minimap?.stepMiniZoom(1, this.session.getRoom() || undefined, this.session.getMyRole());
+    });
+    this.root.querySelector('#hud-mini-zout')?.addEventListener('click', (e) => {
+      e.stopPropagation();
+      this.minimap?.stepMiniZoom(-1, this.session.getRoom() || undefined, this.session.getMyRole());
+    });
+    this.root.querySelector('#hud-status-btn')?.addEventListener('click', () => this.openOverlay('status'));
+    this.root.querySelector('#hud-status-bar')?.addEventListener('click', () => this.openOverlay('status'));
     this.root.querySelector('#hud-p-btn')?.addEventListener('click', () => this.openOverlay('exit'));
     this.promptBtnEl.addEventListener('click', () => this.world?.interact(this.isGameplayBlocked()));
 
@@ -646,7 +688,7 @@ class StrangerApp {
       this.logExpanded = !this.logExpanded;
       this.root.querySelector('#hud-log-box')?.classList.toggle('expanded', this.logExpanded);
       const chev = this.root.querySelector('#hud-log-chev');
-      if (chev) chev.textContent = this.logExpanded ? '▴' : '▾';
+      if (chev) chev.textContent = this.logExpanded ? '▾' : '▴';
     });
     this.root.querySelector('#hud-log-send')?.addEventListener('click', () => this.cMenu?.toggle(true));
     this.root.querySelector('#hud-chk-toggle')?.addEventListener('click', () => {
@@ -654,7 +696,7 @@ class StrangerApp {
       const list = this.root.querySelector<HTMLElement>('#hud-checklist');
       const btn = this.root.querySelector('#hud-chk-toggle');
       if (list) list.style.display = this.checklistExpanded ? 'flex' : 'none';
-      if (btn) btn.textContent = this.checklistExpanded ? '접기 ▴' : '목록 ▾';
+      if (btn) btn.textContent = this.checklistExpanded ? '접기' : '목록';
     });
 
     this.root.querySelectorAll<HTMLElement>('[data-pad-key]').forEach((btn) => {
@@ -688,7 +730,16 @@ class StrangerApp {
     this.renderOverlay();
   }
 
-  private openOverlay(mode: 'settings' | 'controls' | 'exit' | 'room_intro') {
+  private openNavigatorMap(force?: boolean) {
+    const myRole = this.session.getMyRole();
+    if (myRole !== 'lin') {
+      this.showToast('지도는 네비게이터(린)만 볼 수 있습니다.', 'amber');
+      return;
+    }
+    this.minimap?.toggleGuide(force, this.session.getRoom() || undefined, myRole);
+  }
+
+  private openOverlay(mode: 'settings' | 'status' | 'exit' | 'room_intro') {
     this.overlayMode = mode;
     this.world?.clearHeldKeys();
     this.renderOverlay();
@@ -721,9 +772,19 @@ class StrangerApp {
         this.overlayBackdrop.querySelector('#lbl-bgm')!.textContent = `${bgm.value}%`;
       };
       this.overlayBackdrop.querySelector('#btn-settings-ok')?.addEventListener('click', () => this.closeOverlay());
-    } else if (this.overlayMode === 'controls') {
-      this.overlayBackdrop.innerHTML = renderControlsModalHtml(Boolean(room?.soloSwitchEnabled ?? true));
+    } else if (this.overlayMode === 'status') {
+      const myRole = this.session.getMyRole();
+      this.overlayBackdrop.innerHTML = renderStatusWindowModalHtml(room, myRole, this.mapData);
       this.overlayBackdrop.querySelector('#btn-controls-ok')?.addEventListener('click', () => this.closeOverlay());
+      this.overlayBackdrop.querySelectorAll<HTMLElement>('[data-status-sw]').forEach((btn) => {
+        btn.onclick = () => {
+          this.switchRole(btn.dataset.statusSw as RoleId);
+          this.renderOverlay();
+        };
+      });
+      this.overlayBackdrop.querySelector('#status-summon-all')?.addEventListener('click', () => {
+        this.world?.summonAllTeammatesToActive();
+      });
     } else if (this.overlayMode === 'exit') {
       this.overlayBackdrop.innerHTML = renderExitConfirmModalHtml();
       this.overlayBackdrop.querySelector('#btn-exit-cancel')?.addEventListener('click', () => this.closeOverlay());
@@ -768,8 +829,20 @@ class StrangerApp {
     if (this.phase === 'lobby') {
       if (room.phase === 'playing' || room.phase === 'ended') {
         this.phase = room.phase;
+      } else if (room.introStarted) {
+        this.introSlide = 0;
+        this.phase = 'intro';
       }
       this.renderCurrentPhase();
+      return;
+    }
+
+    if (this.phase === 'intro') {
+      if (room.phase === 'playing' || room.phase === 'ended') {
+        this.enterGameFromIntro();
+      } else if (ev === 'room_state') {
+        this.renderCurrentPhase();
+      }
       return;
     }
 
@@ -794,6 +867,7 @@ class StrangerApp {
         this.renderCoronation();
       }
       this.refreshHud();
+      if (this.overlayMode === 'status') this.renderOverlay();
       this.taskModal?.onPuzzleUpdated(info.pid);
       return;
     }
@@ -801,6 +875,7 @@ class StrangerApp {
     if (ev === 'role_switched' || ev === 'room_state') {
       this.world?.snapCamera();
       this.refreshHud();
+      if (this.overlayMode === 'status') this.renderOverlay();
       if (this.taskModal?.isOpen()) this.taskModal.render();
       return;
     }
@@ -816,7 +891,7 @@ class StrangerApp {
     soundEngine.playClick();
     this.session.setLocalActiveRole(roleId);
     const rMeta = ROLES[roleId];
-    this.showToast(`🔄 ${rMeta.name} (${ROLE_KID[roleId].emoji} ${ROLE_KID[roleId].job})`, 'mint');
+    this.showToast(`${rMeta.name} (${ROLE_KID[roleId].job})`, 'mint');
   }
 
   private refreshHud() {
@@ -829,19 +904,19 @@ class StrangerApp {
     const solvedCount = room.solvedPids.length;
     const lbl = this.root.querySelector('#hud-task-label');
     const fill = this.root.querySelector<HTMLElement>('#hud-task-fill');
-    if (lbl) lbl.textContent = `🧩 ${solvedCount} / 16`;
+    if (lbl) lbl.textContent = `${solvedCount} / 16`;
     if (fill) fill.style.width = `${Math.round((solvedCount / 16) * 100)}%`;
 
     const objEl = this.root.querySelector('#hud-objective');
     if (objEl) {
       if (!room.powerRestored) {
-        objEl.textContent = '💡 불을 켜요! 🏛 1층 ➜ ⚡ 지하';
+        objEl.textContent = '1층과 지하를 조사해 불을 켜세요';
       } else if (solvedCount < 15) {
-        objEl.textContent = `✨ 불이 켜졌어요! 남은 퍼즐 (${solvedCount}/15)`;
+        objEl.textContent = `불이 켜졌습니다 · 남은 퍼즐 (${solvedCount}/15)`;
       } else if (!room.solvedPids.includes(16)) {
-        objEl.textContent = '🌈 빛을 쏘고 ➜ 👑 2층 홀에 4명 모이기!';
+        objEl.textContent = '프리즘 빛을 쏘고 2층 홀에 4명 모이기';
       } else {
-        objEl.textContent = '👑 박물관을 다 구했어요!';
+        objEl.textContent = '박물관 복원 완료';
       }
     }
 
@@ -853,10 +928,10 @@ class StrangerApp {
       const act3Done = [11, 12, 13, 14, 15].every((id) => solvedSet.has(id));
       const activeAct: 1 | 2 | 3 | 4 = !act1Done ? 1 : !act2Done ? 2 : !act3Done ? 3 : 4;
       const actTitles: Record<1 | 2 | 3 | 4, string> = {
-        1: '🏛 1층 전시실',
-        2: '⚡ 지하 기계실',
-        3: '📜 2층 기록실',
-        4: '👑 마지막 퍼즐',
+        1: '1층 전시실',
+        2: '지하 기계실',
+        3: '2층 기록실',
+        4: '마지막 퍼즐',
       };
       const items = PUZZLES.filter((pz) => pz.act === activeAct);
       chkEl.innerHTML =
@@ -866,48 +941,47 @@ class StrangerApp {
             const done = solvedSet.has(pz.id);
             const k = PUZZLE_KID[pz.id];
             return `<div class="hud-chk-row kid-chk-row ${done ? 'done' : ''}" title="${pz.code} ${pz.title}">
-              <span class="kid-chk-mark">${done ? '✅' : '⬜'}</span>
+              <span class="hud-chk-dot ${done ? 'done' : ''}"></span>
               <img class="kid-obj kid-obj-xs" src="/assets/sprites/${k?.sprite}.png" alt="" draggable="false" />
-              <span>${k ? `${k.emoji} ${k.title}` : pz.title}</span>
+              <span>${k ? k.title : pz.title}</span>
             </div>`;
           })
           .join('');
     }
 
-    const roleBox = this.root.querySelector<HTMLElement>('#hud-role-box');
-    if (roleBox) {
+    // Upper Status Window Compact Bar (shows current identity & opens full [H] Status Window)
+    const statusBar = this.root.querySelector<HTMLElement>('#hud-status-bar');
+    if (statusBar) {
       const rKid = ROLE_KID[myRole];
-      let dutyBadge = '';
+      let dutyLabel = '상태창';
       if (slot) {
         const roomUnsolved = PUZZLES.filter(
           (pz) => pz.floor === slot.floor && pz.room === slot.scene && !room.solvedPids.includes(pz.id)
         );
         const myMain = roomUnsolved.find((pz) => pz.mainRole === myRole);
         const myHelper = roomUnsolved.find((pz) => pz.helperRoles.includes(myRole));
-        if (myMain) {
-          dutyBadge = `<span class="hud-duty-pill main" style="--rc:${rMeta.color}">★ ${myMain.code} 주도</span>`;
-        } else if (myHelper) {
-          const sum = myHelper.helperSummaryByRole?.[myRole] || '단서 지원';
-          dutyBadge = `<span class="hud-duty-pill help" style="--rc:${rMeta.color}" title="${escapeTokenText(sum)}">💡 ${myHelper.code} 지원</span>`;
-        } else if (roomUnsolved.length > 0) {
-          dutyBadge = `<span class="hud-duty-pill muted">🤝 동료 구역</span>`;
-        } else if (slot.scene === 'atrium') {
-          dutyBadge = `<span class="hud-duty-pill ok">👑 집결 광장</span>`;
-        } else {
-          dutyBadge = `<span class="hud-duty-pill ok">✔ 복원 완료</span>`;
-        }
+        if (myMain) dutyLabel = `${myMain.code} 주도`;
+        else if (myHelper) dutyLabel = `${myHelper.code} 단서`;
+        else dutyLabel = rKid.job;
       }
-      roleBox.innerHTML = `
-        <div class="hud-role-row" title="${rMeta.passiveName}: ${rMeta.passiveDesc}">
+      statusBar.innerHTML = `
+        <div class="hud-status-inner" style="--rc:${rMeta.color}">
           ${charSpriteHtml(myRole, 0.72)}
-          <div class="hud-role-info">
+          <div class="hud-status-text">
             <strong style="color:${rMeta.color}">${rMeta.name}</strong>
-            <span>${rKid.emoji} ${rKid.job}</span>
+            <span>${dutyLabel}</span>
           </div>
-          ${dutyBadge}
+          <span class="hud-status-pill-tag">상태창 [H]</span>
         </div>
       `;
     }
+
+    // Map & Minimap are strictly visible ONLY for Navigator (lin)
+    const isNavigator = myRole === 'lin';
+    const miniWrap = this.root.querySelector<HTMLElement>('#hud-minimap-wrap');
+    const mBtn = this.root.querySelector<HTMLElement>('#hud-m-btn');
+    if (miniWrap) miniWrap.style.display = isNavigator ? '' : 'none';
+    if (mBtn) mBtn.style.display = isNavigator ? 'inline-flex' : 'none';
 
     const miniLbl = this.root.querySelector('#hud-minimap-lbl');
     if (miniLbl && slot) {
@@ -916,27 +990,6 @@ class StrangerApp {
       miniLbl.textContent = `${slot.floor} · ${scName}`;
     }
     this.minimap?.renderMini(room, myRole);
-
-    const switcher = this.root.querySelector('#hud-role-switcher');
-    if (switcher) {
-      if (room.soloSwitchEnabled) {
-        switcher.innerHTML = `
-          ${ROLE_ORDER.map((r, i) => {
-            const rm = ROLES[r];
-            return `<button class="role-pill-btn ${r === myRole ? 'active' : ''}" data-sw-role="${r}" style="--rc:${rm.color}">[${i + 1}] ${rm.name}</button>`;
-          }).join('')}
-          <button class="role-pill-btn" id="btn-summon-all" style="--rc:#E6C886">🧲 동료 집합</button>
-        `;
-        switcher.querySelectorAll<HTMLElement>('[data-sw-role]').forEach((b) => {
-          b.onclick = () => this.switchRole(b.dataset.swRole as RoleId);
-        });
-        switcher.querySelector('#btn-summon-all')?.addEventListener('click', () => {
-          this.world?.summonAllTeammatesToActive();
-        });
-      } else {
-        switcher.innerHTML = `<span class="role-pill-btn active" style="--rc:${rMeta.color}">고정 역할: ${rMeta.name}</span>`;
-      }
-    }
 
     this.refreshSignalLog(room);
   }
@@ -948,7 +1001,7 @@ class StrangerApp {
     const list = this.root.querySelector('#hud-log-list');
     if (!list) return;
     if (room.radioLog.length === 0) {
-      list.innerHTML = `<div class="signal-log-empty">📭 아직 무전이 없어요 · <strong>[C]</strong> 키로 보내세요</div>`;
+      list.innerHTML = `<div class="signal-log-empty">아직 무전이 없습니다 · [C] 키로 보내세요</div>`;
       return;
     }
     list.innerHTML = room.radioLog
@@ -957,8 +1010,8 @@ class StrangerApp {
         const rm = ROLES[pkt.roleId];
         return `<div class="signal-log-item ${idx === 0 ? 'latest' : ''}" style="--sc:${rm.color}">
           <div class="signal-log-meta">
-            <strong style="color:${rm.color}">${rm.badge} ${escapeTokenText(pkt.senderName)}</strong>
-            ${renderRadioTargetHtml(pkt)}
+            ${roleIconImgHtml(pkt.roleId, 'chat-role-ico')}
+            <strong style="color:${rm.color}">${escapeTokenText(pkt.senderName)}</strong>
             ${idx === 0 ? '<span class="signal-new-tag">NEW</span>' : ''}
           </div>
           <div class="signal-log-content">${renderRadioContentHtml(pkt, room.slots)}</div>
@@ -971,18 +1024,26 @@ class StrangerApp {
     if (!this.radioBannerEl) return;
     const rm = ROLES[pkt.roleId];
     const room = this.session.getRoom();
+    this.radioBannerEl.classList.remove('fading');
     this.radioBannerEl.style.display = 'flex';
     this.radioBannerEl.style.borderColor = rm.color;
     this.radioBannerEl.innerHTML = `
-      <span>📡</span>
-      <strong style="color:${rm.color}">${rm.badge} ${escapeTokenText(pkt.senderName)}</strong>
-      ${renderRadioTargetHtml(pkt)}
+      ${roleIconImgHtml(pkt.roleId, 'chat-role-ico')}
+      <strong style="color:${rm.color}">${escapeTokenText(pkt.senderName)}</strong>
       ${renderRadioBannerContentHtml(pkt, room?.slots)}
     `;
-    if (this.radioBannerTimer) window.clearTimeout(this.radioBannerTimer);
-    this.radioBannerTimer = window.setTimeout(() => {
-      if (this.radioBannerEl) this.radioBannerEl.style.display = 'none';
-    }, 4800);
+    if (this.radioBannerFadeTimer) window.clearTimeout(this.radioBannerFadeTimer);
+    if (this.radioBannerHideTimer) window.clearTimeout(this.radioBannerHideTimer);
+    // Solid for 3s, then smoothly fade out to transparent after 3s
+    this.radioBannerFadeTimer = window.setTimeout(() => {
+      this.radioBannerEl?.classList.add('fading');
+    }, 3000);
+    this.radioBannerHideTimer = window.setTimeout(() => {
+      if (this.radioBannerEl) {
+        this.radioBannerEl.style.display = 'none';
+        this.radioBannerEl.classList.remove('fading');
+      }
+    }, 4500);
   }
 
   private showRoomBanner(text: string) {
@@ -1039,11 +1100,60 @@ class StrangerApp {
     );
   }
 
+  private normalizeGameKey(e: KeyboardEvent): string {
+    const codeMap: Record<string, string> = {
+      KeyW: 'w',
+      KeyA: 'a',
+      KeyS: 's',
+      KeyD: 'd',
+      KeyC: 'c',
+      KeyE: 'e',
+      KeyM: 'm',
+      KeyH: 'h',
+      KeyP: 'p',
+      KeyX: 'x',
+      Digit1: '1',
+      Digit2: '2',
+      Digit3: '3',
+      Digit4: '4',
+      Numpad1: '1',
+      Numpad2: '2',
+      Numpad3: '3',
+      Numpad4: '4',
+      ArrowUp: 'ArrowUp',
+      ArrowDown: 'ArrowDown',
+      ArrowLeft: 'ArrowLeft',
+      ArrowRight: 'ArrowRight',
+      Escape: 'Escape',
+      Enter: 'Enter',
+      NumpadEnter: 'Enter',
+      Space: ' ',
+    };
+    if (e.code && codeMap[e.code]) return codeMap[e.code];
+    const koMap: Record<string, string> = {
+      'ㅈ': 'w',
+      'ㅉ': 'w',
+      'ㅁ': 'a',
+      'ㄴ': 's',
+      'ㅇ': 'd',
+      'ㅊ': 'c',
+      'ㄷ': 'e',
+      'ㄸ': 'e',
+      'ㅡ': 'm',
+      'ㅗ': 'h',
+      'ㅐ': 'p',
+      'ㅒ': 'p',
+      'ㅌ': 'x',
+    };
+    if (koMap[e.key]) return koMap[e.key];
+    return e.key.length === 1 ? e.key.toLowerCase() : e.key;
+  }
+
   private bindGlobalKeys() {
     window.addEventListener('keydown', (e) => {
       const target = e.target as HTMLElement | null;
       const inInput = Boolean(target?.closest('input, textarea, select'));
-      const key = e.key.length === 1 ? e.key.toLowerCase() : e.key;
+      const key = this.normalizeGameKey(e);
 
       if (this.phase === 'splash') {
         this.phase = 'title';
@@ -1052,7 +1162,7 @@ class StrangerApp {
       }
 
       if (this.phase === 'intro' && !e.repeat) {
-        if (key === 'x' || key === 'Escape') this.finishIntro();
+        if (key === 'x' || key === 'Escape') this.voteStorySkip();
         else if (key === 'ArrowLeft') {
           e.preventDefault();
           this.root.querySelector<HTMLElement>('#btn-intro-prev')?.click();
@@ -1105,7 +1215,7 @@ class StrangerApp {
 
       if (this.phase !== 'playing') return;
 
-      // Movement keys
+      // Movement keys (works identically in Korean/English IME)
       if (['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown', 'w', 'a', 's', 'd'].includes(key)) {
         if (!this.isGameplayBlocked()) {
           e.preventDefault();
@@ -1119,7 +1229,7 @@ class StrangerApp {
       if (key === 'c') {
         if (this.overlayMode === 'none') this.cMenu?.toggle();
       } else if (key === 'e') {
-        if (this.overlayMode === 'controls') {
+        if (this.overlayMode === 'status') {
           this.closeOverlay();
         } else if (this.taskModal?.isOpen()) {
           this.taskModal.close();
@@ -1128,11 +1238,11 @@ class StrangerApp {
         }
       } else if (key === 'm') {
         if (!this.cMenu?.isOpen() && !this.taskModal?.isOpen()) {
-          this.minimap?.toggleGuide(undefined, this.session.getRoom() || undefined, this.session.getMyRole());
+          this.openNavigatorMap();
         }
       } else if (key === 'h') {
-        if (this.overlayMode === 'controls') this.closeOverlay();
-        else if (!this.taskModal?.isOpen() && !this.cMenu?.isOpen()) this.openOverlay('controls');
+        if (this.overlayMode === 'status') this.closeOverlay();
+        else if (!this.taskModal?.isOpen() && !this.cMenu?.isOpen()) this.openOverlay('status');
       } else if (key === 'p') {
         if (this.overlayMode === 'exit') this.closeOverlay();
         else if (!this.taskModal?.isOpen() && !this.cMenu?.isOpen()) this.openOverlay('exit');
@@ -1143,7 +1253,7 @@ class StrangerApp {
     });
 
     window.addEventListener('keyup', (e) => {
-      const key = e.key.length === 1 ? e.key.toLowerCase() : e.key;
+      const key = this.normalizeGameKey(e);
       this.world?.setHeldKey(key, false);
     });
     window.addEventListener('blur', () => {

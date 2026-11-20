@@ -2,8 +2,6 @@ import type { MapJson, MapObject, PuzzleDef, RoleId, RoomState } from '../types/
 import {
   ROLES,
   escapeTokenText,
-  renderRadioTargetHtml,
-  renderTokenPillHtml,
 } from '../data/cMenuTokens.ts';
 import {
   MAIN_OPERATOR_OBJECT_IDS,
@@ -141,38 +139,7 @@ export class TaskModal {
   }
 
   refreshPinnedRadios() {
-    if (!this.open) return;
-    const room = this.session.getRoom();
-    const pinEl = this.root.querySelector('#fg-pin-stack');
-    if (!room || !pinEl) return;
-    pinEl.innerHTML = this.buildPinHtml(room);
-  }
-
-  private buildPinHtml(room: RoomState): string {
-    const pinnedRadios = room.radioLog.slice(0, 2);
-    if (!pinnedRadios.length) {
-      return '<div class="fg-pin-empty">📭 수신 무전 없음</div>';
-    }
-    return pinnedRadios
-      .map((pkt) => {
-        const meta = ROLES[pkt.roleId];
-        const pills = pkt.tokenIds
-          .slice(0, 3)
-          .map((id) => renderTokenPillHtml(id, room.slots))
-          .filter(Boolean)
-          .join('<span class="fg-pin-plus">+</span>');
-        const noteHtml =
-          !pills && pkt.note
-            ? `<span class="pin-note">${escapeTokenText(pkt.note.slice(0, 22))}${pkt.note.length > 22 ? '…' : ''}</span>`
-            : '';
-        return `<div class="fg-pin-packet" title="${escapeTokenText(pkt.note || '')}">
-          <span class="fg-pin-bar" style="background:${meta.color}"></span>
-          <span class="fg-pin-sender" style="color:${meta.color}">${escapeTokenText(pkt.senderName)}</span>
-          ${renderRadioTargetHtml(pkt)}
-          <div class="fg-pin-toks">${pills || noteHtml}</div>
-        </div>`;
-      })
-      .join('');
+    // Radio pin stack removed; live translucent bottom-right chat dock remains visible at z-index 9500
   }
 
   private createHelpers(room: RoomState, myRole: RoleId): BoardHelpers {
@@ -245,7 +212,6 @@ export class TaskModal {
     const isSolved = room.solvedPids.includes(p.id);
     const totalSolved = room.solvedPids.length;
     const kid = PUZZLE_KID[p.id];
-    const pinHtml = this.buildPinHtml(room);
     const shakeNow = this.shouldShake;
     this.shouldShake = false;
 
@@ -297,8 +263,10 @@ export class TaskModal {
           </div>
 
           <div class="fg-head-right">
-            <div class="fg-pin-stack" id="fg-pin-stack">${pinHtml}</div>
-            <button class="fg-radio-trigger" id="au-open-cmenu" title="무전 보내기 (C)">📡 [C]</button>
+            <button class="fg-radio-trigger" id="au-open-cmenu" title="무전 보내기 (C)">
+              <img class="hud-btn-ico" src="/assets/ui-icons/radio.svg" alt="" />
+              <span>[C] 무전</span>
+            </button>
           </div>
         </div>
 
@@ -389,12 +357,12 @@ export class TaskModal {
             이 장치는 <strong style="color:${ownerMeta.color}">${ownerMeta.name}</strong>만 조작할 수 있어요.<br/>
             단서를 찾아 무전(C)으로 알려 주세요!
           </p>
-          <div style="font-size:12px;font-weight:800;color:var(--fg-gold)">💡 ${escapeTokenText(pointerText)}</div>
+          <div style="font-size:12px;font-weight:800;color:var(--fg-gold)">${escapeTokenText(pointerText)}</div>
           <div class="fg-locked-actions">
-            ${isSelfHelper ? '<button class="s-btn primary" id="au-lock-to-clue">📜 내 단서 탭 보기</button>' : ''}
-            <button class="s-btn" id="au-lock-radio">📡 ${ownerMeta.name}에게 무전 보내기</button>
-            ${canAskBot ? `<button class="s-btn amber" id="au-lock-bot">🤖 AI ${ownerMeta.name}에게 협동 요청</button>` : ''}
-            ${soloMode ? `<button class="s-btn" id="au-lock-switch">🔄 ${ownerMeta.name}(으)로 전환</button>` : ''}
+            ${isSelfHelper ? '<button class="s-btn primary" id="au-lock-to-clue">내 단서 탭 보기</button>' : ''}
+            <button class="s-btn" id="au-lock-radio">무전 보내기 [C]</button>
+            ${canAskBot ? `<button class="s-btn amber" id="au-lock-bot">AI ${ownerMeta.name}에게 협동 요청</button>` : ''}
+            ${soloMode ? `<button class="s-btn" id="au-lock-switch">${ownerMeta.name}(으)로 전환</button>` : ''}
           </div>
         </div>
       </div>
@@ -406,8 +374,7 @@ export class TaskModal {
       this.render();
     });
     stage.querySelector('#au-lock-radio')?.addEventListener('click', () => {
-      this.close();
-      this.host.onOpenCMenu(targetOwner);
+      this.host.onOpenCMenu(null);
     });
     stage.querySelector('#au-lock-bot')?.addEventListener('click', () => {
       soundEngine.playRadio();
@@ -431,7 +398,7 @@ export class TaskModal {
 
     const selfClueHtml = curObjClue
       ? `<div class="fg-panel">
-          <div class="fg-panel-title">🔎 현장 조사 단서 (${escapeTokenText(curObjClue.title)})</div>
+          <div class="fg-panel-title">현장 조사 단서 (${escapeTokenText(curObjClue.title)})</div>
         </div>
         <div class="fg-parchment">${curObjClue.bodyHtml}</div>`
       : '';
@@ -450,8 +417,8 @@ export class TaskModal {
             </div>
           </div>
           <div class="fg-row">
-            <button class="s-btn" data-req-radio="${hr}">📡 ${rm.name}에게 무전</button>
-            ${isBot && !isSolved ? `<button class="s-btn amber" data-req-bot="${hr}">🤖 AI 도움 요청</button>` : ''}
+            <button class="s-btn" data-req-radio="${hr}">무전 보내기 [C]</button>
+            ${isBot && !isSolved ? `<button class="s-btn amber" data-req-bot="${hr}">AI 도움 요청</button>` : ''}
           </div>
         </div>`;
       })
@@ -461,8 +428,8 @@ export class TaskModal {
       <div class="fg-stack">
         ${selfClueHtml}
         <div class="fg-panel">
-          <div class="fg-panel-title">🤝 도움이 필요한 동료</div>
-          <div class="fg-panel-sub">단서 내용은 각 동료만 볼 수 있습니다. 무전 핑이나 AI 협동 요청으로 신호를 받아 조립하세요!</div>
+          <div class="fg-panel-title">도움이 필요한 동료</div>
+          <div class="fg-panel-sub">단서 내용은 각 동료만 볼 수 있습니다. 무전 신호나 AI 협동 요청으로 단서를 받아 조립하세요!</div>
         </div>
         ${cards}
         <div style="max-width:260px">${pushBtnHtml({ id: 'fg-back-main', label: '조작 화면으로 돌아가기', tone: 'mint' })}</div>
@@ -476,8 +443,7 @@ export class TaskModal {
     });
     stage.querySelectorAll<HTMLElement>('[data-req-radio]').forEach((btn) => {
       btn.onclick = () => {
-        this.close();
-        this.host.onOpenCMenu(btn.dataset.reqRadio as RoleId);
+        this.host.onOpenCMenu(null);
       };
     });
     stage.querySelectorAll<HTMLElement>('[data-req-bot]').forEach((btn) => {
@@ -528,7 +494,7 @@ export class TaskModal {
 
     const suggestedChips = p.answerTokens
       .flat()
-      .slice(0, 6)
+      .slice(0, 3)
       .map((tid) => tokenChipHtml(tid, 'md'))
       .join('<span class="fg-pin-plus">+</span>');
 
@@ -539,7 +505,6 @@ export class TaskModal {
             ${roleBadgeHtml(myRole, '단서')}
             <strong style="font-family:var(--fg-font-display);font-size:20px;color:${myMeta.color}">${escapeTokenText(roleClue?.title || `${myMeta.name} 담당 단서`)}</strong>
           </div>
-          <button class="s-btn primary" id="au-send-to-main">📡 ${mainR.name}에게 무전 보내기</button>
         </div>
         <div class="fg-parchment">
           ${roleClue?.bodyHtml || `<div class="clue-card"><p>무전으로 ${mainR.name}에게 정보를 전달하세요.</p></div>`}
@@ -550,7 +515,10 @@ export class TaskModal {
             <span style="font-family:var(--fg-font-display);font-size:16px;color:var(--fg-gold);margin-right:6px">보낼 무전</span>
             ${suggestedChips}
           </div>
-          <button class="s-btn amber" id="au-send-quick-radio">📡 C-Menu 2.0 열기</button>
+          <button class="s-btn primary" id="au-send-quick-radio">
+            <img class="hud-btn-ico" src="/assets/ui-icons/radio.svg" alt="" />
+            <span>무전 보내기 [C]</span>
+          </button>
         </div>
       </div>
     `;
@@ -558,13 +526,8 @@ export class TaskModal {
     const helperMount = stage.querySelector<HTMLElement>('#au-helper-interactive')!;
     this.mountHelperControls(helperMount, room, p.id, myRole, h);
 
-    stage.querySelector('#au-send-to-main')?.addEventListener('click', () => {
-      this.close();
-      this.host.onOpenCMenu(p.mainRole);
-    });
     stage.querySelector('#au-send-quick-radio')?.addEventListener('click', () => {
-      this.close();
-      this.host.onOpenCMenu(p.mainRole);
+      this.host.onOpenCMenu(null);
     });
   }
 
@@ -580,14 +543,16 @@ export class TaskModal {
             <strong>${p.helperRoles.map((hr) => ROLES[hr].name).join(' + ')}</strong> 협동 구역입니다.
           </p>
           <div class="fg-locked-actions">
-            <button class="s-btn primary" id="au-uninv-radio">📡 ${rMain.name}에게 무전 보내기</button>
+            <button class="s-btn primary" id="au-uninv-radio">
+              <img class="hud-btn-ico" src="/assets/ui-icons/radio.svg" alt="" />
+              <span>무전 보내기 [C]</span>
+            </button>
           </div>
         </div>
       </div>
     `;
     stage.querySelector('#au-uninv-radio')?.addEventListener('click', () => {
-      this.close();
-      this.host.onOpenCMenu(p.mainRole);
+      this.host.onOpenCMenu(null);
     });
   }
 

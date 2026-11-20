@@ -94,6 +94,8 @@ export function attachWsRoomHub(httpServer, { destroyUnmatched = false } = {}) {
       coronationTriggered: false,
       radioSeq: 0,
       radioLog: [],
+      introStarted: false,
+      introSkipVotes: [],
       createdAt: Date.now(),
       updatedAt: Date.now(),
     };
@@ -113,6 +115,8 @@ export function attachWsRoomHub(httpServer, { destroyUnmatched = false } = {}) {
       powerRestored: room.powerRestored,
       coronationTriggered: room.coronationTriggered,
       radioLog: room.radioLog,
+      introStarted: Boolean(room.introStarted),
+      introSkipVotes: Array.isArray(room.introSkipVotes) ? room.introSkipVotes : [],
     };
   }
 
@@ -267,8 +271,38 @@ export function attachWsRoomHub(httpServer, { destroyUnmatched = false } = {}) {
         return;
       }
 
+      if (msg.type === 'start_intro') {
+        room.introStarted = true;
+        room.introSkipVotes = [];
+        broadcastRoom(room, { type: 'room_state', room: serializeRoom(room) });
+        return;
+      }
+
       if (msg.type === 'start_game') {
         room.phase = 'playing';
+        room.introStarted = false;
+        room.introSkipVotes = [];
+        broadcastRoom(room, { type: 'room_state', room: serializeRoom(room) });
+        return;
+      }
+
+      if (msg.type === 'vote_intro_skip') {
+        if (!Array.isArray(room.introSkipVotes)) room.introSkipVotes = [];
+        for (const r of ROLE_ORDER) {
+          if (room.slots[r]?.ownerClientId === clientId && !room.introSkipVotes.includes(r)) {
+            room.introSkipVotes.push(r);
+          }
+        }
+        if (msg.roleId && ROLE_ORDER.includes(msg.roleId) && !room.introSkipVotes.includes(msg.roleId)) {
+          room.introSkipVotes.push(msg.roleId);
+        }
+        const humanRoles = ROLE_ORDER.filter((r) => Boolean(room.slots[r]?.ownerClientId));
+        const required = humanRoles.length > 0 ? humanRoles : ['doyun'];
+        if (required.every((r) => room.introSkipVotes.includes(r))) {
+          room.phase = 'playing';
+          room.introStarted = false;
+          room.introSkipVotes = [];
+        }
         broadcastRoom(room, { type: 'room_state', room: serializeRoom(room) });
         return;
       }
@@ -292,7 +326,7 @@ export function attachWsRoomHub(httpServer, { destroyUnmatched = false } = {}) {
       }
 
       if (msg.type === 'send_radio') {
-        const { roleId, tokenIds, targetRoleId, note } = msg;
+        const { roleId, tokenIds } = msg;
         if (!ROLE_ORDER.includes(roleId) || !Array.isArray(tokenIds)) return;
         const cleanTokens = tokenIds
           .map((t) => {
@@ -304,23 +338,18 @@ export function attachWsRoomHub(httpServer, { destroyUnmatched = false } = {}) {
             return s;
           })
           .filter(Boolean)
-          .slice(0, 8);
-        const cleanNote = note ? String(note).trim().slice(0, 160) : null;
-        if (cleanTokens.length === 0 && !cleanNote) return;
-        const resolvedTarget = targetRoleId && ROLE_ORDER.includes(targetRoleId) ? targetRoleId : null;
-        const resolvedTargetName = resolvedTarget
-          ? room.slots[resolvedTarget]?.nickname || DEFAULT_NAMES[resolvedTarget]
-          : null;
+          .slice(0, 3);
+        if (cleanTokens.length === 0) return;
         const now = Date.now();
         const entry = {
           id: 'R' + now + '_' + (++room.radioSeq),
           seq: room.radioSeq,
           roleId,
           senderName: room.slots[roleId]?.nickname || DEFAULT_NAMES[roleId],
-          targetRoleId: resolvedTarget,
-          targetName: resolvedTargetName,
+          targetRoleId: null,
+          targetName: null,
           tokenIds: cleanTokens,
-          note: cleanNote,
+          note: null,
           ts: now,
           expiresAt: now + 12000,
         };
@@ -387,6 +416,7 @@ export function attachWsRoomHub(httpServer, { destroyUnmatched = false } = {}) {
         room.powerRestored = false;
         room.coronationTriggered = false;
         room.radioLog = [];
+        room.introSkipVotes = [];
         for (const r of ROLE_ORDER) {
           const sp = DEFAULT_SPAWNS[r];
           Object.assign(room.slots[r], sp, { moving: false });

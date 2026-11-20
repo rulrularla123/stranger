@@ -20,122 +20,122 @@ interface BotHelpScript {
 const BOT_HELPER_SCRIPTS: Record<number, Partial<Record<RoleId, BotHelpScript>>> = {
   1: {
     maria: {
-      tokens: ['DIR_N', 'SYM_SUN', 'DIR_E', 'SYM_STAR', 'DIR_S', 'SYM_WAVE', 'DIR_W', 'SYM_MTN'],
-      note: '방명록 해독: 북=☀생활, 동=★역사, 남=🌊도시, 서=⛰공예 (모두 0° 기준)',
+      tokens: ['DIR_N', 'SYM_SUN', 'SYM_STAR'],
+      note: '',
     },
   },
   2: {
     maria: {
-      tokens: ['NUM_1', 'SYM_SUN', 'NUM_2', 'SYM_WAVE', 'NUM_3', 'SYM_MTN'],
-      note: '1다락=곡식단지, 2마루=바구니, 3기둥=돌절구 (등유 램프는 미끼)',
+      tokens: ['NUM_1', 'SYM_SUN', 'SYM_WAVE'],
+      note: '',
     },
   },
   3: {
     doyun: {
-      tokens: ['ACT_ROT', 'VAL:180', 'NUM_0', 'VAL:0'],
-      note: '기어 실측: 턴테이블 180°, 영혼의 배 뚜껑 기울기 0°로 맞추세요',
+      tokens: ['ACT_ROT', 'VAL:180', 'VAL:0'],
+      note: '',
     },
   },
   4: {
     lin: {
-      tokens: ['NUM_1', 'SYM_WAVE', 'NUM_2', 'DIR_W', 'NUM_3', 'DIR_N'],
-      note: '해협 측량: 1521=비사야, 1898=말롤로스(서←), 1946=마닐라 북부(북↑)',
+      tokens: ['SYM_WAVE', 'DIR_W', 'DIR_N'],
+      note: '',
     },
   },
   5: {
     aisha: {
-      tokens: ['NUM_1', 'SYM_SUN', 'NUM_2', 'SYM_VOLT', 'NUM_3', 'SYM_WAVE'],
-      note: '직물 루페: 1줄 황금(☀) → 2줄 진홍(⚡) → 3줄 청록(🌊) 순서입니다',
+      tokens: ['SYM_SUN', 'SYM_VOLT', 'SYM_WAVE'],
+      note: '',
     },
   },
   6: {
     maria: {
-      tokens: ['NUM_2', 'DIR_E'],
-      note: '노선표 판독: 2번 비논도 우회(S1=B, S2=B, S3=A) → 동쪽(→) 도개교',
+      tokens: ['NUM_2', 'DIR_E', 'COOP_OK'],
+      note: '',
     },
   },
   7: {
     lin: {
-      tokens: ['NUM_1', 'VAL:25', 'NUM_2', 'VAL:50', 'NUM_3', 'VAL:100'],
-      note: '배관 계통도: 1번=25%, 2번=50%, 3번=100% 개방 시 60 PSI 평형!',
+      tokens: ['VAL:25', 'VAL:50', 'VAL:100'],
+      note: '',
     },
   },
   8: {
     aisha: {
-      tokens: ['SYM_VOLT', 'VAL:70-90', 'NUM_2', 'VAL:1200'],
-      note: '센서 경보: 보일러 70~90 PSI로 감압 후 1·2호기 1200 RPM 동기화하세요',
+      tokens: ['VAL:80', 'NUM_2', 'VAL:1200'],
+      note: '',
     },
   },
   9: {
     lin: {
-      tokens: ['NUM_3', 'COOP_SWAP'],
-      note: 'UPS 단락 점검: Bus 1·2 OFF, 3번 예비 우회 모선만 ON 하세요',
+      tokens: ['NUM_3', 'COOP_SWAP', 'COOP_OK'],
+      note: '',
     },
     aisha: {
       tokens: ['VAL:60', 'COOP_OK'],
-      note: '코일 센서: 발전기 100% 예열 후 크랭크 기동(60Hz) 하세요',
+      note: '',
     },
   },
   10: {
     aisha: {
-      tokens: ['SYM_WAVE', 'VAL:45/18', 'DIR_N'],
-      note: '제습(45%/18°C) 완료! 침수 (2,2)(3,2)(2,3) 피해 북쪽 우회 → (4,1)',
+      tokens: ['VAL:45/18', 'DIR_N', 'SYM_SAFE'],
+      note: '',
       statePatch: { rh: 45, temp: 18 },
     },
     doyun: {
       tokens: ['NUM_1', 'VAL:1/3', 'SYM_SAFE'],
-      note: '(1,3) 1번 방수 크레이트 걸쇠 체결 완료! 크레인으로 인양하세요',
+      note: '',
       statePatch: { crateLatch: true },
     },
   },
   11: {
     aisha: {
       tokens: ['SYM_STAR', 'NUM_0', 'ACT_ROT'],
-      note: 'UV 스캔: 3개 음절 모두 모음점 없는 무점(기본 모음 a)입니다',
+      note: '',
     },
     doyun: {
-      tokens: ['NUM_1', 'NUM_2', 'NUM_3', 'SYM_SUN'],
-      note: '목판 판독: 자유(Kalayaan) 앞 세 자음은 KA(ᜃ) - LA(ᜎ) - YA(ᜌ)',
+      tokens: ['NUM_1', 'NUM_2', 'SYM_SUN'],
+      note: '',
     },
   },
   12: {
     lin: {
-      tokens: ['NUM_2', 'SYM_STAR', 'NUM_4', 'SYM_WAVE'],
-      note: '마이크로필름 초점(60,40) 맞춤! 2열 ★별자리, 4열 🌊파도 타공하세요',
+      tokens: ['NUM_2', 'SYM_STAR', 'SYM_WAVE'],
+      note: '',
       statePatch: { fx: 60, fy: 40 },
     },
   },
   13: {
     maria: {
-      tokens: ['SYM_WAVE', 'VAL:2', 'SYM_SUN', 'VAL:1', 'VAL:7.0'],
-      note: '화학 노트: 청록 2방울 + 호박 1방울 + 투명 0방울 = pH 7.0, 세척 90%+',
+      tokens: ['SYM_WAVE', 'VAL:2', 'VAL:7.0'],
+      note: '',
     },
     doyun: {
       tokens: ['COOP_OK'],
-      note: '약품 보관장 시약 공급 안전 밸브 개방 완료! 스포이드 사용 가능합니다',
+      note: '',
       statePatch: { valveOpen: true },
     },
   },
   14: {
     doyun: {
-      tokens: ['NUM_1', 'NUM_3', 'COOP_SWAP', 'VAL:0'],
-      note: '도르래 순서: 대각선 #1(좌상)·#3(우하) 먼저 0% 풀고 #2·#4! 밀랍 0° 압착',
+      tokens: ['NUM_1', 'NUM_3', 'VAL:0'],
+      note: '',
     },
   },
   15: {
     lin: {
       tokens: ['DIR_W', 'ACT_ROT', 'VAL:0'],
-      note: '축선 측량: 서쪽(←) 원점 이동 + 시계 90° 회전(0°)으로 3점 일치',
+      note: '',
     },
   },
   16: {
     maria: {
       tokens: ['DIR_E', 'DIR_S', 'ACT_ROT'],
-      note: '항로 비문: 화살표 프리즘 M1=동(→), M2=남(↓)으로 맞추세요 (M3는 서하린 확인)',
+      note: '',
     },
     doyun: {
       tokens: ['COOP_OK', 'NUM_3', 'DIR_W'],
-      note: '거치대 베어링 잠금 해제 완료! 3번 프리즘 방향은 M3=서(←) 아치문 쪽입니다',
+      note: '',
       statePatch: { mountUnlocked: true },
     },
   },
@@ -235,9 +235,9 @@ export class BotController {
     if (script.statePatch) {
       this.session.patchPuzzle(pid, script.statePatch);
     }
-    this.session.sendRadio(helperRole, script.tokens, {
-      targetRoleId: pDef.mainRole,
-      note: script.note,
+    this.session.sendRadio(helperRole, script.tokens.slice(0, 3), {
+      targetRoleId: null,
+      note: null,
     });
     return true;
   }
@@ -261,24 +261,14 @@ export class BotController {
     if (room.hostClientId !== this.session.getClientId()) return;
 
     const senderSlot = room.slots[pkt.roleId];
-    if (!senderSlot || senderSlot.isBot) return;
+    if (!senderSlot || senderSlot.isBot || this.isBotControlled(room, pkt.roleId)) return;
 
-    const botTargets = new Set<RoleId>();
-    if (pkt.targetRoleId && pkt.targetRoleId !== pkt.roleId) {
-      botTargets.add(pkt.targetRoleId);
-    }
-    for (const tid of pkt.tokenIds) {
-      if (tid.startsWith('ROLE:')) {
-        const rid = tid.slice(5) as RoleId;
-        if (ROLE_ORDER.includes(rid) && rid !== pkt.roleId) botTargets.add(rid);
-      }
-    }
-    if (botTargets.size === 0) return;
+    // Radio is broadcast-only: bots in the room respond with their clue tokens when a player broadcasts
+    const botCandidates = ROLE_ORDER.filter((r) => this.isBotControlled(room, r));
+    if (botCandidates.length === 0) return;
 
-    for (const botRole of botTargets) {
-      if (!this.isBotControlled(room, botRole)) continue;
-
-      // Prefer an unsolved puzzle in the sender's current room where this bot is a helper
+    let responded = false;
+    for (const botRole of botCandidates) {
       const roomPuzzle = Object.values(PUZZLES_BY_ID).find(
         (p) =>
           p.floor === senderSlot.floor &&
@@ -286,25 +276,22 @@ export class BotController {
           !room.solvedPids.includes(p.id) &&
           p.helperRoles.includes(botRole)
       );
-
-      window.setTimeout(() => {
-        if (roomPuzzle) {
+      if (roomPuzzle) {
+        responded = true;
+        window.setTimeout(() => {
           this.executeBotHelp(roomPuzzle.id, botRole);
           this.sentClueFor.add(`${roomPuzzle.code}:${botRole}`);
-        } else {
-          // Inform the player if this bot has an unsolved puzzle elsewhere
-          const nextElsewhere = Object.values(PUZZLES_BY_ID).find(
-            (p) => !room.solvedPids.includes(p.id) && p.helperRoles.includes(botRole)
-          );
-          const note = nextElsewhere
-            ? `${ROLES[botRole].name}: 이 방엔 제 단서가 없어요. ${nextElsewhere.roomLabel}(${nextElsewhere.code})에서 도울 수 있습니다!`
-            : `${ROLES[botRole].name}: 지금 맡을 단서 작업이 모두 완료되었습니다!`;
-          this.session.sendRadio(botRole, ['COOP_OK'], {
-            targetRoleId: pkt.roleId,
-            note,
-          });
-        }
-      }, 450);
+        }, 450);
+      }
+    }
+
+    if (!responded) {
+      const nearestBot = botCandidates[0];
+      if (nearestBot) {
+        window.setTimeout(() => {
+          this.session.sendRadio(nearestBot, ['COOP_OK'], { targetRoleId: null, note: null });
+        }, 450);
+      }
     }
   }
 
@@ -338,7 +325,7 @@ export class BotController {
     ) {
       this.sentClueFor.add('P16:HERE_BOT');
       this.session.patchPuzzle(16, { hereSent: true });
-      this.session.sendRadio('lin', ['COOP_HERE'], { note: '2층 중앙 홀 발판으로 모여!' });
+      this.session.sendRadio('lin', ['COOP_HERE'], { note: null, targetRoleId: null });
     }
     const isP16GatherPhase = Boolean(p16.beamReachedAtrium && p16.hereSent && !room.solvedPids.includes(16));
 

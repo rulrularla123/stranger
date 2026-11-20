@@ -52,50 +52,50 @@ export const ROLES: Record<RoleId, RoleMeta> = {
 export const C_CATEGORIES: TokenCategory[] = [
   {
     id: 'num',
-    label: '🔢 순서',
+    label: '숫자',
     color: '#F4F7FA',
     tokens: [
-      { id: 'NUM_1', category: 'num', glyph: '①', label: '1번', sub: '첫번째 / 1방울', color: '#F4F7FA' },
-      { id: 'NUM_2', category: 'num', glyph: '②', label: '2번', sub: '두번째 / 2방울', color: '#F4F7FA' },
-      { id: 'NUM_3', category: 'num', glyph: '③', label: '3번', sub: '세번째 / 3구역', color: '#F4F7FA' },
-      { id: 'NUM_4', category: 'num', glyph: '④', label: '4번', sub: '네번째 / 4열', color: '#F4F7FA' },
-      { id: 'NUM_0', category: 'num', glyph: '◎0', label: '기준(0)', sub: '영점 / 초기화', color: '#9AA7B4' },
+      { id: 'NUM_1', category: 'num', glyph: '1', label: '1', sub: '1', color: '#F4F7FA' },
+      { id: 'NUM_2', category: 'num', glyph: '2', label: '2', sub: '2', color: '#F4F7FA' },
+      { id: 'NUM_3', category: 'num', glyph: '3', label: '3', sub: '3', color: '#F4F7FA' },
+      { id: 'NUM_4', category: 'num', glyph: '4', label: '4', sub: '4', color: '#F4F7FA' },
+      { id: 'NUM_0', category: 'num', glyph: '0', label: '0', sub: '0', color: '#9AA7B4' },
     ],
   },
   {
     id: 'dir',
-    label: '🧭 방향',
+    label: '방향',
     color: '#52EFBF',
     tokens: [
-      { id: 'DIR_N', category: 'dir', glyph: '↑', label: '북 ↑', sub: '위 / 북쪽', color: '#52EFBF' },
-      { id: 'DIR_E', category: 'dir', glyph: '→', label: '동 →', sub: '오른쪽 / 동쪽', color: '#52EFBF' },
-      { id: 'DIR_S', category: 'dir', glyph: '↓', label: '남 ↓', sub: '아래 / 남쪽', color: '#52EFBF' },
-      { id: 'DIR_W', category: 'dir', glyph: '←', label: '서 ←', sub: '왼쪽 / 서쪽', color: '#52EFBF' },
-      { id: 'ACT_ROT', category: 'dir', glyph: '↻', label: '회전 ↻', sub: '돌리기 / 정렬', color: '#FFB86B' },
+      { id: 'DIR_N', category: 'dir', glyph: 'N', label: 'N', sub: 'N', color: '#52EFBF' },
+      { id: 'DIR_E', category: 'dir', glyph: 'E', label: 'E', sub: 'E', color: '#52EFBF' },
+      { id: 'DIR_S', category: 'dir', glyph: 'S', label: 'S', sub: 'S', color: '#52EFBF' },
+      { id: 'DIR_W', category: 'dir', glyph: 'W', label: 'W', sub: 'W', color: '#52EFBF' },
+      { id: 'ACT_ROT', category: 'dir', glyph: 'ROT', label: 'ROT', sub: 'ROT', color: '#FFB86B' },
     ],
   },
   {
     id: 'sym',
-    label: '🎨 그림',
+    label: '기호',
     color: '#E6C886',
     tokens: [
-      { id: 'SYM_SUN', category: 'sym', glyph: '☀', label: '태양 ☀', sub: '황금 / 지붕 / 호박', color: '#E6C886' },
-      { id: 'SYM_WAVE', category: 'sym', glyph: '🌊', label: '파도 🌊', sub: '청록 / 해협 / 습도', color: '#7CD8FF' },
-      { id: 'SYM_MTN', category: 'sym', glyph: '⛰', label: '산맥 ⛰', sub: '황토 / 기둥 / 지형', color: '#D49B6A' },
-      { id: 'SYM_STAR', category: 'sym', glyph: '★', label: '별자리 ★', sub: '감청 / 바이바이인', color: '#91A8FF' },
-      { id: 'SYM_VOLT', category: 'sym', glyph: '⚡', label: '열기 ⚡', sub: '적색 / 과압 / 고압', color: '#FF6E6E' },
-      { id: 'SYM_SAFE', category: 'sym', glyph: '🛡', label: '안정 🛡', sub: '녹색 / 건조 / 안전', color: '#52EFBF' },
+      { id: 'SYM_SUN', category: 'sym', glyph: 'SUN', label: 'SUN', sub: 'SUN', color: '#E6C886' },
+      { id: 'SYM_WAVE', category: 'sym', glyph: 'WAVE', label: 'WAVE', sub: 'WAVE', color: '#7CD8FF' },
+      { id: 'SYM_MTN', category: 'sym', glyph: 'MTN', label: 'MTN', sub: 'MTN', color: '#D49B6A' },
+      { id: 'SYM_STAR', category: 'sym', glyph: 'STAR', label: 'STAR', sub: 'STAR', color: '#91A8FF' },
+      { id: 'SYM_VOLT', category: 'sym', glyph: 'VOLT', label: 'VOLT', sub: 'VOLT', color: '#FF6E6E' },
+      { id: 'SYM_SAFE', category: 'sym', glyph: 'SAFE', label: 'SAFE', sub: 'SAFE', color: '#52EFBF' },
     ],
   },
   {
     id: 'coop',
-    label: '🤝 신호',
+    label: '신호',
     color: '#C792EA',
     tokens: [
-      { id: 'COOP_OK', category: 'coop', glyph: '✔', label: '준비 완료', sub: 'OK / 작동 가능', color: '#52EFBF' },
-      { id: 'COOP_WAIT', category: 'coop', glyph: '✋', label: '잠깐 대기', sub: 'HOLD / 정지', color: '#FFB86B' },
-      { id: 'COOP_SWAP', category: 'coop', glyph: '⇄', label: '반전/교체', sub: '대각선 / 모선 우회', color: '#C792EA' },
-      { id: 'COOP_HERE', category: 'coop', glyph: '📍', label: '집결 호출', sub: 'HERE / 반원 홀', color: '#52EFBF' },
+      { id: 'COOP_OK', category: 'coop', glyph: 'OK', label: 'OK', sub: 'OK', color: '#52EFBF' },
+      { id: 'COOP_WAIT', category: 'coop', glyph: 'WAIT', label: 'WAIT', sub: 'WAIT', color: '#FFB86B' },
+      { id: 'COOP_SWAP', category: 'coop', glyph: 'SWAP', label: 'SWAP', sub: 'SWAP', color: '#C792EA' },
+      { id: 'COOP_HERE', category: 'coop', glyph: 'HERE', label: 'HERE', sub: 'HERE', color: '#52EFBF' },
     ],
   },
 ];
@@ -103,6 +103,11 @@ export const C_CATEGORIES: TokenCategory[] = [
 export const TOKENS_BY_ID: Record<string, TokenDef> = Object.fromEntries(
   C_CATEGORIES.flatMap((c) => c.tokens).map((t) => [t.id, t])
 );
+
+export function roleIconImgHtml(roleId: RoleId, extraClass = ''): string {
+  const cls = ['s-role-ico', extraClass].filter(Boolean).join(' ');
+  return `<img class="${cls}" src="/assets/puzzle-ui/icons/role-${roleId}.svg" alt="" />`;
+}
 
 export function escapeTokenText(s: string): string {
   return s
@@ -118,58 +123,43 @@ export function sanitizeRadioNumber(raw: string): string {
 
 export function renderTokenPillHtml(
   tokenId: string,
-  slots?: Partial<Record<RoleId, { nickname?: string }>>
+  _slots?: Partial<Record<RoleId, { nickname?: string }>>
 ): string {
   if (tokenId.startsWith('VAL:')) {
     const clean = sanitizeRadioNumber(tokenId.slice(4));
     if (!clean) return '';
-    return `<span class="s-tok s-tok-num">
-      <span class="s-tok-glyph">🔢</span>
-      <span class="s-tok-label">${escapeTokenText(clean)}</span>
-    </span>`;
+    return `<span class="s-tok s-tok-num"><span class="s-tok-num-val">${escapeTokenText(clean)}</span></span>`;
   }
   if (tokenId.startsWith('ROLE:')) {
     const target = tokenId.slice(5);
-    if (target === 'all') {
-      return `<span class="s-tok s-tok-role" style="--tok-color:#9bb0be">
-        <span class="s-tok-glyph">📢</span>
-        <span class="s-tok-label">@전체</span>
-      </span>`;
-    }
     const rm = ROLES[target as RoleId];
     if (rm) {
-      const nick = slots?.[rm.id]?.nickname || rm.name;
       return `<span class="s-tok s-tok-role" style="--tok-color:${rm.color}">
         <img class="s-tok-icon" src="/assets/puzzle-ui/icons/role-${rm.id}.svg" alt="" />
-        <span class="s-tok-label">@${escapeTokenText(nick)}</span>
       </span>`;
     }
+    return '';
   }
   const tok = TOKENS_BY_ID[tokenId];
-  if (!tok) return `<span class="s-tok">${escapeTokenText(tokenId)}</span>`;
-  return `<span class="s-tok" style="--tok-color:${tok.color}">
+  if (!tok) return '';
+  return `<span class="s-tok s-tok-icon-only" style="--tok-color:${tok.color}">
     <img class="s-tok-icon" src="/assets/puzzle-ui/icons/tok-${tok.id}.svg" alt="" />
-    <span class="s-tok-label">${tok.label}</span>
   </span>`;
 }
 
-export function renderRadioTargetHtml(pkt: Pick<RadioPacket, 'targetRoleId' | 'targetName'>): string {
-  if (pkt.targetRoleId && ROLES[pkt.targetRoleId]) {
-    const meta = ROLES[pkt.targetRoleId];
-    return `<span class="s-target" style="--rc:${meta.color}">▸ ${meta.badge} ${escapeTokenText(pkt.targetName || meta.name)}</span>`;
-  }
-  return `<span class="s-target all">▸ 전체</span>`;
+export function renderRadioTargetHtml(_pkt: Pick<RadioPacket, 'targetRoleId' | 'targetName'>): string {
+  return '';
 }
 
 export function renderRadioContentHtml(
   pkt: Pick<RadioPacket, 'tokenIds' | 'note'>,
   slots?: Partial<Record<RoleId, { nickname?: string }>>
 ): string {
-  const pills = pkt.tokenIds.map((id) => renderTokenPillHtml(id, slots)).filter(Boolean).join('');
-  if (pkt.note) {
-    const pillsRow = pills ? `<div class="signal-pills compact">${pills}</div>` : '';
-    return `<div class="signal-bot-note">${escapeTokenText(pkt.note)}</div>${pillsRow}`;
-  }
+  const pills = pkt.tokenIds
+    .slice(0, 3)
+    .map((id) => renderTokenPillHtml(id, slots))
+    .filter(Boolean)
+    .join('');
   return pills ? `<div class="signal-pills">${pills}</div>` : '';
 }
 
@@ -177,10 +167,11 @@ export function renderRadioBannerContentHtml(
   pkt: Pick<RadioPacket, 'tokenIds' | 'note'>,
   slots?: Partial<Record<RoleId, { nickname?: string }>>
 ): string {
-  if (pkt.note) {
-    return `<span class="banner-note">${escapeTokenText(pkt.note)}</span>`;
-  }
-  const pills = pkt.tokenIds.map((id) => renderTokenPillHtml(id, slots)).filter(Boolean).join('');
+  const pills = pkt.tokenIds
+    .slice(0, 3)
+    .map((id) => renderTokenPillHtml(id, slots))
+    .filter(Boolean)
+    .join('');
   return pills ? `<span class="signal-pills">${pills}</span>` : '';
 }
 
@@ -188,10 +179,6 @@ export function renderRadioPinContentHtml(
   pkt: Pick<RadioPacket, 'tokenIds' | 'note'>,
   slots?: Partial<Record<RoleId, { nickname?: string }>>
 ): string {
-  if (pkt.note) {
-    const clipped = pkt.note.length > 28 ? `${pkt.note.slice(0, 28)}…` : pkt.note;
-    return `<span class="pin-note" title="${escapeTokenText(pkt.note)}">${escapeTokenText(clipped)}</span>`;
-  }
   const pills = pkt.tokenIds
     .slice(0, 3)
     .map((id) => renderTokenPillHtml(id, slots))
@@ -201,18 +188,13 @@ export function renderRadioPinContentHtml(
 }
 
 export function formatRadioPlainText(pkt: RadioPacket): string {
-  const prefix = pkt.targetRoleId && ROLES[pkt.targetRoleId] ? `@${pkt.targetName || ROLES[pkt.targetRoleId].name} ` : '';
-  const body = pkt.tokenIds
+  return pkt.tokenIds
+    .slice(0, 3)
     .map((id) => {
-      if (id.startsWith('VAL:')) return `#${sanitizeRadioNumber(id.slice(4))}`;
-      if (id.startsWith('ROLE:')) {
-        const rid = id.slice(5);
-        return rid === 'all' ? '@전체' : `@${ROLES[rid as RoleId]?.name || rid}`;
-      }
+      if (id.startsWith('VAL:')) return sanitizeRadioNumber(id.slice(4));
       const t = TOKENS_BY_ID[id];
-      return t ? `${t.glyph}${t.label}` : id;
+      return t ? t.glyph : '';
     })
+    .filter(Boolean)
     .join(' ');
-  const suffix = pkt.note ? ` · ${pkt.note}` : '';
-  return `${prefix}${body}${suffix}`.trim();
 }

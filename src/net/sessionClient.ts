@@ -100,6 +100,10 @@ function normalizePuzzleStates(room: RoomState): RoomState {
     p16.prisms = ['S', 'W', 'N'];
   }
   room.puzzleStates = base;
+  room.introStarted = Boolean(room.introStarted);
+  room.introSkipVotes = Array.isArray(room.introSkipVotes)
+    ? room.introSkipVotes.filter((r): r is RoleId => ROLE_ORDER.includes(r))
+    : [];
   return room;
 }
 
@@ -136,6 +140,8 @@ function createLocalRoom(code: string, clientId: string, nickname: string, fillB
     powerRestored: false,
     coronationTriggered: false,
     radioLog: [],
+    introStarted: false,
+    introSkipVotes: [],
     startedAt: null,
   };
 }
@@ -804,11 +810,28 @@ export class SessionClient {
     this.emit('room_state');
   }
 
+  startIntro() {
+    if (!this.room) return;
+    if (this.transportMode === 'ws' && this.sendWs({ type: 'start_intro' })) return;
+    this.room.introStarted = true;
+    this.room.introSkipVotes = [];
+    if (this.transportMode === 'supabase') {
+      this.sendSupabaseBroadcast('room_state', { room: this.room });
+      const puzzleSnap = roomStateToRow(this.room).puzzle_states;
+      this.enqueueSupabaseUpdate(() => ({ puzzle_states: puzzleSnap }));
+    } else {
+      this.syncBc();
+    }
+    this.emit('room_state');
+  }
+
   startGame() {
     if (!this.room) return;
     if (this.transportMode === 'ws' && this.sendWs({ type: 'start_game' })) return;
 
     this.room.phase = 'playing';
+    this.room.introStarted = false;
+    this.room.introSkipVotes = [];
     this.room.startedAt = this.room.startedAt || Date.now();
 
     if (this.transportMode === 'supabase') {
@@ -817,12 +840,66 @@ export class SessionClient {
         phase: 'playing' as const,
         started_at: new Date(this.room.startedAt).toISOString(),
         slots: structuredClone(this.room.slots),
+        puzzle_states: roomStateToRow(this.room).puzzle_states,
       };
       this.enqueueSupabaseUpdate(() => snap);
     } else {
       this.syncBc();
     }
     this.emit('room_state');
+  }
+
+  getIntroSkipStatus(): { voted: number; required: number; myVoted: boolean; allSkipped: boolean } {
+    if (!this.room) return { voted: 0, required: 1, myVoted: false, allSkipped: false };
+    const humanRoles = ROLE_ORDER.filter((r) => Boolean(this.room!.slots[r]?.ownerClientId));
+    const requiredRoles = humanRoles.length > 0 ? humanRoles : [this.myRole];
+    const votes = Array.isArray(this.room.introSkipVotes) ? this.room.introSkipVotes : [];
+    const voted = requiredRoles.filter((r) => votes.includes(r)).length;
+    const myRoles = ROLE_ORDER.filter((r) => this.room!.slots[r]?.ownerClientId === this.clientId);
+    const checkMine = myRoles.length > 0 ? myRoles : [this.myRole];
+    const myVoted = checkMine.every((r) => votes.includes(r));
+    return {
+      voted,
+      required: requiredRoles.length,
+      myVoted,
+      allSkipped: voted >= requiredRoles.length,
+    };
+  }
+
+  voteIntroSkip(): { voted: number; required: number; myVoted: boolean; allSkipped: boolean } {
+    if (!this.room) {
+      return { voted: 1, required: 1, myVoted: true, allSkipped: true };
+    }
+    if (!Array.isArray(this.room.introSkipVotes)) {
+      this.room.introSkipVotes = [];
+    }
+    const ownedRoles = ROLE_ORDER.filter((r) => this.room!.slots[r]?.ownerClientId === this.clientId);
+    const toAdd = ownedRoles.length > 0 ? ownedRoles : [this.myRole];
+    for (const r of toAdd) {
+      if (!this.room.introSkipVotes.includes(r)) {
+        this.room.introSkipVotes.push(r);
+      }
+    }
+
+    if (this.transportMode === 'ws' && this.sendWs({ type: 'vote_intro_skip', roleId: this.myRole })) {
+      return this.getIntroSkipStatus();
+    }
+
+    const status = this.getIntroSkipStatus();
+    if (status.allSkipped) {
+      this.startGame();
+      return { ...status, allSkipped: true };
+    }
+
+    if (this.transportMode === 'supabase') {
+      this.sendSupabaseBroadcast('room_state', { room: this.room });
+      const puzzleSnap = roomStateToRow(this.room).puzzle_states;
+      this.enqueueSupabaseUpdate(() => ({ puzzle_states: puzzleSnap }));
+    } else {
+      this.syncBc();
+    }
+    this.emit('room_state');
+    return status;
   }
 
   moveSlot(
@@ -848,7 +925,7 @@ export class SessionClient {
   sendRadio(
     roleId: RoleId,
     tokenIds: string[],
-    opts?: { targetRoleId?: RoleId | null; note?: string | null }
+    _opts?: { targetRoleId?: RoleId | null; note?: string | null }
   ): RadioPacket | null {
     if (!this.room) return null;
     const cleanTokens = tokenIds
@@ -860,16 +937,16 @@ export class SessionClient {
         return String(t || '').trim();
       })
       .filter(Boolean)
-      .slice(0, 8);
-    const cleanNote = opts?.note ? String(opts.note).trim().slice(0, 160) : null;
-    if (cleanTokens.length === 0 && !cleanNote) return null;
+      .slice(0, 3);
+    if (cleanTokens.length === 0) return null;
 
-    const targetRoleId = opts?.targetRoleId && ROLE_ORDER.includes(opts.targetRoleId) ? opts.targetRoleId : null;
-    const targetName = targetRoleId ? this.room.slots[targetRoleId]?.nickname || ROLES[targetRoleId].name : null;
+    const targetRoleId = null;
+    const targetName = null;
+    const cleanNote = null;
 
     if (
       this.transportMode === 'ws' &&
-      this.sendWs({ type: 'send_radio', roleId, tokenIds: cleanTokens, targetRoleId, note: cleanNote })
+      this.sendWs({ type: 'send_radio', roleId, tokenIds: cleanTokens, targetRoleId: null, note: null })
     ) {
       return null;
     }
@@ -996,6 +1073,7 @@ export class SessionClient {
     this.room.powerRestored = false;
     this.room.coronationTriggered = false;
     this.room.radioLog = [];
+    this.room.introSkipVotes = [];
     this.room.startedAt = Date.now();
     this.clearRecorded = false;
     for (const r of ROLE_ORDER) {

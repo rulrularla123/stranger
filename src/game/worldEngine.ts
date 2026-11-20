@@ -11,14 +11,15 @@ import type {
   RoleId,
   RoomState,
 } from '../types/stranger.ts';
-import { ROLE_ORDER, ROLES, formatRadioPlainText } from '../data/cMenuTokens.ts';
+import { ROLE_ORDER, ROLES, TOKENS_BY_ID, sanitizeRadioNumber } from '../data/cMenuTokens.ts';
 import { PUZZLES_BY_ID, getObjectOwnerRole, getPortalLockReason } from '../data/puzzleCatalog.ts';
 import { soundEngine } from '../audio/soundEngine.ts';
 import type { SessionClient } from '../net/sessionClient.ts';
 
 export const VIEWPORT_W = 384;
 export const VIEWPORT_H = 240;
-export const SCALE_X = 3; // 1152 x 720 main canvas
+export const SCALE_X = 3; // 1152 x 720 logical canvas
+export const HD_DPR = 2; // 2304 x 1440 HiDPI backing store for razor-sharp HUD text over pixel art
 
 export interface WorldCallbacks {
   onInteractObject: (obj: MapObject) => void;
@@ -108,7 +109,9 @@ export class WorldEngine {
    * toward it at walking speed instead of letting it jump.
    */
   private drawPos: Partial<Record<RoleId, { x: number; y: number; floor: FloorKey; scene: string; gliding: boolean }>> = {};
-  private speechBubbles: Partial<Record<RoleId, { text: string; color: string; until: number }>> = {};
+  private speechBubbles: Partial<
+    Record<RoleId, { tokenIds: string[]; color: string; solidUntil: number; until: number }>
+  > = {};
   private coronationHoldTimer = 0;
   private coronationDone = false;
 
@@ -123,8 +126,8 @@ export class WorldEngine {
     callbacks: WorldCallbacks
   ) {
     this.displayCanvas = canvas;
-    this.displayCanvas.width = VIEWPORT_W * SCALE_X;
-    this.displayCanvas.height = VIEWPORT_H * SCALE_X;
+    this.displayCanvas.width = VIEWPORT_W * SCALE_X * HD_DPR;
+    this.displayCanvas.height = VIEWPORT_H * SCALE_X * HD_DPR;
     const dctx = canvas.getContext('2d');
     if (!dctx) throw new Error('2D display context unavailable');
     this.displayCtx = dctx;
@@ -157,6 +160,12 @@ export class WorldEngine {
       this.loadImage(fl.background);
       this.loadImage(fl.walkability);
       for (const o of fl.objects) this.loadImage(o.sprite);
+    }
+    for (const tid of Object.keys(TOKENS_BY_ID)) {
+      this.loadImage(`/assets/puzzle-ui/icons/tok-${tid}.svg`);
+    }
+    for (const r of ROLE_ORDER) {
+      this.loadImage(`/assets/puzzle-ui/icons/role-${r}.svg`);
     }
   }
 
@@ -201,11 +210,14 @@ export class WorldEngine {
   }
 
   onRadioReceived(pkt: RadioPacket) {
-    const label = formatRadioPlainText(pkt);
+    const tokenIds = (pkt.tokenIds || []).slice(0, 3);
+    if (tokenIds.length === 0) return;
+    const now = Date.now();
     this.speechBubbles[pkt.roleId] = {
-      text: label.length > 42 ? label.slice(0, 41) + '…' : label,
+      tokenIds,
       color: ROLES[pkt.roleId].color,
-      until: Date.now() + 6500,
+      solidUntil: now + 3000,
+      until: now + 4500,
     };
   }
 
@@ -495,7 +507,7 @@ export class WorldEngine {
     let nextPrompt: string | null = null;
     if (portal) {
       const lockMsg = getPortalLockReason(room, portal);
-      nextPrompt = lockMsg ? `[🔒] ${portal.name} (잠김)` : `[E] → ${portal.name}`;
+      nextPrompt = lockMsg ? `잠김 · ${portal.name}` : `[E] ${portal.name}`;
     } else if (nearObj) {
       const pid = nearObj.puzzles?.[0];
       const tag = pid ? `P${String(pid).padStart(2, '0')} ` : '';
@@ -504,7 +516,7 @@ export class WorldEngine {
       const myRoleNow = this.session.getMyRole();
       const ownerHint = owner !== 'all' && owner !== myRoleNow ? ` (${ROLES[owner].name} 담당)` : '';
       nextPrompt = nearObj.id.startsWith('gather-')
-        ? `👣 ${nearObj.name}${ownerHint} — 발판 위에서 대기`
+        ? `${nearObj.name}${ownerHint} — 발판 위에서 대기`
         : `[E] ${tag}${nearObj.name}${ownerHint}`;
     }
     if (nextPrompt !== this.lastPrompt) {
@@ -773,19 +785,22 @@ export class WorldEngine {
       wctx.drawImage(this.lightCanvas, 0, 0);
     }
 
-    // PASS 2: Blit 384x240 -> 1152x720 with ZERO smoothing, then draw crisp HD overlays!
+    // PASS 2: Blit 384x240 -> 2304x1440 with ZERO smoothing on pixel art, then draw 2x HiDPI overlays!
     const dctx = this.displayCtx;
     dctx.setTransform(1, 0, 0, 1, 0, 0);
     dctx.imageSmoothingEnabled = false;
     dctx.clearRect(0, 0, this.displayCanvas.width, this.displayCanvas.height);
     dctx.drawImage(this.worldCanvas, 0, 0, this.displayCanvas.width, this.displayCanvas.height);
 
+    dctx.setTransform(HD_DPR, 0, 0, HD_DPR, 0, 0);
+    dctx.imageSmoothingEnabled = true;
+    dctx.imageSmoothingQuality = 'high';
     this.drawHdOverlays(dctx, room, fl, activeSlot, party, camX, camY, nearbyPortal);
 
     // Room transition fade
     if (this.fadeAlpha > 0.01) {
       dctx.fillStyle = `rgba(7, 10, 15, ${this.fadeAlpha.toFixed(3)})`;
-      dctx.fillRect(0, 0, this.displayCanvas.width, this.displayCanvas.height);
+      dctx.fillRect(0, 0, VIEWPORT_W * SCALE_X, VIEWPORT_H * SCALE_X);
     }
   }
 
@@ -1026,15 +1041,72 @@ export class WorldEngine {
       const bubble = this.speechBubbles[ch.roleId];
       if (bubble && bubble.until > now) {
         const [, headY] = toScreen(ch.x, ch.y - 54);
-        ctx.font = '800 12px "Noto Sans KR", sans-serif';
-        const bText = `📡 ${bubble.text}`;
-        const bw = ctx.measureText(bText).width + 18;
-        ctx.fillStyle = 'rgba(15, 22, 31, 0.96)';
+        const alpha = now <= bubble.solidUntil ? 1 : Math.max(0, 1 - (now - bubble.solidUntil) / 1500);
+        const items = bubble.tokenIds.slice(0, 3);
+        const itemWidths = items.map((tid) => {
+          if (tid.startsWith('VAL:')) {
+            ctx.font = '800 13px ui-monospace, "Noto Sans KR", sans-serif';
+            return Math.max(24, Math.ceil(ctx.measureText(sanitizeRadioNumber(tid.slice(4))).width) + 12);
+          }
+          return 26;
+        });
+        const gap = 6;
+        const innerW = itemWidths.reduce((a, b) => a + b, 0) + Math.max(0, items.length - 1) * gap;
+        const bw = Math.max(46, innerW + 20);
+        const bh = 34;
+        const bx = cx - bw / 2;
+        const by = headY - 38;
+
+        ctx.save();
+        ctx.globalAlpha = alpha;
+        ctx.fillStyle = 'rgba(13, 20, 29, 0.96)';
         ctx.strokeStyle = bubble.color;
         ctx.lineWidth = 2;
-        this.roundRect(ctx, cx - bw / 2, headY - 28, bw, 26, 8, true, true);
-        ctx.fillStyle = '#F4F7FA';
-        ctx.fillText(bText, cx, headY - 15);
+        this.roundRect(ctx, bx, by, bw, bh, 11, true, true);
+
+        // Speech bubble downward tail pointer
+        ctx.beginPath();
+        ctx.moveTo(cx - 6, by + bh - 1);
+        ctx.lineTo(cx, by + bh + 8);
+        ctx.lineTo(cx + 6, by + bh - 1);
+        ctx.closePath();
+        ctx.fillStyle = 'rgba(13, 20, 29, 0.96)';
+        ctx.fill();
+        ctx.strokeStyle = bubble.color;
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.moveTo(cx - 6, by + bh);
+        ctx.lineTo(cx, by + bh + 8);
+        ctx.lineTo(cx + 6, by + bh);
+        ctx.stroke();
+
+        let curX = cx - innerW / 2;
+        const midY = by + bh / 2;
+        items.forEach((tid, idx) => {
+          const iw = itemWidths[idx];
+          if (tid.startsWith('VAL:')) {
+            const numStr = sanitizeRadioNumber(tid.slice(4));
+            ctx.fillStyle = 'rgba(255, 216, 107, 0.14)';
+            ctx.strokeStyle = '#FFD86B';
+            ctx.lineWidth = 1.2;
+            this.roundRect(ctx, curX, midY - 11, iw, 22, 6, true, true);
+            ctx.fillStyle = '#FFD86B';
+            ctx.font = '800 13px ui-monospace, "Noto Sans KR", sans-serif';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.fillText(numStr, curX + iw / 2, midY + 0.5);
+          } else {
+            const path = tid.startsWith('ROLE:')
+              ? `/assets/puzzle-ui/icons/role-${tid.slice(5)}.svg`
+              : `/assets/puzzle-ui/icons/tok-${tid}.svg`;
+            const iconImg = this.loadImage(path);
+            if (iconImg.complete && iconImg.naturalWidth > 0) {
+              ctx.drawImage(iconImg, curX + 2, midY - 11, 22, 22);
+            }
+          }
+          curX += iw + gap;
+        });
+        ctx.restore();
       }
     }
   }

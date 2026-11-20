@@ -32,17 +32,25 @@
   border-width: 2px;
   border-color: var(--fg-outline);
   background: var(--fg-bg-panel);
-  padding: 2px 9px 2px 5px;
+  padding: 4px 7px;
   border-radius: 999px;
-  gap: 5px;
+  gap: 4px;
 }
 
 .s-tok-icon {
-  width: 18px;
-  height: 18px;
+  width: 20px;
+  height: 20px;
   object-fit: contain;
   display: block;
   flex: none;
+}
+
+.s-tok-num-val {
+  font-family: var(--fg-font-mono);
+  font-weight: 900;
+  font-size: 13px;
+  color: #ffd86b;
+  padding: 0 3px;
 }
 
 .s-tok-label {
@@ -52,12 +60,38 @@
   color: var(--fg-text);
 }
 
+.cwheel-backdrop {
+  z-index: 250 !important;
+}
+
 .cw-dialog {
   background: var(--fg-bg-bezel);
   border: 4px solid var(--fg-outline);
   border-radius: 24px;
   box-shadow: 0 24px 60px rgba(0, 0, 0, 0.72), 0 8px 0 rgba(0, 0, 0, 0.5);
   position: relative;
+  animation: fg-stage-enter 0.22s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.cw-head-title,
+.cw-send-btn {
+  display: inline-flex !important;
+  align-items: center;
+  gap: 6px;
+}
+
+.cw-tile-icon-only {
+  min-width: 52px;
+  width: 52px;
+  height: 46px;
+  padding: 6px;
+  display: grid;
+  place-items: center;
+}
+
+.cw-tile-icon-only .cw-tile-icon {
+  width: 30px;
+  height: 30px;
 }
 
 .cw-badge {
@@ -2116,4 +2150,95 @@
   .fg-p07-zones {
     grid-template-columns: 1fr;
   }
+}
+
+/* ── Natural Tactile Puzzle Animations ── */
+@keyframes fg-stage-enter {
+  0% {
+    opacity: 0;
+    transform: translateY(8px) scale(0.985);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes fg-beam-pulse {
+  0%,
+  100% {
+    filter: drop-shadow(0 0 4px rgba(82, 239, 191, 0.55));
+  }
+  50% {
+    filter: drop-shadow(0 0 11px rgba(82, 239, 191, 0.95));
+  }
+}
+
+@keyframes fg-solve-pop {
+  0% {
+    opacity: 0;
+    transform: scale(0.86);
+  }
+  65% {
+    opacity: 1;
+    transform: scale(1.03);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+.fg-modal-shell {
+  animation: fg-stage-enter 0.24s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+#au-stage-area > * {
+  animation: fg-stage-enter 0.22s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+#au-stage-area [style*='rotate('],
+#au-stage-area [style*='translate('],
+#au-stage-area svg g[transform],
+.fg-dial-rot {
+  transition: transform 0.28s cubic-bezier(0.22, 1, 0.36, 1), filter 0.22s ease;
+}
+
+#au-stage-area svg circle,
+#au-stage-area svg rect,
+#au-stage-area svg path,
+#au-stage-area svg line,
+#au-stage-area svg polyline,
+.fg-lamp-img {
+  transition: all 0.24s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.fg-push,
+.fg-round-btn,
+.fg-lever-btn,
+.fg-tab-btn,
+.cw-tile {
+  transition: transform 0.12s cubic-bezier(0.22, 1, 0.36, 1), border-color 0.16s ease, background 0.16s ease, box-shadow 0.16s ease;
+}
+
+.fg-push:active:not(:disabled),
+.fg-round-btn:active:not(:disabled),
+.fg-lever-btn:active:not(:disabled),
+.cw-tile:active {
+  transform: translateY(2px) scale(0.95);
+}
+
+.fg-lamp-wrap.glow-mint .fg-lamp-img,
+#fg-complete-overlay .fg-complete-banner {
+  animation: fg-beam-pulse 2s ease-in-out infinite;
+}
+
+#fg-complete-overlay {
+  animation: fg-solve-pop 0.32s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.fg-radio-trigger {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
 }

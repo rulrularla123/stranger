@@ -67,13 +67,15 @@ export function roleBadgeHtml(roleId: RoleId, prefix: string, extra = ''): strin
 }
 
 export function tokenChipHtml(tokenId: string, size: 'sm' | 'md' = 'md'): string {
+  if (tokenId.startsWith('VAL:')) {
+    return `<span class="fg-tok-chip ${size}">${escapeTokenText(tokenId.slice(4))}</span>`;
+  }
   const tok = TOKENS_BY_ID[tokenId];
   if (!tok) {
     return `<span class="fg-tok-chip ${size}">${escapeTokenText(tokenId)}</span>`;
   }
-  return `<span class="fg-tok-chip ${size}" style="--tc:${tok.color}" title="${escapeTokenText(tok.sub)}">
+  return `<span class="fg-tok-chip fg-tok-chip-icon ${size}" style="--tc:${tok.color}">
     <img class="fg-tok-img" src="${tokenIconUrl(tok.id)}" alt="" />
-    <span class="fg-tok-lbl">${escapeTokenText(tok.label.replace(/\s*[↑→↓←↻☀🌊⛰★⚡🛡]\s*$/u, ''))}</span>
   </span>`;
 }
 

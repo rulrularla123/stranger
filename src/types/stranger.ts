@@ -83,6 +83,8 @@ export interface RoomState {
   powerRestored: boolean;
   coronationTriggered: boolean;
   radioLog: RadioPacket[];
+  introStarted?: boolean;
+  introSkipVotes?: RoleId[];
   startedAt?: number | null;
 }
 

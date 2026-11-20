@@ -1,6 +1,6 @@
-import type { AnimationsMeta, ClearRecord, FloorKey, GamePhase, PuzzleDef, RoleId, RoomState } from '../types/stranger.ts';
+import type { AnimationsMeta, ClearRecord, FloorKey, GamePhase, MapJson, PuzzleDef, RoleId, RoomState } from '../types/stranger.ts';
 import { ROLE_ORDER, ROLES } from '../data/cMenuTokens.ts';
-import { PUZZLES } from '../data/puzzleCatalog.ts';
+import { PUZZLES, getObjectOwnerRole } from '../data/puzzleCatalog.ts';
 import {
   STORY_CHAPTER_STARTS,
   STORY_SLIDE_COUNT,
@@ -416,12 +416,22 @@ function getSpeakerColor(slide: StorySlide): string {
   return '#e8c87a';
 }
 
-export function renderIntroHtml(slideIdx: number): string {
+export function renderIntroHtml(
+  slideIdx: number,
+  skipStatus?: { voted: number; required: number; myVoted: boolean }
+): string {
   preloadStoryBackgrounds();
   const idx = Math.min(STORY_SLIDE_COUNT - 1, Math.max(0, slideIdx));
   const slide = STORY_SLIDES[idx];
   const isLast = idx >= STORY_SLIDE_COUNT - 1;
   const pct = Math.round(((idx + 1) / STORY_SLIDE_COUNT) * 100);
+  const voted = skipStatus?.voted ?? 0;
+  const required = skipStatus?.required ?? 1;
+  const myVoted = Boolean(skipStatus?.myVoted);
+  const skipBtnLabel =
+    required > 1
+      ? `${myVoted ? '건너뛰기 대기 중' : '건너뛰기'} (${voted}/${required}) [X]`
+      : `건너뛰기 (${voted}/${required}) [X]`;
 
   const chapterJumpsHtml = STORY_CHAPTER_STARTS.map((ch, cIdx) => {
     const active = ch.chapter === slide.chapter;
@@ -440,7 +450,7 @@ export function renderIntroHtml(slideIdx: number): string {
           </div>
           <div class="vn-top-actions">
             ${idx > 0 ? '<button class="vn-top-btn" id="btn-intro-prev">← 이전</button>' : ''}
-            <button class="vn-top-btn skip" id="btn-intro-skip">✕ 건너뛰기 (X)</button>
+            <button class="vn-top-btn skip ${myVoted ? 'voted' : ''}" id="btn-intro-skip">${skipBtnLabel}</button>
           </div>
         </div>
         <div class="vn-stage vn-stage-black" id="btn-intro-next" role="button" tabindex="0" aria-label="다음 장면으로">
@@ -469,7 +479,7 @@ export function renderIntroHtml(slideIdx: number): string {
         </div>
         <div class="vn-top-actions">
           ${idx > 0 ? '<button class="vn-top-btn" id="btn-intro-prev">← 이전</button>' : ''}
-          <button class="vn-top-btn skip" id="btn-intro-skip">✕ 건너뛰기 (X)</button>
+          <button class="vn-top-btn skip ${myVoted ? 'voted' : ''}" id="btn-intro-skip">${skipBtnLabel}</button>
         </div>
       </div>
 
@@ -520,42 +530,135 @@ export function renderSettingsModalHtml(): string {
   `;
 }
 
-export function renderControlsModalHtml(soloSwitchEnabled: boolean): string {
+export function renderStatusWindowModalHtml(room: RoomState | null, myRole: RoleId, mapData: MapJson): string {
+  const meta = ROLES[myRole];
+  const kid = ROLE_KID[myRole];
+  const slot = room?.slots[myRole];
+  const fl = slot ? mapData.floors[slot.floor] : undefined;
+  const curSceneLabel = slot && fl ? fl.scenes[slot.scene]?.label || slot.scene : '';
+  const solvedSet = new Set(room?.solvedPids || []);
+
+  // Collect all objects in current room that myRole owns/accesses
+  const curRoomObjs = (fl?.objects || []).filter((o) => {
+    if (!slot || o.room !== slot.scene || !o.puzzles?.length) return false;
+    const pDef = PUZZLES.find((pz) => pz.id === o.puzzles[0]);
+    const owner = getObjectOwnerRole(o, pDef);
+    return owner === myRole || owner === 'all';
+  });
+
+  // Collect all puzzles/tasks across the museum where myRole has access (main operator or helper clue)
+  const accessiblePuzzles = PUZZLES.filter((p) => p.mainRole === myRole || p.helperRoles.includes(myRole));
+
+  const switchBarHtml =
+    room && room.soloSwitchEnabled
+      ? `<div class="status-switch-row">
+        ${ROLE_ORDER.map((r, i) => {
+          const rm = ROLES[r];
+          return `<button type="button" class="role-pill-btn ${r === myRole ? 'active' : ''}" data-status-sw="${r}" style="--rc:${rm.color}">[${i + 1}] ${rm.name}</button>`;
+        }).join('')}
+        <button type="button" class="role-pill-btn" id="status-summon-all" style="--rc:#E6C886">동료 집합</button>
+      </div>`
+      : room
+        ? `<div class="status-fixed-pill" style="color:${meta.color}">멀티플레이 고정 역할: ${meta.name}</div>`
+        : '';
+
   return `
-    <div class="au-modal small-modal kid-controls" role="dialog" aria-modal="true" aria-label="하는 방법">
+    <div class="au-modal status-window-modal" role="dialog" aria-modal="true" aria-label="내 상태창 및 도움말">
       <div class="au-modal-head">
-        <strong>❔ 이렇게 해요</strong>
+        <div style="display:flex;align-items:center;gap:8px">
+          <img class="hud-btn-ico" src="/assets/ui-icons/status.svg" alt="" />
+          <strong>상태창 · ${meta.name} (${kid.job})</strong>
+        </div>
         <button class="au-close-x" id="btn-close-overlay">✕</button>
       </div>
-      <div class="au-body p-stack">
-        <div class="kid-keys">
-          <div class="kid-key kid-key-move">
-            <div class="kid-arrows"><kbd class="kid-kbd">↑</kbd><kbd class="kid-kbd">←</kbd><kbd class="kid-kbd">↓</kbd><kbd class="kid-kbd">→</kbd></div>
-            <div class="kid-key-emoji">🚶</div><div class="kid-key-word">걷기</div>
+      <div class="au-body status-window-body">
+        <div class="status-hero-card" style="--rc:${meta.color}">
+          <div class="status-portrait-frame">
+            <img class="status-portrait-img" src="${STORY_PORTRAITS[myRole]}" alt="${meta.name}" />
           </div>
-          <div class="kid-key"><kbd class="kid-kbd">E</kbd><div class="kid-key-emoji">✋</div><div class="kid-key-word">살펴보기</div></div>
-          <div class="kid-key"><kbd class="kid-kbd">C</kbd><div class="kid-key-emoji">📡</div><div class="kid-key-word">무전</div></div>
-          <div class="kid-key"><kbd class="kid-kbd">M</kbd><div class="kid-key-emoji">🗺</div><div class="kid-key-word">지도</div></div>
-          <div class="kid-key"><kbd class="kid-kbd">H</kbd><div class="kid-key-emoji">❔</div><div class="kid-key-word">도움말</div></div>
-          <div class="kid-key"><kbd class="kid-kbd">P</kbd><div class="kid-key-emoji">🚪</div><div class="kid-key-word">나가기</div></div>
-          ${
-            soloSwitchEnabled
-              ? '<div class="kid-key"><kbd class="kid-kbd">1~4</kbd><div class="kid-key-emoji">🔄</div><div class="kid-key-word">친구 바꾸기</div></div>'
-              : ''
-          }
+          <div class="status-hero-info">
+            <div class="status-hero-top">
+              ${charSpriteHtml(myRole, 1.35, true)}
+              <div>
+                <div class="status-hero-name" style="color:${meta.color}">${meta.name} <small>${meta.country}</small></div>
+                <div class="status-hero-job">${meta.title}</div>
+              </div>
+            </div>
+            <div class="status-passive-box">
+              <strong>고유 능력 · ${meta.passiveName}</strong>
+              <p>${meta.passiveDesc}</p>
+            </div>
+            <div class="status-location-line">
+              현재 위치: <strong>${slot ? `${slot.floor} · ${escapeHtml(curSceneLabel)}` : '-'}</strong>
+            </div>
+            ${switchBarHtml}
+          </div>
         </div>
-        <div class="kid-role-strip">
-          ${ROLE_ORDER.map((r) => {
-            const m = ROLES[r];
-            const k = ROLE_KID[r];
-            return `<div class="kid-role-mini" style="--rc:${m.color}" title="${m.passiveName}: ${m.passiveDesc}">
-              ${charSpriteHtml(r, 1.4)}
-              <strong style="color:${m.color}">${m.name}</strong>
-              <span>${k.emoji} ${k.job}</span>
-            </div>`;
-          }).join('')}
+
+        <div class="status-access-grid">
+          <div class="status-section">
+            <div class="status-sec-title">현재 방에서 접근 가능한 대상 (${escapeHtml(curSceneLabel)})</div>
+            <div class="status-obj-list">
+              ${
+                curRoomObjs.length
+                  ? curRoomObjs
+                      .map((o) => {
+                        const pid = o.puzzles[0];
+                        const pDef = PUZZLES.find((pz) => pz.id === pid);
+                        const done = solvedSet.has(pid);
+                        const isMain = pDef?.mainRole === myRole;
+                        const duty = isMain ? '직접 조작' : pDef ? '단서 조사' : '협동';
+                        return `<div class="status-obj-item ${done ? 'done' : ''}">
+                          <img class="kid-obj kid-obj-xs" src="/${o.sprite}" alt="" />
+                          <div class="status-obj-meta">
+                            <strong>${escapeHtml(o.name)}</strong>
+                            <span>${pDef ? pDef.code : ''} · ${duty}</span>
+                          </div>
+                          <span class="status-obj-state">${done ? '완료' : '가능'}</span>
+                        </div>`;
+                      })
+                      .join('')
+                  : '<div class="status-empty">현재 방에는 내 담당 장치가 없습니다. 다른 방이나 2층으로 이동해 보세요.</div>'
+              }
+            </div>
+          </div>
+
+          <div class="status-section">
+            <div class="status-sec-title">박물관 전체 내 접근 권한 (${accessiblePuzzles.length}개)</div>
+            <div class="status-access-list">
+              ${accessiblePuzzles
+                .map((p) => {
+                  const done = solvedSet.has(p.id);
+                  const pk = PUZZLE_KID[p.id];
+                  const isMain = p.mainRole === myRole;
+                  return `<div class="status-access-row ${done ? 'done' : ''}">
+                    <span class="status-code">${p.code}</span>
+                    <img class="kid-obj kid-obj-xs" src="/assets/sprites/${pk?.sprite}.png" alt="" />
+                    <span class="status-access-name">${pk ? pk.title : p.title}</span>
+                    <span class="status-access-duty ${isMain ? 'main' : 'clue'}">${isMain ? '주도 조작' : '단서'}</span>
+                  </div>`;
+                })
+                .join('')}
+            </div>
+          </div>
         </div>
-        <button class="s-btn primary big" id="btn-controls-ok">▶ 출발! (E)</button>
+
+        <div class="status-help-box">
+          <div class="status-sec-title">도움말 · 조작 안내</div>
+          <div class="status-keys-grid">
+            <div class="status-key-item"><kbd>WASD / 방향키</kbd><span>이동 (한/영 상태 무관)</span></div>
+            <div class="status-key-item"><kbd>E</kbd><span>장치 · 문 조사 및 열기</span></div>
+            <div class="status-key-item"><kbd>C</kbd><span>아이콘 무전 보내기 (전체 발신)</span></div>
+            <div class="status-key-item"><kbd>M</kbd><span>박물관 지도 (네비게이터 린 전용)</span></div>
+            <div class="status-key-item"><kbd>H</kbd><span>상태창 · 도움말 열기/닫기</span></div>
+            <div class="status-key-item"><kbd>P</kbd><span>방 나가기</span></div>
+            ${room?.soloSwitchEnabled ?? true ? '<div class="status-key-item"><kbd>1~4</kbd><span>캐릭터 전환</span></div>' : ''}
+          </div>
+        </div>
+
+        <div style="display:flex;justify-content:flex-end">
+          <button class="s-btn primary" id="btn-controls-ok">닫기 (H / E / ESC)</button>
+        </div>
       </div>
     </div>
   `;
@@ -580,7 +683,7 @@ export function renderRoomIntroModalHtml(
   const kid = ROOM_KID[pic.key];
   const title = pic.sceneLabel || info.title;
   const picHtml = pic.view
-    ? roomPicHtml(pic.floor, pic.view, pic.key, 'kid-room-hero', kid ? `<span class="kid-room-badge">${kid.emoji}</span>` : '')
+    ? roomPicHtml(pic.floor, pic.view, pic.key, 'kid-room-hero', '')
     : '';
   const missions = pic.puzzles.length
     ? pic.puzzles
@@ -590,7 +693,7 @@ export function renderRoomIntroModalHtml(
           return `<div class="kid-mission ${done ? 'done' : ''}">
             <div class="kid-mission-pic">${puzzlePicHtml(p.id)}</div>
             <div class="kid-mission-main">
-              <strong>${done ? '✅' : k?.emoji || '🧩'} ${k?.title || escapeHtml(p.title)} <small>${p.code}</small></strong>
+              <strong>${k?.title || escapeHtml(p.title)} <small>${p.code}${done ? ' · 완료' : ''}</small></strong>
               ${teamFlowHtml(p, 0.8)}
             </div>
           </div>`;
@@ -598,12 +701,12 @@ export function renderRoomIntroModalHtml(
         .join('')
     : `<div class="kid-mission kid-mission-gather">
         <div class="kid-team-mini">${ROLE_ORDER.map((r) => charSpriteHtml(r, 1.2, true)).join('')}</div>
-        <strong>👣 발판 4개에 4명 모두 올라서기!</strong>
+        <strong>발판 4개에 4명 모두 올라서기</strong>
       </div>`;
   return `
     <div class="au-modal small-modal room-intro-modal kid-room" role="dialog" aria-modal="true" aria-label="${escapeHtml(title)}">
       <div class="au-modal-head">
-        <span style="color:#E6C886;font-weight:900">🗺 ${escapeHtml(info.kicker)}</span>
+        <span style="color:#E6C886;font-weight:900">${escapeHtml(info.kicker)}</span>
         <button class="au-close-x" id="btn-close-overlay">✕</button>
       </div>
       <div class="au-body p-stack">
@@ -612,10 +715,10 @@ export function renderRoomIntroModalHtml(
         ${kid ? `<p class="kid-caption">${kid.line}</p>` : ''}
         <div class="kid-missions">${missions}</div>
         <details class="kid-more">
-          <summary>📖 이야기 자세히 보기</summary>
+          <summary>이야기 자세히 보기</summary>
           <p>${escapeHtml(info.body)}</p>
         </details>
-        <button class="s-btn primary big" id="btn-room-intro-ok">🔍 조사 시작! (E)</button>
+        <button class="s-btn primary big" id="btn-room-intro-ok">조사 시작! (E)</button>
       </div>
     </div>
   `;
@@ -668,7 +771,7 @@ export function renderCoronationEndingHtml(room: RoomState, savedToCloud = false
             const k = PUZZLE_KID[p.id];
             return `<div class="coro-item kid-coro-item ${room.solvedPids.includes(p.id) ? 'done' : ''}" title="${p.code} ${p.title}">
               ${puzzlePicHtml(p.id, 'kid-obj-sm')}
-              <span>${k ? `${k.emoji} ${k.title}` : p.title}</span>
+              <span>${k ? k.title : p.title}</span>
             </div>`;
           }).join('')}
         </div>
