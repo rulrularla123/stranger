@@ -331,7 +331,7 @@ flowchart LR
   - `solveCondition`: `rope` 모두 `0` && `waxRot` 모두 `0° (mod 360)` && `pressed === true`
 
 #### **P15. 고서 지명 색인과 성곽 건축 도면 트레이싱 오버레이** (`2F · reading` · 자료 열람실)
-- **메커니즘**: SVG 반투명 트레이싱지 X·Y 포인터 드래그 / 미세 이동 버튼 + 90° 회전 정합 (`성벽 종탑`, `Puerta Real`, `Baluarte` 3점 일치)
+- **메커니즘**: SVG 반투명 트레이싱지 X·Y 포인터 드래그 / 미세 이동 버튼 + 90° 회전 정합 (`종탑 · Campanario(중앙 십자 탑)`, `Baluarte(좌하단 원형 보루)`, `Puerta Real(하단 성문)` 3점 일치)
 - **연결 오브젝트 (`5`)**:
   - ★ `reading-table`, ★ `reading-blueprint-e` (`중앙 자료 열람 책상 / 제도판` · 이안 주도)
   - `reading-side-shelf-w`, `reading-side-desk-w` (`서측 서가·책상` · 이안 지명 색인 대조)
@@ -352,18 +352,18 @@ flowchart LR
 - **연결 오브젝트 (`10`)**:
   - **1부 (`2F · special`)**:
     - ★ `special-table` (`교역 유물 유리 전시대 (광학 프리즘)` · 린 주도 프리즘 회전)
-    - `special-boat-nw` (`목선 유물 진열장 (프리즘 거치대)` · 서하린 전용 베어링 잠금 해제 + 각인 M3=90°)
-    - `special-wall-art` (`해양 교류 기획전 벽화` · 이안 고대 항로 비문 M1=45°, M2=135°)
+    - `special-boat-nw` (`목선 유물 진열장 (프리즘 거치대)` · 서하린 전용 베어링 잠금 해제 + 각인 M3=서(←))
+    - `special-wall-art` (`해양 교류 기획전 벽화` · 이안 고대 항로 비문 M1=동(→), M2=남(↓))
   - **2부 (`2F · atrium` 현장 집결)**:
     - `atrium-statue`, `atrium-bust-l`, `atrium-bust-r`
     - `gather-1` (서하린 1/4), `gather-2` (이안 2/4), `gather-3` (린 3/4), `gather-4` (카이 4/4)
 - **역할 분담**:
-  - **이안 (1부 단서)**: 벽화 비문을 번역해 `M1 = 45°`, `M2 = 135°`를 린에게 발신합니다.
-  - **서하린 (1부 장치·단서)**: `special-boat-nw`에서 프리즘 베어링 거치대 잠금(`mountUnlocked = true`)을 해제하고 명판 각인 `M3 = 90°`를 린에게 발신합니다.
-  - **린 (1부 주도 & 집결 호출)**: 서하린이 거치대 잠금을 풀기 전에는 프리즘 회전 버튼이 잠기며(`mountUnlocked` 읽기 전용 표시), 잠금 해제 후 **M1=45°, M2=135°, M3=90°**로 맞추면 태양 광선이 서쪽 `2F · 반원 홀` 여신 동상으로 투사됩니다. 이어 `[📍 집결 호출 HERE]`를 발신합니다.
+  - **이안 (1부 단서)**: 벽화 비문을 번역해 `M1 = 동(→)`, `M2 = 남(↓)`을 린에게 발신합니다.
+  - **서하린 (1부 장치·단서)**: `special-boat-nw`에서 프리즘 베어링 거치대 잠금(`mountUnlocked = true`)을 해제하고 명판 각인 `M3 = 서(←)`를 린에게 발신합니다.
+  - **린 (1부 주도 & 집결 호출)**: 서하린이 거치대 잠금을 풀기 전에는 프리즘 회전 버튼이 잠기며(`mountUnlocked` 읽기 전용 표시), 잠금 해제 후 **M1=동(→), M2=남(↓), M3=서(←)**로 맞추면 태양 광선이 서쪽 `2F · 반원 홀` 여신 동상으로 투사됩니다. 이어 `[📍 집결 호출 HERE]`를 발신합니다.
   - **4인 전원 (2부 필드 집결)**: `P01~P15`가 모두 완료된 상태에서 서하린·이안·린·카이 모두가 `2F · 반원 홀` 바닥 발판(`gather-1~4`)에 동시에 올라서면 **4/4 대관식 엔딩**이 자동 재생됩니다.
 - **데이터 & 판정**:
-  - `initialState`: `{ mountUnlocked: false, prisms: [0, 45, 45], beamReachedAtrium: false, hereSent: false, pads: [false, false, false, false] }`
+  - `initialState`: `{ mountUnlocked: false, prisms: ['S', 'W', 'N'], beamReachedAtrium: false, hereSent: false, pads: [false, false, false, false] }`
   - `solveCondition`: `P01~P15 모두 완료 && mountUnlocked === true && beamReachedAtrium === true && hereSent === true && pads.every(Boolean)`
 
 ---

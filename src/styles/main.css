@@ -2694,6 +2694,17 @@ kbd {
   object-position: center 34%;
 }
 
+.vn-art-museum-storm .vn-bg-img {
+  object-position: center 76%;
+  transform: scale(1.75);
+  transform-origin: 50% 73%;
+  filter: brightness(0.46) saturate(0.76) contrast(1.12);
+}
+
+.vn-bg-vignette-storm {
+  background: radial-gradient(circle at 50% 42%, rgba(16, 26, 42, 0.15) 0%, rgba(5, 8, 15, 0.86) 80%);
+}
+
 .vn-bg-vignette {
   position: absolute;
   inset: 0;
@@ -2752,9 +2763,14 @@ kbd {
   pointer-events: none;
 }
 
-.vn-bust-row.single {
+.vn-bust-row.single-left {
   justify-content: flex-start;
   padding-left: 38px;
+}
+
+.vn-bust-row.single-right {
+  justify-content: flex-end;
+  padding-right: 38px;
 }
 
 .vn-bust-slot {
@@ -2960,8 +2976,11 @@ kbd {
     height: clamp(160px, 28vh, 218px);
     padding: 0 12px;
   }
-  .vn-bust-row.single {
+  .vn-bust-row.single-left {
     padding-left: 14px;
+  }
+  .vn-bust-row.single-right {
+    padding-right: 14px;
   }
   .vn-dialog-box {
     padding: 16px 14px 14px;

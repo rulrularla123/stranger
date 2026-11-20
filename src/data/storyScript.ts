@@ -221,6 +221,7 @@ export const STORY_SLIDES: StorySlide[] = [
     kind: 'friend1',
     speaker: '친구1',
     text: '발표는 누가 해? 지호 네가 해도 되겠다. 베트남 얘기 하면 딱이잖아.',
+    lead: { id: 'doyun', emotion: 'default' },
     partner: { id: 'jiho', emotion: 'shy' },
   },
   {
@@ -231,6 +232,7 @@ export const STORY_SLIDES: StorySlide[] = [
     note: '머쓱하게',
     text: '나는… 사실 베트남에 가 본 적도 별로 없어서. 잘 모르는데…',
     emotion: 'shy',
+    partner: { id: 'doyun', emotion: 'default' },
   },
   {
     scene: 'classroom',
@@ -248,7 +250,8 @@ export const STORY_SLIDES: StorySlide[] = [
     kind: 'friend2',
     speaker: '친구2',
     text: '맞네, 하린아 네가 하면 되겠네.',
-    partner: { id: 'doyun', emotion: 'laugh' },
+    lead: { id: 'doyun', emotion: 'laugh' },
+    partner: { id: 'jiho', emotion: 'shy' },
   },
   {
     scene: 'classroom',
@@ -622,6 +625,7 @@ export const STORY_SLIDES: StorySlide[] = [
     chapter: '4. 캠프 도착',
     kind: 'narrator',
     text: '이안은 멈칫하다가 웃으며 물러선다. 이번에는 린이 서하린의 물병을 가리키고, 카이가 본관을 가리킨다.\n세 사람이 자기 말로 한꺼번에 말을 걸어 오지만, 서하린에게는 어느 것도 말이 되지 않는다.',
+    lead: { id: 'doyun', emotion: 'default' },
     partner: { id: 'maria', emotion: 'default' },
   },
   {
@@ -676,6 +680,7 @@ export const STORY_SLIDES: StorySlide[] = [
     chapter: '4. 캠프 도착',
     kind: 'narrator',
     text: '이안이 손짓으로 본관 쪽을 가리킨다. 마침 본관 문이 열리고, 스태프가 손뼉을 치며 모두를 불러 모은다.',
+    lead: { id: 'doyun', emotion: 'default' },
     partner: { id: 'maria', emotion: 'default' },
   },
   {
@@ -832,7 +837,8 @@ export const STORY_SLIDES: StorySlide[] = [
     chapter: '6. 태풍의 박물관',
     kind: 'narrator',
     text: '말은 달라도, 그림과 숫자 무전([C])으로 하나가 될 수 있다.\n네 명의 첫 협동 복원이 지금 시작된다.',
-    partner: { id: 'doyun', emotion: 'laugh' },
+    lead: { id: 'doyun', emotion: 'laugh' },
+    partner: { id: 'maria', emotion: 'laugh' },
   },
 ];
 

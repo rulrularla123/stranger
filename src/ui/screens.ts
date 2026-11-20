@@ -318,6 +318,7 @@ const STORY_BG_URLS = [
   '/assets/story/classroom.png',
   '/assets/story/school-road.jpg',
   '/assets/story/bayani-camp.jpg',
+  '/assets/guides/STRANGER-1F.png',
 ] as const;
 
 const STORY_PORTRAITS: Record<StoryCharacterId, Partial<Record<StoryEmotion, string>> & { default: string }> = {
@@ -389,17 +390,9 @@ function renderStorySceneBackdrop(scene: StorySceneId): string {
   }
   // museum_storm
   return `
-    <div class="vn-art vn-art-museum">
-      ${roomPicHtml(
-        '1F',
-        [731, 1080, 440, 260],
-        '',
-        'vn-museum-bg',
-        `<span class="kid-fx kid-fx-rain">⛈</span>
-         <span class="kid-fx kid-fx-bulb">💡<b>✕</b></span>
-         <span class="kid-fx kid-fx-wave">🌊🌊🌊</span>
-         <div class="vn-museum-team">${ROLE_ORDER.map((r) => charSpriteHtml(r, 1.75, false)).join('')}</div>`
-      )}
+    <div class="vn-art vn-art-photo vn-art-museum-storm">
+      <img class="vn-bg-img vn-bg-pixelated" src="/assets/guides/STRANGER-1F.png" alt="정전된 필리핀 역사박물관 중앙 로비 배경" draggable="false" decoding="async" />
+      <div class="vn-bg-vignette vn-bg-vignette-storm"></div>
     </div>
   `;
 }
@@ -443,7 +436,8 @@ function renderVnStandingBusts(slide: StorySlide): string {
     )
     .join('');
 
-  return `<div class="vn-bust-row ${entries.length === 1 ? 'single' : 'dual'}">${slotsHtml}</div>`;
+  const rowClass = entries.length === 1 ? (entries[0].id === 'doyun' ? 'single-left' : 'single-right') : 'dual';
+  return `<div class="vn-bust-row ${rowClass}">${slotsHtml}</div>`;
 }
 
 function getSpeakerColor(slide: StorySlide): string {
