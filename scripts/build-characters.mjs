@@ -42,6 +42,9 @@ const CHARACTER_SPECS = [
       left: { body: [5, 6, 7, 8, 9], hat: null },
       right: { body: [0, 1, 2, 3, 4], hat: null },
     },
+    // The drawn right-facing frames drop the flag patch, the book and the skirt detail
+    // that the other three directions show, so right = mirror of left.
+    consistency: { rightMirrorsLeft: true },
   },
   {
     id: 'lin',
@@ -56,6 +59,9 @@ const CHARACTER_SPECS = [
       left: { body: [12, 13, 14, 15, 16], hat: 17 },
       right: { body: [6, 7, 8, 9, 10], hat: 11 },
     },
+    // The drawn right-facing hat sits lower and wider and covers the eyes, unlike the
+    // left-facing one, so right = mirror of left.
+    consistency: { rightMirrorsLeft: true },
   },
   {
     id: 'aisha',
@@ -69,6 +75,14 @@ const CHARACTER_SPECS = [
       up: { body: [0, 1, 2, 3, 4], hat: null },
       left: { body: [10, 11, 12, 13, 14], hat: null },
       right: { body: [5, 6, 7, 8, 9], hat: null },
+    },
+    // From the front and the sides the jacket is black, but the back view was painted
+    // white. Repaint the back of the jacket in the jacket colours.
+    consistency: {
+      upRecolor: [
+        [[255, 255, 255], [10, 10, 10]],
+        [[219, 219, 219], [48, 48, 48]],
+      ],
     },
   },
 ];
@@ -128,6 +142,46 @@ function getOpaqueBounds(png) {
   return { minX, minY, maxX, maxY, width: maxX - minX + 1, height: maxY - minY + 1 };
 }
 
+/** Body layer of one frame with the hat layer (if any) composited on top. */
+function composeFrame(rawLayers, grp, fIdx) {
+  const body = rawLayers[grp.body[fIdx]];
+  return grp.hat !== null ? alphaCompositeOver(body, rawLayers[grp.hat]) : body;
+}
+
+/** Horizontal mirror where source column x lands on column (axis2 - x). */
+function mirrorFrame(png, axis2) {
+  const out = new PNG({ width: png.width, height: png.height });
+  out.data.fill(0);
+  for (let y = 0; y < png.height; y++) {
+    for (let x = 0; x < png.width; x++) {
+      const tx = axis2 - x;
+      if (tx < 0 || tx >= png.width) continue;
+      const si = (y * png.width + x) * 4;
+      const ti = (y * png.width + tx) * 4;
+      for (let c = 0; c < 4; c++) out.data[ti + c] = png.data[si + c];
+    }
+  }
+  return out;
+}
+
+/** Replace exact RGB colours (opaque pixels only). */
+function recolorFrame(png, pairs) {
+  const out = new PNG({ width: png.width, height: png.height });
+  png.data.copy(out.data);
+  for (let i = 0; i < out.data.length; i += 4) {
+    if (out.data[i + 3] === 0) continue;
+    for (const [[r, g, b], to] of pairs) {
+      if (out.data[i] === r && out.data[i + 1] === g && out.data[i + 2] === b) {
+        out.data[i] = to[0];
+        out.data[i + 1] = to[1];
+        out.data[i + 2] = to[2];
+        break;
+      }
+    }
+  }
+  return out;
+}
+
 const atlasW = FRAME_W * DIRECTIONS.length * FRAMES_PER_DIR; // 640
 const atlasH = FRAME_H * CHARACTER_SPECS.length; // 256
 const atlas = new PNG({ width: atlasW, height: atlasH });
@@ -169,16 +223,27 @@ CHARACTER_SPECS.forEach((spec, rowIdx) => {
   let globalMinY = 64;
   let globalMaxY = 0;
   const dirFrames = {};
+  const fixes = spec.consistency || {};
+
+  // Mirror axis that keeps the mirrored figure centred where the drawn right-facing one was.
+  let mirrorAxis = FRAME_W - 1;
+  if (fixes.rightMirrorsLeft) {
+    const l = getOpaqueBounds(composeFrame(rawLayers, spec.groups.left, 4));
+    const r = getOpaqueBounds(composeFrame(rawLayers, spec.groups.right, 4));
+    mirrorAxis = Math.round((l.minX + l.maxX + r.minX + r.maxX) / 2);
+  }
 
   DIRECTIONS.forEach((dir, dirIdx) => {
     const grp = spec.groups[dir];
-    const hatImg = grp.hat !== null ? rawLayers[grp.hat] : null;
     dirFrames[dir] = [];
 
-    grp.body.forEach((layerIdx, fIdx) => {
-      let framePng = rawLayers[layerIdx];
-      if (hatImg) {
-        framePng = alphaCompositeOver(framePng, hatImg);
+    grp.body.forEach((_layerIdx, fIdx) => {
+      let framePng = composeFrame(rawLayers, grp, fIdx);
+      if (dir === 'right' && fixes.rightMirrorsLeft) {
+        framePng = mirrorFrame(composeFrame(rawLayers, spec.groups.left, fIdx), mirrorAxis);
+      }
+      if (dir === 'up' && fixes.upRecolor) {
+        framePng = recolorFrame(framePng, fixes.upRecolor);
       }
       const bounds = getOpaqueBounds(framePng);
       if (bounds.minY < globalMinY) globalMinY = bounds.minY;

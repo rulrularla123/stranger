@@ -8,10 +8,10 @@ const DEFAULT_NAMES = {
   aisha: '카이',
 };
 const DEFAULT_SPAWNS = {
-  doyun: { floor: '1F', scene: 'hall', x: 922, y: 1550, dir: 'down' },
-  maria: { floor: '1F', scene: 'hall', x: 942, y: 1556, dir: 'down' },
-  lin: { floor: '1F', scene: 'hall', x: 962, y: 1556, dir: 'down' },
-  aisha: { floor: '1F', scene: 'hall', x: 982, y: 1550, dir: 'down' },
+  doyun: { floor: '1F', scene: 'hall', x: 913, y: 1552, dir: 'down' },
+  maria: { floor: '1F', scene: 'hall', x: 939, y: 1552, dir: 'down' },
+  lin: { floor: '1F', scene: 'hall', x: 965, y: 1552, dir: 'down' },
+  aisha: { floor: '1F', scene: 'hall', x: 991, y: 1552, dir: 'down' },
 };
 
 export function createInitialPuzzleStates() {
@@ -39,7 +39,7 @@ export function createInitialPuzzleStates() {
     14: { rope: [100, 100, 100, 100], waxRot: [90, 180, 270], pressed: false },
     15: { ox: 96, oy: -48, rot: 270 },
     16: {
-      prisms: [0, 45, 45],
+      prisms: ['S', 'W', 'N'],
       mountUnlocked: false,
       beamReachedAtrium: false,
       hereSent: false,

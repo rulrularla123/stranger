@@ -5,6 +5,8 @@ import {
   STORY_CHAPTER_STARTS,
   STORY_SLIDE_COUNT,
   STORY_SLIDES,
+  type StoryCharacterId,
+  type StoryEmotion,
   type StorySceneId,
   type StorySlide,
   type StorySpeakerKind,
@@ -316,40 +318,53 @@ const STORY_BG_URLS = [
   '/assets/story/classroom.png',
   '/assets/story/school-road.jpg',
   '/assets/story/bayani-camp.jpg',
+  '/assets/guides/STRANGER-1F.png',
 ] as const;
+
+const STORY_PORTRAITS: Record<StoryCharacterId, Partial<Record<StoryEmotion, string>> & { default: string }> = {
+  doyun: {
+    default: '/assets/characters/story/harin_default.png',
+    laugh: '/assets/characters/story/harin_laugh.png',
+    surprised: '/assets/characters/story/harin_surprised.png',
+    serious: '/assets/characters/story/harin_serious.png',
+  },
+  maria: {
+    default: '/assets/characters/story/ian_default.png',
+    laugh: '/assets/characters/story/ian_laugh.png',
+    worried: '/assets/characters/story/ian_worried.png',
+  },
+  lin: {
+    default: '/assets/characters/story/lin_default.png',
+    curious: '/assets/characters/story/lin_curious.png',
+  },
+  aisha: {
+    default: '/assets/characters/story/kai_default.png',
+    excited: '/assets/characters/story/kai_excited.png',
+  },
+  jiho: {
+    default: '/assets/characters/story/jiho_shy.png',
+    shy: '/assets/characters/story/jiho_shy.png',
+  },
+};
+
+function getStoryPortraitUrl(charId: StoryCharacterId, emotion: StoryEmotion = 'default'): string {
+  const map = STORY_PORTRAITS[charId];
+  return map[emotion] || map.default;
+}
 
 let storyBgsPreloaded = false;
 function preloadStoryBackgrounds(): void {
   if (storyBgsPreloaded || typeof Image === 'undefined') return;
   storyBgsPreloaded = true;
-  for (const url of STORY_BG_URLS) {
+  const portraitUrls = Object.values(STORY_PORTRAITS).flatMap((m) => Object.values(m).filter((u): u is string => Boolean(u)));
+  for (const url of new Set([...STORY_BG_URLS, ...portraitUrls])) {
     const img = new Image();
     img.src = url;
   }
 }
 
 function renderStorySceneBackdrop(scene: StorySceneId): string {
-  if (scene === 'cafeteria') {
-    return `
-      <div class="vn-art vn-art-cafeteria">
-        <div class="vn-art-windows"><span></span><span></span><span></span></div>
-        <div class="vn-cafeteria-floor"></div>
-        <div class="vn-table-main">
-          <div class="vn-sil-group">
-            ${charSpriteHtml('doyun', 1.8, false)}
-            <span class="vn-sil-person p1"></span>
-            <span class="vn-sil-person p2"></span>
-          </div>
-          <div class="vn-tray-row">🍱 🥛 🍱 🧃</div>
-        </div>
-        <div class="vn-table-alone">
-          <span class="vn-jiho-fig" title="지호"></span>
-          <div class="vn-tray-row">🍱</div>
-        </div>
-      </div>
-    `;
-  }
-  if (scene === 'classroom') {
+  if (scene === 'cafeteria' || scene === 'classroom') {
     return `
       <div class="vn-art vn-art-photo vn-art-classroom-pixil">
         <img class="vn-bg-img vn-bg-pixelated" src="/assets/story/classroom.png" alt="교실 배경" draggable="false" decoding="async" />
@@ -375,46 +390,61 @@ function renderStorySceneBackdrop(scene: StorySceneId): string {
   }
   // museum_storm
   return `
-    <div class="vn-art vn-art-museum">
-      ${roomPicHtml(
-        '1F',
-        [731, 1080, 440, 260],
-        '',
-        'vn-museum-bg',
-        `<span class="kid-fx kid-fx-rain">⛈</span>
-         <span class="kid-fx kid-fx-bulb">💡<b>✕</b></span>
-         <span class="kid-fx kid-fx-wave">🌊🌊🌊</span>
-         <div class="vn-museum-team">${ROLE_ORDER.map((r) => charSpriteHtml(r, 1.75, false)).join('')}</div>`
-      )}
+    <div class="vn-art vn-art-photo vn-art-museum-storm">
+      <img class="vn-bg-img vn-bg-pixelated" src="/assets/guides/STRANGER-1F.png" alt="정전된 필리핀 역사박물관 중앙 로비 배경" draggable="false" decoding="async" />
+      <div class="vn-bg-vignette vn-bg-vignette-storm"></div>
     </div>
   `;
 }
 
-function renderVnPortrait(kind: StorySpeakerKind): string {
-  if (kind === 'narrator' || kind === 'title') return '';
-  if (kind === 'doyun' || kind === 'maria' || kind === 'lin' || kind === 'aisha') {
-    const meta = ROLES[kind];
-    return `<div class="vn-portrait hero" style="border-color:${meta.color}">
-      ${charSpriteHtml(kind, 2.0, false, 'vn-bust-sprite')}
-    </div>`;
+function isStoryCharacter(kind: StorySpeakerKind): kind is StoryCharacterId {
+  return kind === 'doyun' || kind === 'maria' || kind === 'lin' || kind === 'aisha' || kind === 'jiho';
+}
+
+function renderVnStandingBusts(slide: StorySlide): string {
+  const entries: { id: StoryCharacterId; emotion: StoryEmotion; active: boolean }[] = [];
+
+  if (isStoryCharacter(slide.kind)) {
+    const defEmo: StoryEmotion = slide.kind === 'jiho' ? 'shy' : 'default';
+    entries.push({ id: slide.kind, emotion: slide.emotion || defEmo, active: true });
+  } else if (slide.lead) {
+    const defEmo: StoryEmotion = slide.lead.id === 'jiho' ? 'shy' : 'default';
+    entries.push({ id: slide.lead.id, emotion: slide.lead.emotion || defEmo, active: false });
+  } else if (slide.emotion) {
+    entries.push({ id: 'doyun', emotion: slide.emotion, active: false });
   }
-  const silMeta: Record<'jiho' | 'friend1' | 'friend2' | 'teacher' | 'staff', { glyph: string; label: string; tone: string }> = {
-    jiho: { glyph: '🎒', label: '지호', tone: '#88b4cc' },
-    friend1: { glyph: '🗣', label: '친구1', tone: '#7a8796' },
-    friend2: { glyph: '💬', label: '친구2', tone: '#7a8796' },
-    teacher: { glyph: '📘', label: '선생님', tone: '#b89f6b' },
-    staff: { glyph: '📋', label: '스태프', tone: '#75b8a4' },
-  };
-  const info = silMeta[kind];
-  return `<div class="vn-portrait sil" style="border-color:${info.tone}" aria-label="${info.label}">
-    <span class="vn-sil-glyph">${info.glyph}</span>
-  </div>`;
+
+  if (slide.partner && !entries.some((e) => e.id === slide.partner!.id)) {
+    const defEmo: StoryEmotion = slide.partner.id === 'jiho' ? 'shy' : 'default';
+    entries.push({ id: slide.partner.id, emotion: slide.partner.emotion || defEmo, active: false });
+  }
+
+  if (entries.length === 0) return '';
+
+  // Keep Ha-rin (doyun) anchored on the left whenever two characters stand together
+  if (entries.length === 2 && entries[1].id === 'doyun') {
+    const tmp = entries[0];
+    entries[0] = entries[1];
+    entries[1] = tmp;
+  }
+
+  const slotsHtml = entries
+    .map(
+      (e) => `<div class="vn-bust-slot ${e.active ? 'is-active' : 'is-listener'}" data-char="${e.id}" data-emo="${e.emotion}">
+        <img class="vn-bust-img" src="${getStoryPortraitUrl(e.id, e.emotion)}" alt="" draggable="false" decoding="async" />
+      </div>`
+    )
+    .join('');
+
+  const rowClass = entries.length === 1 ? (entries[0].id === 'doyun' ? 'single-left' : 'single-right') : 'dual';
+  return `<div class="vn-bust-row ${rowClass}">${slotsHtml}</div>`;
 }
 
 function getSpeakerColor(slide: StorySlide): string {
   if (slide.kind === 'doyun' || slide.kind === 'maria' || slide.kind === 'lin' || slide.kind === 'aisha') {
     return ROLES[slide.kind].color;
   }
+  if (slide.kind === 'jiho') return '#8fd3f4';
   return '#e8c87a';
 }
 
@@ -456,7 +486,7 @@ export function renderIntroHtml(slideIdx: number): string {
     `;
   }
 
-  const portraitHtml = renderVnPortrait(slide.kind);
+  const standingBustsHtml = renderVnStandingBusts(slide);
   const bodyHtml = escapeHtml(slide.text || '').replaceAll('\n', '<br/>');
   const spkColor = getSpeakerColor(slide);
 
@@ -477,21 +507,23 @@ export function renderIntroHtml(slideIdx: number): string {
 
       <div class="vn-stage">
         ${renderStorySceneBackdrop(slide.scene)}
-        <button class="vn-dialog-box" id="btn-intro-next" aria-label="${isLast ? '박물관 탐험 시작' : '다음 대사'}">
-          ${portraitHtml}
-          <div class="vn-dialog-main">
+        <div class="vn-bottom-dock">
+          ${standingBustsHtml}
+          <button class="vn-dialog-box ${slide.speaker ? 'has-speaker' : ''}" id="btn-intro-next" aria-label="${isLast ? '박물관 탐험 시작' : '다음 대사'}">
             ${
               slide.speaker
-                ? `<div class="vn-speaker-row">
+                ? `<div class="vn-nameplate" style="border-color:${spkColor}">
                     <strong class="vn-speaker" style="color:${spkColor}">${escapeHtml(slide.speaker)}</strong>
                     ${slide.note ? `<span class="vn-stage-note">(${escapeHtml(slide.note)})</span>` : ''}
                   </div>`
                 : ''
             }
-            <div class="vn-dialog-text ${slide.thought ? 'thought' : ''}">${bodyHtml}</div>
-          </div>
-          <span class="vn-advance">${isLast ? '▶ 시작하기 ▼' : '▼'}</span>
-        </button>
+            <div class="vn-dialog-main">
+              <div class="vn-dialog-text ${slide.thought ? 'thought' : ''}">${bodyHtml}</div>
+            </div>
+            <span class="vn-advance">${isLast ? '▶ 시작하기 ▼' : '▼'}</span>
+          </button>
+        </div>
       </div>
     </div>
   `;

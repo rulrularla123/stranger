@@ -23,6 +23,7 @@ export function renderAct3Act4Board(
     sendHere?: () => void;
     gotoAtrium?: () => void;
     closeModal?: () => void;
+    priorDone?: number;
   }
 ): boolean {
   switch (pid) {
@@ -1128,6 +1129,7 @@ function boardP16(
     sendHere?: () => void;
     gotoAtrium?: () => void;
     closeModal?: () => void;
+    priorDone?: number;
   }
 ) {
   const rawPrisms = Array.isArray(s.prisms) ? s.prisms : ['S', 'W', 'N'];
@@ -1257,6 +1259,11 @@ function boardP16(
         </div>
 
         <div class="fg-stack" style="gap:6px">
+          ${
+            extraActions?.priorDone !== undefined && extraActions.priorDone < 15
+              ? `<div style="font-size:11.5px;font-weight:800;color:var(--fg-amber);background:rgba(255,184,107,0.12);border:1px solid rgba(255,184,107,0.45);border-radius:8px;padding:6px 10px">⚠ P01~P15 완료 필요 (${extraActions.priorDone}/15) — 모든 퍼즐을 풀어야 동상 홀 4인 발판이 작동합니다</div>`
+              : ''
+          }
           <div class="fg-row" style="gap:8px">
             <button type="button" class="s-btn amber" id="p16-here" style="flex:1">${hereSent ? '✔ 집결 호출 발신됨' : '📍 린 [집결 호출]'}</button>
             <button type="button" class="s-btn primary" id="p16-goto" style="flex:1">🏃 반원 홀 이동 (${padsCnt}/4)</button>
