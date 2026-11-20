@@ -34,6 +34,103 @@ export interface TaskModalHost {
   onJumpToAtrium: () => void;
 }
 
+function clearInlineEventHandlers(el: Element) {
+  const target = el as unknown as Record<string, unknown>;
+  for (const prop of [
+    'onclick',
+    'oninput',
+    'onchange',
+    'onpointerdown',
+    'onpointermove',
+    'onpointerup',
+    'onpointerleave',
+    'onpointercancel',
+  ]) {
+    if (prop in target) target[prop] = null;
+  }
+  for (let i = 0; i < el.children.length; i++) {
+    clearInlineEventHandlers(el.children[i]);
+  }
+}
+
+function syncElementPropsAndAttrs(cur: Element, nxt: Element) {
+  const curAttrs = cur.attributes;
+  for (let i = curAttrs.length - 1; i >= 0; i--) {
+    const name = curAttrs[i].name;
+    if (!nxt.hasAttribute(name)) {
+      cur.removeAttribute(name);
+    }
+  }
+  const nxtAttrs = nxt.attributes;
+  for (let i = 0; i < nxtAttrs.length; i++) {
+    const { name, value } = nxtAttrs[i];
+    if (cur.getAttribute(name) !== value) {
+      cur.setAttribute(name, value);
+    }
+  }
+  if (cur instanceof HTMLButtonElement && nxt instanceof HTMLButtonElement) {
+    if (cur.disabled !== nxt.disabled) cur.disabled = nxt.disabled;
+  } else if (cur instanceof HTMLInputElement && nxt instanceof HTMLInputElement) {
+    if (cur.disabled !== nxt.disabled) cur.disabled = nxt.disabled;
+    if (cur.checked !== nxt.checked) cur.checked = nxt.checked;
+    if (cur.value !== nxt.value) cur.value = nxt.value;
+  } else if (cur instanceof HTMLSelectElement && nxt instanceof HTMLSelectElement) {
+    if (cur.disabled !== nxt.disabled) cur.disabled = nxt.disabled;
+    if (cur.value !== nxt.value) cur.value = nxt.value;
+  } else if (cur instanceof HTMLTextAreaElement && nxt instanceof HTMLTextAreaElement) {
+    if (cur.disabled !== nxt.disabled) cur.disabled = nxt.disabled;
+    if (cur.value !== nxt.value) cur.value = nxt.value;
+  }
+}
+
+function morphNodePair(curParent: Node, curChild: Node, nxtChild: Node) {
+  if (curChild.nodeType !== nxtChild.nodeType || curChild.nodeName !== nxtChild.nodeName) {
+    curParent.replaceChild(nxtChild.cloneNode(true), curChild);
+    return;
+  }
+  if (curChild.nodeType === Node.TEXT_NODE || curChild.nodeType === Node.COMMENT_NODE) {
+    if (curChild.nodeValue !== nxtChild.nodeValue) {
+      curChild.nodeValue = nxtChild.nodeValue;
+    }
+    return;
+  }
+  if (curChild instanceof Element && nxtChild instanceof Element) {
+    if (curChild.namespaceURI !== nxtChild.namespaceURI) {
+      curParent.replaceChild(nxtChild.cloneNode(true), curChild);
+      return;
+    }
+    if (curChild.id && nxtChild.id && curChild.id !== nxtChild.id) {
+      curParent.replaceChild(nxtChild.cloneNode(true), curChild);
+      return;
+    }
+    syncElementPropsAndAttrs(curChild, nxtChild);
+    morphChildList(curChild, nxtChild);
+  }
+}
+
+function morphChildList(curParent: Node, nxtParent: Node) {
+  const curNodes = curParent.childNodes;
+  const nxtNodes = nxtParent.childNodes;
+  const minLen = Math.min(curNodes.length, nxtNodes.length);
+  for (let i = 0; i < minLen; i++) {
+    morphNodePair(curParent, curNodes[i], nxtNodes[i]);
+  }
+  while (curNodes.length > nxtNodes.length) {
+    if (curParent.lastChild) curParent.removeChild(curParent.lastChild);
+  }
+  while (curNodes.length < nxtNodes.length) {
+    const idx = curNodes.length;
+    curParent.appendChild(nxtNodes[idx].cloneNode(true));
+  }
+}
+
+function morphElementHtml(target: HTMLElement, nextHtml: string) {
+  clearInlineEventHandlers(target);
+  const scratch = document.createElement('div');
+  scratch.innerHTML = nextHtml;
+  morphChildList(target, scratch);
+}
+
 export class TaskModal {
   private root: HTMLElement;
   private session: SessionClient;
@@ -50,6 +147,8 @@ export class TaskModal {
   private completeTimer: number | null = null;
   private shouldShake = false;
   private selfPatching = false;
+  private mountedShellKey = '';
+  private boardHostEl: HTMLElement | null = null;
 
   constructor(container: HTMLElement, session: SessionClient, mapData: MapJson, host: TaskModalHost) {
     this.session = session;
@@ -129,6 +228,8 @@ export class TaskModal {
     this.runCleanups();
     this.justSolved = null;
     this.open = false;
+    this.mountedShellKey = '';
+    this.boardHostEl = null;
     this.root.classList.remove('open');
   }
 
@@ -224,81 +325,160 @@ export class TaskModal {
       .join('');
 
     const showCompleteBanner = Boolean(this.justSolved && this.justSolved.pid === p.id);
+    const nextShellKey = `${p.id}:${myRole}:${ownerRole === 'all' ? 'all' : this.currentObj && ownerRole !== myRole ? 'lock' : this.activeTab}`;
+    const needRebuild = !this.root.querySelector('.fg-modal-shell') || this.mountedShellKey !== nextShellKey;
 
-    this.root.innerHTML = `
-      <div class="fg-modal-shell ${shakeNow ? 'au-shake' : ''}" role="dialog" aria-modal="true" aria-label="${p.code} ${p.title}">
-        <div class="fg-bezel-shine"></div>
-        <img class="fg-screw tl" src="${PART_URL.screw}" alt="" />
-        <img class="fg-screw tr" src="${PART_URL.screw}" alt="" />
-        <img class="fg-screw bl" src="${PART_URL.screw}" alt="" />
-        <img class="fg-screw br" src="${PART_URL.screw}" alt="" />
-        <button class="fg-close-btn" id="au-close-btn" title="닫기 (ESC)">
-          <img src="${PART_URL.closeBtn}" alt="✕" />
-        </button>
+    if (needRebuild) {
+      this.mountedShellKey = nextShellKey;
+      this.boardHostEl = null;
+      this.root.innerHTML = `
+        <div class="fg-modal-shell fg-entering ${shakeNow ? 'au-shake' : ''}" role="dialog" aria-modal="true" aria-label="${p.code} ${p.title}">
+          <div class="fg-bezel-shine"></div>
+          <img class="fg-screw tl" src="${PART_URL.screw}" alt="" />
+          <img class="fg-screw tr" src="${PART_URL.screw}" alt="" />
+          <img class="fg-screw bl" src="${PART_URL.screw}" alt="" />
+          <img class="fg-screw br" src="${PART_URL.screw}" alt="" />
+          <button class="fg-close-btn" id="au-close-btn" title="닫기 (ESC)">
+            <img src="${PART_URL.closeBtn}" alt="✕" />
+          </button>
 
-        <div class="fg-modal-head">
-          <div class="fg-head-left">
-            <div class="fg-id-chip">${p.code}</div>
-            <div class="fg-title-group">
-              <div class="fg-title-main">${kid ? kid.title : p.title}</div>
-              <div class="fg-title-sub">
-                <span>${p.roomLabel}</span>
-                <span class="fg-progress-mini">${totalSolved}/16 · ${room.difficulty}</span>
-                ${roleBadgeHtml(p.mainRole, '주도')}
-                ${helperBadgesHtml}
+          <div class="fg-modal-head">
+            <div class="fg-head-left">
+              <div class="fg-id-chip">${p.code}</div>
+              <div class="fg-title-group">
+                <div class="fg-title-main">${kid ? kid.title : p.title}</div>
+                <div class="fg-title-sub">
+                  <span>${p.roomLabel}</span>
+                  <span class="fg-progress-mini" id="fg-progress-mini">${totalSolved}/16 · ${room.difficulty}</span>
+                  ${roleBadgeHtml(p.mainRole, '주도')}
+                  ${helperBadgesHtml}
+                </div>
               </div>
+            </div>
+
+            <div class="fg-tabs" role="tablist" aria-label="조작 및 단서 탭">
+              <button type="button" class="fg-tab-btn ${this.activeTab === 'main' ? 'active' : ''} ${!isMainRole ? 'locked-tab' : ''}" id="fg-tab-main" role="tab">
+                <img src="${ROLE_ICON_URL[p.mainRole]}" alt="" />
+                <span>조작</span>
+                ${!isMainRole ? `<img class="fg-tab-lock" src="${uiIconUrl('lock')}" alt="🔒" />` : ''}
+              </button>
+              <button type="button" class="fg-tab-btn ${this.activeTab === 'clue' ? 'active-gold' : ''}" id="fg-tab-clue" role="tab">
+                <img src="${ROLE_ICON_URL[p.helperRoles[0] || myRole]}" alt="" />
+                <span>단서</span>
+              </button>
+            </div>
+
+            <div class="fg-head-right">
+              <button class="fg-radio-trigger" id="au-open-cmenu" title="무전 보내기 (C)">
+                <img class="hud-btn-ico" src="/assets/ui-icons/radio.svg" alt="" />
+                <span>[C] 무전</span>
+              </button>
             </div>
           </div>
 
-          <div class="fg-tabs" role="tablist" aria-label="조작 및 단서 탭">
-            <button type="button" class="fg-tab-btn ${this.activeTab === 'main' ? 'active' : ''} ${!isMainRole ? 'locked-tab' : ''}" id="fg-tab-main" role="tab">
-              <img src="${ROLE_ICON_URL[p.mainRole]}" alt="" />
-              <span>조작</span>
-              ${!isMainRole ? `<img class="fg-tab-lock" src="${uiIconUrl('lock')}" alt="🔒" />` : ''}
-            </button>
-            <button type="button" class="fg-tab-btn ${this.activeTab === 'clue' ? 'active-gold' : ''}" id="fg-tab-clue" role="tab">
-              <img src="${ROLE_ICON_URL[p.helperRoles[0] || myRole]}" alt="" />
-              <span>단서</span>
-            </button>
+          <div class="fg-board-well">
+            <div id="au-stage-area" class="fg-entering"></div>
+            <div id="fg-feedback-slot"></div>
+            <div id="fg-solved-slot"></div>
           </div>
 
-          <div class="fg-head-right">
-            <button class="fg-radio-trigger" id="au-open-cmenu" title="무전 보내기 (C)">
-              <img class="hud-btn-ico" src="/assets/ui-icons/radio.svg" alt="" />
-              <span>[C] 무전</span>
-            </button>
-          </div>
+          <div id="fg-complete-slot"></div>
         </div>
+      `;
 
-        <div class="fg-board-well">
-          <div id="au-stage-area"></div>
-          ${this.feedback.kind === 'err' && this.feedback.msg ? wrongToastHtml(this.feedback.msg) : ''}
-          ${this.feedback.kind !== 'err' && this.feedback.msg ? `<div class="fg-solved-bar">${this.feedback.msg}</div>` : ''}
-          ${isSolved && !showCompleteBanner ? `<div class="fg-solved-bar">✔ 임무 완료 (${totalSolved}/16) — 다시 확인하거나 수정할 수 있습니다</div>` : ''}
-        </div>
+      const shellEl = this.root.querySelector<HTMLElement>('.fg-modal-shell');
+      const stageAreaEl = this.root.querySelector<HTMLElement>('#au-stage-area');
+      shellEl?.addEventListener(
+        'animationend',
+        () => {
+          shellEl.classList.remove('fg-entering');
+        },
+        { once: true }
+      );
+      stageAreaEl?.addEventListener(
+        'animationend',
+        () => {
+          stageAreaEl.classList.remove('fg-entering');
+        },
+        { once: true }
+      );
 
-        ${showCompleteBanner && this.justSolved ? completeBannerHtml('임무 완료!', this.justSolved.sub) : ''}
-      </div>
-    `;
+      this.root.querySelector('#au-close-btn')?.addEventListener('click', () => this.close());
+      this.root.querySelector('#au-open-cmenu')?.addEventListener('click', () => this.host.onOpenCMenu(null));
+      this.root.querySelector('#fg-tab-main')?.addEventListener('click', () => {
+        soundEngine.playClick();
+        this.activeTab = 'main';
+        this.render();
+      });
+      this.root.querySelector('#fg-tab-clue')?.addEventListener('click', () => {
+        soundEngine.playClick();
+        this.activeTab = 'clue';
+        this.render();
+      });
+    } else {
+      const shellEl = this.root.querySelector<HTMLElement>('.fg-modal-shell');
+      if (shellEl) {
+        if (shakeNow) {
+          shellEl.classList.remove('au-shake');
+          void shellEl.offsetWidth;
+          shellEl.classList.add('au-shake');
+        } else {
+          shellEl.classList.remove('au-shake');
+        }
+      }
+      const progEl = this.root.querySelector('#fg-progress-mini');
+      if (progEl) progEl.textContent = `${totalSolved}/16 · ${room.difficulty}`;
+    }
 
-    this.root.querySelector('#au-close-btn')?.addEventListener('click', () => this.close());
-    this.root.querySelector('#au-open-cmenu')?.addEventListener('click', () => this.host.onOpenCMenu(null));
-    this.root.querySelector('#fg-complete-overlay')?.addEventListener('click', () => {
-      this.justSolved = null;
-      this.close();
-    });
-    this.root.querySelector('#fg-tab-main')?.addEventListener('click', () => {
-      soundEngine.playClick();
-      this.activeTab = 'main';
-      this.render();
-    });
-    this.root.querySelector('#fg-tab-clue')?.addEventListener('click', () => {
-      soundEngine.playClick();
-      this.activeTab = 'clue';
-      this.render();
-    });
+    const fbSlot = this.root.querySelector<HTMLElement>('#fg-feedback-slot');
+    if (fbSlot) {
+      fbSlot.innerHTML =
+        this.feedback.kind === 'err' && this.feedback.msg
+          ? wrongToastHtml(this.feedback.msg)
+          : this.feedback.kind !== 'err' && this.feedback.msg
+            ? `<div class="fg-solved-bar">${this.feedback.msg}</div>`
+            : '';
+    }
 
-    const stage = this.root.querySelector<HTMLElement>('#au-stage-area')!;
+    const solvedSlot = this.root.querySelector<HTMLElement>('#fg-solved-slot');
+    if (solvedSlot) {
+      solvedSlot.innerHTML =
+        isSolved && !showCompleteBanner
+          ? `<div class="fg-solved-bar">✔ 임무 완료 (${totalSolved}/16) — 다시 확인하거나 수정할 수 있습니다</div>`
+          : '';
+    }
+
+    const completeSlot = this.root.querySelector<HTMLElement>('#fg-complete-slot');
+    if (completeSlot) {
+      completeSlot.innerHTML =
+        showCompleteBanner && this.justSolved ? completeBannerHtml('임무 완료!', this.justSolved.sub) : '';
+      completeSlot.querySelector<HTMLElement>('#fg-complete-overlay')?.addEventListener('click', () => {
+        this.justSolved = null;
+        this.close();
+      });
+    }
+
+    const stageArea = this.root.querySelector<HTMLElement>('#au-stage-area')!;
+    if (!this.boardHostEl || !stageArea.contains(this.boardHostEl)) {
+      const hostEl = document.createElement('div');
+      hostEl.className = 'fg-morph-host';
+      const protoDesc =
+        Object.getOwnPropertyDescriptor(Element.prototype, 'innerHTML') ||
+        Object.getOwnPropertyDescriptor(HTMLElement.prototype, 'innerHTML');
+      Object.defineProperty(hostEl, 'innerHTML', {
+        configurable: true,
+        get() {
+          return protoDesc?.get ? protoDesc.get.call(hostEl) : '';
+        },
+        set(nextHtml: string) {
+          morphElementHtml(hostEl, String(nextHtml));
+        },
+      });
+      stageArea.innerHTML = '';
+      stageArea.appendChild(hostEl);
+      this.boardHostEl = hostEl;
+    }
+    const stage = this.boardHostEl;
 
     if (ownerRole === 'all') {
       this.renderAtriumGatherStatus(stage, room);
@@ -368,26 +548,38 @@ export class TaskModal {
       </div>
     `;
 
-    stage.querySelector('#au-lock-to-clue')?.addEventListener('click', () => {
-      soundEngine.playClick();
-      this.activeTab = 'clue';
-      this.render();
-    });
-    stage.querySelector('#au-lock-radio')?.addEventListener('click', () => {
-      this.host.onOpenCMenu(null);
-    });
-    stage.querySelector('#au-lock-bot')?.addEventListener('click', () => {
-      soundEngine.playRadio();
-      this.host.onRequestBotHelp(p.id, targetOwner);
-      this.feedback = { msg: `AI ${ownerMeta.name}에게 협동을 요청했습니다. 팀 무전을 확인하세요!`, kind: 'ok' };
-      this.render();
-    });
-    stage.querySelector('#au-lock-switch')?.addEventListener('click', () => {
-      this.host.onSwitchRole(targetOwner);
-      const nextP = PUZZLES_BY_ID[this.pid];
-      this.activeTab = nextP && targetOwner === nextP.mainRole ? 'main' : 'clue';
-      this.render();
-    });
+    const lockToClue = stage.querySelector<HTMLElement>('#au-lock-to-clue');
+    if (lockToClue) {
+      lockToClue.onclick = () => {
+        soundEngine.playClick();
+        this.activeTab = 'clue';
+        this.render();
+      };
+    }
+    const lockRadio = stage.querySelector<HTMLElement>('#au-lock-radio');
+    if (lockRadio) {
+      lockRadio.onclick = () => {
+        this.host.onOpenCMenu(null);
+      };
+    }
+    const lockBot = stage.querySelector<HTMLElement>('#au-lock-bot');
+    if (lockBot) {
+      lockBot.onclick = () => {
+        soundEngine.playRadio();
+        this.host.onRequestBotHelp(p.id, targetOwner);
+        this.feedback = { msg: `AI ${ownerMeta.name}에게 협동을 요청했습니다. 팀 무전을 확인하세요!`, kind: 'ok' };
+        this.render();
+      };
+    }
+    const lockSwitch = stage.querySelector<HTMLElement>('#au-lock-switch');
+    if (lockSwitch) {
+      lockSwitch.onclick = () => {
+        this.host.onSwitchRole(targetOwner);
+        const nextP = PUZZLES_BY_ID[this.pid];
+        this.activeTab = nextP && targetOwner === nextP.mainRole ? 'main' : 'clue';
+        this.render();
+      };
+    }
   }
 
   private renderMainClueSummaryView(stage: HTMLElement, room: RoomState, p: PuzzleDef, isSolved: boolean) {
@@ -436,11 +628,14 @@ export class TaskModal {
       </div>
     `;
 
-    stage.querySelector('#fg-back-main')?.addEventListener('click', () => {
-      soundEngine.playClick();
-      this.activeTab = 'main';
-      this.render();
-    });
+    const backMain = stage.querySelector<HTMLElement>('#fg-back-main');
+    if (backMain) {
+      backMain.onclick = () => {
+        soundEngine.playClick();
+        this.activeTab = 'main';
+        this.render();
+      };
+    }
     stage.querySelectorAll<HTMLElement>('[data-req-radio]').forEach((btn) => {
       btn.onclick = () => {
         this.host.onOpenCMenu(null);
@@ -461,14 +656,10 @@ export class TaskModal {
     const s = (room.puzzleStates[this.pid] || {}) as Record<string, unknown>;
     const helpers = this.createHelpers(room, this.session.getMyRole());
 
-    const boardHost = document.createElement('div');
-    stage.innerHTML = '';
-    stage.appendChild(boardHost);
-
     const priorDone = Array.from({ length: 15 }, (_, i) => i + 1).filter((id) => room.solvedPids.includes(id)).length;
     const handled =
-      renderAct1Act2Board(this.pid, boardHost, p, s, helpers) ||
-      renderAct3Act4Board(this.pid, boardHost, p, s, helpers, {
+      renderAct1Act2Board(this.pid, stage, p, s, helpers) ||
+      renderAct3Act4Board(this.pid, stage, p, s, helpers, {
         sendHere: () => {
           this.session.sendRadio('lin', ['COOP_HERE']);
           soundEngine.playRadio();
@@ -479,7 +670,7 @@ export class TaskModal {
       });
 
     if (!handled) {
-      boardHost.innerHTML = `<div class="fg-panel">퍼즐 보드를 찾을 수 없습니다.</div>`;
+      stage.innerHTML = `<div class="fg-panel">퍼즐 보드를 찾을 수 없습니다.</div>`;
     }
   }
 
@@ -526,9 +717,12 @@ export class TaskModal {
     const helperMount = stage.querySelector<HTMLElement>('#au-helper-interactive')!;
     this.mountHelperControls(helperMount, room, p.id, myRole, h);
 
-    stage.querySelector('#au-send-quick-radio')?.addEventListener('click', () => {
-      this.host.onOpenCMenu(null);
-    });
+    const quickRadio = stage.querySelector<HTMLElement>('#au-send-quick-radio');
+    if (quickRadio) {
+      quickRadio.onclick = () => {
+        this.host.onOpenCMenu(null);
+      };
+    }
   }
 
   private renderUninvolvedRoleView(stage: HTMLElement, p: PuzzleDef) {
@@ -551,9 +745,12 @@ export class TaskModal {
         </div>
       </div>
     `;
-    stage.querySelector('#au-uninv-radio')?.addEventListener('click', () => {
-      this.host.onOpenCMenu(null);
-    });
+    const uninvRadio = stage.querySelector<HTMLElement>('#au-uninv-radio');
+    if (uninvRadio) {
+      uninvRadio.onclick = () => {
+        this.host.onOpenCMenu(null);
+      };
+    }
   }
 
   private renderAtriumGatherStatus(stage: HTMLElement, room: RoomState) {
@@ -612,7 +809,9 @@ export class TaskModal {
       const temp = Number(s.temp ?? 24);
       const rhOk = rh === 45;
       const tempOk = temp === 18;
-      mount.innerHTML = `
+      morphElementHtml(
+        mount,
+        `
         <div class="fg-p10-clue-grid">
           <div class="fg-dial-card" style="border-color:${rhOk ? 'var(--fg-mint)' : 'var(--fg-outline)'}">
             <div class="fg-dial-box">
@@ -648,48 +847,52 @@ export class TaskModal {
             </div>
           </div>
         </div>
-      `;
-      mount.querySelector('#hc-p10-rhd')?.addEventListener('click', () => {
+      `
+      );
+      mount.querySelector<HTMLElement>('#hc-p10-rhd')!.onclick = () => {
         soundEngine.playClick();
         h.patchState(10, { rh: Math.max(36, rh - 9) });
         h.rerender();
-      });
-      mount.querySelector('#hc-p10-rhu')?.addEventListener('click', () => {
+      };
+      mount.querySelector<HTMLElement>('#hc-p10-rhu')!.onclick = () => {
         soundEngine.playClick();
         h.patchState(10, { rh: Math.min(81, rh + 9) });
         h.rerender();
-      });
-      mount.querySelector('#hc-p10-td')?.addEventListener('click', () => {
+      };
+      mount.querySelector<HTMLElement>('#hc-p10-td')!.onclick = () => {
         soundEngine.playClick();
         h.patchState(10, { temp: Math.max(14, temp - 2) });
         h.rerender();
-      });
-      mount.querySelector('#hc-p10-tu')?.addEventListener('click', () => {
+      };
+      mount.querySelector<HTMLElement>('#hc-p10-tu')!.onclick = () => {
         soundEngine.playClick();
         h.patchState(10, { temp: Math.min(28, temp + 2) });
         h.rerender();
-      });
+      };
       return;
     }
 
     if (pid === 10 && myRole === 'doyun') {
       const latch = Boolean(s.crateLatch);
-      mount.innerHTML = `
+      morphElementHtml(
+        mount,
+        `
         <div class="fg-panel fg-row-between" style="border-color:${latch ? 'var(--fg-mint)' : 'var(--fg-amber)'}">
           <div>
             <div class="fg-panel-title" style="color:${latch ? 'var(--fg-mint)' : 'var(--fg-amber)'}">1번 방수 크레이트 걸쇠: ${latch ? '체결 완료 ✔' : '미체결'}</div>
             <div class="fg-panel-sub">걸쇠를 잠가야 린이 크레인으로 상자를 안전하게 인양할 수 있습니다.</div>
           </div>
           <div style="min-width:210px">
-            ${pushBtnHtml({ id: 'hc-p10-latch', label: latch ? '✔ 걸쇠 체결됨' : '🔒 걸쇠 체결하기', tone: latch ? 'mint' : 'amber', disabled: latch })}
+            ${pushBtnHtml({ id: 'hc-p10-latch', label: latch ? '✔ 걸쇠 체결됨' : '걸쇠 체결하기', tone: latch ? 'mint' : 'amber', disabled: latch })}
           </div>
         </div>
-      `;
-      mount.querySelector('#hc-p10-latch')?.addEventListener('click', () => {
+      `
+      );
+      mount.querySelector<HTMLElement>('#hc-p10-latch')!.onclick = () => {
         soundEngine.playClick();
         h.patchState(10, { crateLatch: true });
-        h.setInfo('서하린: 1번 방수 크레이트 걸쇠 체결 완료! 린에게 [1번]+[안정] 무전을 보내세요.');
-      });
+        h.setInfo('서하린: 1번 방수 크레이트 걸쇠 체결 완료!');
+      };
       return;
     }
 
@@ -706,7 +909,9 @@ export class TaskModal {
       const shiftX = (fx - 60) * 1.4;
       const shiftY = (fy - 40) * 1.1;
 
-      mount.innerHTML = `
+      morphElementHtml(
+        mount,
+        `
         <div class="fg-p12-clue-wrap" id="hc-p12-card" style="border-color:${m.sharp ? 'var(--fg-mint)' : 'var(--fg-outline)'}">
           <div class="fg-film-viewport">
             <img id="hc-p12-film" class="fg-film-img" src="/assets/puzzle-ui/boards/p12-film-clue.svg" alt="마이크로필름"
@@ -728,7 +933,8 @@ export class TaskModal {
             </div>
           </div>
         </div>
-      `;
+      `
+      );
 
       const applyXY = (nx: number, ny: number) => {
         fx = Math.max(0, Math.min(100, nx));
@@ -752,52 +958,58 @@ export class TaskModal {
         h.patchState(12, { fx, fy });
       };
 
-      mount.querySelector('#hc-p12-xl')?.addEventListener('click', () => applyXY(fx - 5, fy));
-      mount.querySelector('#hc-p12-xr')?.addEventListener('click', () => applyXY(fx + 5, fy));
-      mount.querySelector('#hc-p12-yu')?.addEventListener('click', () => applyXY(fx, fy - 5));
-      mount.querySelector('#hc-p12-yd')?.addEventListener('click', () => applyXY(fx, fy + 5));
+      mount.querySelector<HTMLElement>('#hc-p12-xl')!.onclick = () => applyXY(fx - 5, fy);
+      mount.querySelector<HTMLElement>('#hc-p12-xr')!.onclick = () => applyXY(fx + 5, fy);
+      mount.querySelector<HTMLElement>('#hc-p12-yu')!.onclick = () => applyXY(fx, fy - 5);
+      mount.querySelector<HTMLElement>('#hc-p12-yd')!.onclick = () => applyXY(fx, fy + 5);
       return;
     }
 
     if (pid === 13 && myRole === 'doyun') {
       const valveOpen = Boolean(s.valveOpen);
-      mount.innerHTML = `
+      morphElementHtml(
+        mount,
+        `
         <div class="fg-panel fg-row-between" style="border-color:${valveOpen ? 'var(--fg-mint)' : 'var(--fg-amber)'}">
           <div>
             <div class="fg-panel-title" style="color:${valveOpen ? 'var(--fg-mint)' : 'var(--fg-amber)'}">시약 공급 안전 밸브: ${valveOpen ? '개방됨 ✔ (스포이드 사용 가능)' : '잠김'}</div>
             <div class="fg-panel-sub">안전 차단 밸브를 열어야 카이가 청록·호박 시약 스포이드를 사용할 수 있습니다.</div>
           </div>
           <div style="min-width:210px">
-            ${pushBtnHtml({ id: 'hc-p13-valve', label: valveOpen ? '✔ 밸브 개방됨' : '🔧 시약 밸브 열기', tone: valveOpen ? 'mint' : 'amber', disabled: valveOpen })}
+            ${pushBtnHtml({ id: 'hc-p13-valve', label: valveOpen ? '✔ 밸브 개방됨' : '시약 밸브 열기', tone: valveOpen ? 'mint' : 'amber', disabled: valveOpen })}
           </div>
         </div>
-      `;
-      mount.querySelector('#hc-p13-valve')?.addEventListener('click', () => {
+      `
+      );
+      mount.querySelector<HTMLElement>('#hc-p13-valve')!.onclick = () => {
         soundEngine.playClick();
         h.patchState(13, { valveOpen: true });
-        h.setInfo('서하린: 시약 공급 안전 밸브 개방 완료! 카이에게 무전으로 알려주세요.');
-      });
+        h.setInfo('서하린: 시약 공급 안전 밸브 개방 완료!');
+      };
       return;
     }
 
     if (pid === 16 && myRole === 'doyun') {
       const mountUnlocked = Boolean(s.mountUnlocked);
-      mount.innerHTML = `
+      morphElementHtml(
+        mount,
+        `
         <div class="fg-panel fg-row-between" style="border-color:${mountUnlocked ? 'var(--fg-mint)' : 'var(--fg-amber)'}">
           <div>
             <div class="fg-panel-title" style="color:${mountUnlocked ? 'var(--fg-mint)' : 'var(--fg-amber)'}">프리즘 거치대 베어링: ${mountUnlocked ? '잠금 해제됨 ✔' : '잠김'}</div>
             <div class="fg-panel-sub">거치대를 풀어 줘야 린이 프리즘 3개를 돌릴 수 있습니다. (명판 각인: M3 = 서 ←)</div>
           </div>
           <div style="min-width:210px">
-            ${pushBtnHtml({ id: 'hc-p16-mount', label: mountUnlocked ? '✔ 잠금 해제됨' : '🔧 거치대 베어링 해제', tone: mountUnlocked ? 'mint' : 'amber', disabled: mountUnlocked })}
+            ${pushBtnHtml({ id: 'hc-p16-mount', label: mountUnlocked ? '✔ 잠금 해제됨' : '거치대 베어링 해제', tone: mountUnlocked ? 'mint' : 'amber', disabled: mountUnlocked })}
           </div>
         </div>
-      `;
-      mount.querySelector('#hc-p16-mount')?.addEventListener('click', () => {
+      `
+      );
+      mount.querySelector<HTMLElement>('#hc-p16-mount')!.onclick = () => {
         soundEngine.playClick();
         h.patchState(16, { mountUnlocked: true });
-        h.setInfo('서하린: 프리즘 거치대 잠금 해제 완료! 린에게 [준비 완료] + [3번] + [서 ←] 무전을 보내세요.');
-      });
+        h.setInfo('서하린: 프리즘 거치대 잠금 해제 완료!');
+      };
     }
   }
 

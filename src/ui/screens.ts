@@ -319,18 +319,25 @@ const STORY_BG_URLS = [
   '/assets/guides/STRANGER-1F.png',
 ] as const;
 
-const STORY_PORTRAITS: Record<RoleId, string> = {
-  doyun: '/assets/characters/story/harin_default.png',
-  maria: '/assets/characters/story/ian_default.png',
-  lin: '/assets/characters/story/lin_default.png',
-  aisha: '/assets/characters/story/kai_default.png',
+type PixelSpeakerId = Exclude<StorySpeakerKind, 'narrator' | 'title'>;
+
+const STORY_PIXEL_SPRITES: Record<PixelSpeakerId, string> = {
+  doyun: '/assets/characters/portrait_0.png',
+  maria: '/assets/characters/portrait_1.png',
+  lin: '/assets/characters/portrait_2.png',
+  aisha: '/assets/characters/portrait_3.png',
+  jiho: '/assets/characters/story-pixel/jiho.svg',
+  friend1: '/assets/characters/story-pixel/friend1.svg',
+  friend2: '/assets/characters/story-pixel/friend2.svg',
+  teacher: '/assets/characters/story-pixel/teacher.svg',
+  staff: '/assets/characters/story-pixel/staff.svg',
 };
 
 let storyBgsPreloaded = false;
 function preloadStoryBackgrounds(): void {
   if (storyBgsPreloaded || typeof Image === 'undefined') return;
   storyBgsPreloaded = true;
-  for (const url of new Set([...STORY_BG_URLS, ...Object.values(STORY_PORTRAITS)])) {
+  for (const url of new Set([...STORY_BG_URLS, ...Object.values(STORY_PIXEL_SPRITES)])) {
     const img = new Image();
     img.src = url;
   }
@@ -370,26 +377,26 @@ function renderStorySceneBackdrop(scene: StorySceneId): string {
   `;
 }
 
-function isStoryHero(kind: StorySpeakerKind): kind is RoleId {
-  return kind === 'doyun' || kind === 'maria' || kind === 'lin' || kind === 'aisha';
+function isPixelSpeaker(kind: StorySpeakerKind): kind is PixelSpeakerId {
+  return kind in STORY_PIXEL_SPRITES;
 }
 
 function renderVnStandingBusts(slide: StorySlide): string {
-  const entries: { id: RoleId; active: boolean }[] = [];
+  const entries: { id: PixelSpeakerId; active: boolean }[] = [];
 
-  if (isStoryHero(slide.kind)) {
+  if (isPixelSpeaker(slide.kind)) {
     entries.push({ id: slide.kind, active: true });
-  } else if (slide.lead && isStoryHero(slide.lead)) {
+  } else if (slide.lead && isPixelSpeaker(slide.lead)) {
     entries.push({ id: slide.lead, active: false });
   }
 
-  if (slide.partner && isStoryHero(slide.partner) && !entries.some((e) => e.id === slide.partner)) {
+  if (slide.partner && isPixelSpeaker(slide.partner) && !entries.some((e) => e.id === slide.partner)) {
     entries.push({ id: slide.partner, active: false });
   }
 
   if (entries.length === 0) return '';
 
-  // Keep Ha-rin (doyun) anchored on the left whenever two heroes stand together
+  // Keep Ha-rin (doyun) anchored on the left whenever two speakers appear together
   if (entries.length === 2 && entries[1].id === 'doyun') {
     const tmp = entries[0];
     entries[0] = entries[1];
@@ -399,7 +406,7 @@ function renderVnStandingBusts(slide: StorySlide): string {
   const slotsHtml = entries
     .map(
       (e) => `<div class="vn-bust-slot ${e.active ? 'is-active' : 'is-listener'}" data-char="${e.id}">
-        <img class="vn-bust-img" src="${STORY_PORTRAITS[e.id]}" alt="" draggable="false" decoding="async" />
+        <img class="vn-bust-img vn-bust-pixel" src="${STORY_PIXEL_SPRITES[e.id]}" alt="" draggable="false" decoding="async" />
       </div>`
     )
     .join('');
@@ -413,6 +420,9 @@ function getSpeakerColor(slide: StorySlide): string {
     return ROLES[slide.kind].color;
   }
   if (slide.kind === 'jiho') return '#8fd3f4';
+  if (slide.kind === 'friend1') return '#ffa886';
+  if (slide.kind === 'friend2') return '#9de0b8';
+  if (slide.kind === 'staff') return '#7cd8ff';
   return '#e8c87a';
 }
 
@@ -549,19 +559,6 @@ export function renderStatusWindowModalHtml(room: RoomState | null, myRole: Role
   // Collect all puzzles/tasks across the museum where myRole has access (main operator or helper clue)
   const accessiblePuzzles = PUZZLES.filter((p) => p.mainRole === myRole || p.helperRoles.includes(myRole));
 
-  const switchBarHtml =
-    room && room.soloSwitchEnabled
-      ? `<div class="status-switch-row">
-        ${ROLE_ORDER.map((r, i) => {
-          const rm = ROLES[r];
-          return `<button type="button" class="role-pill-btn ${r === myRole ? 'active' : ''}" data-status-sw="${r}" style="--rc:${rm.color}">[${i + 1}] ${rm.name}</button>`;
-        }).join('')}
-        <button type="button" class="role-pill-btn" id="status-summon-all" style="--rc:#E6C886">동료 집합</button>
-      </div>`
-      : room
-        ? `<div class="status-fixed-pill" style="color:${meta.color}">멀티플레이 고정 역할: ${meta.name}</div>`
-        : '';
-
   return `
     <div class="au-modal status-window-modal" role="dialog" aria-modal="true" aria-label="내 상태창 및 도움말">
       <div class="au-modal-head">
@@ -574,11 +571,10 @@ export function renderStatusWindowModalHtml(room: RoomState | null, myRole: Role
       <div class="au-body status-window-body">
         <div class="status-hero-card" style="--rc:${meta.color}">
           <div class="status-portrait-frame">
-            <img class="status-portrait-img" src="${STORY_PORTRAITS[myRole]}" alt="${meta.name}" />
+            <img class="status-portrait-img status-portrait-pixel" src="${STORY_PIXEL_SPRITES[myRole]}" alt="${meta.name}" />
           </div>
           <div class="status-hero-info">
             <div class="status-hero-top">
-              ${charSpriteHtml(myRole, 1.35, true)}
               <div>
                 <div class="status-hero-name" style="color:${meta.color}">${meta.name} <small>${meta.country}</small></div>
                 <div class="status-hero-job">${meta.title}</div>
@@ -591,7 +587,6 @@ export function renderStatusWindowModalHtml(room: RoomState | null, myRole: Role
             <div class="status-location-line">
               현재 위치: <strong>${slot ? `${slot.floor} · ${escapeHtml(curSceneLabel)}` : '-'}</strong>
             </div>
-            ${switchBarHtml}
           </div>
         </div>
 
@@ -649,10 +644,9 @@ export function renderStatusWindowModalHtml(room: RoomState | null, myRole: Role
             <div class="status-key-item"><kbd>WASD / 방향키</kbd><span>이동 (한/영 상태 무관)</span></div>
             <div class="status-key-item"><kbd>E</kbd><span>장치 · 문 조사 및 열기</span></div>
             <div class="status-key-item"><kbd>C</kbd><span>아이콘 무전 보내기 (전체 발신)</span></div>
-            <div class="status-key-item"><kbd>M</kbd><span>박물관 지도 (네비게이터 린 전용)</span></div>
+            <div class="status-key-item"><kbd>M</kbd><span>박물관 지도 (네비게이터 전용)</span></div>
             <div class="status-key-item"><kbd>H</kbd><span>상태창 · 도움말 열기/닫기</span></div>
             <div class="status-key-item"><kbd>P</kbd><span>방 나가기</span></div>
-            ${room?.soloSwitchEnabled ?? true ? '<div class="status-key-item"><kbd>1~4</kbd><span>캐릭터 전환</span></div>' : ''}
           </div>
         </div>
 

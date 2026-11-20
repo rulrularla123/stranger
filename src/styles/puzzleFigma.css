@@ -2189,11 +2189,11 @@
   }
 }
 
-.fg-modal-shell {
+.fg-modal-shell.fg-entering {
   animation: fg-stage-enter 0.24s cubic-bezier(0.22, 1, 0.36, 1);
 }
 
-#au-stage-area > * {
+#au-stage-area.fg-entering > * {
   animation: fg-stage-enter 0.22s cubic-bezier(0.22, 1, 0.36, 1);
 }
 

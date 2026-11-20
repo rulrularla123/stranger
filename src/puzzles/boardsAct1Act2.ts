@@ -1254,12 +1254,12 @@ function boardP08(stage: HTMLElement, s: Record<string, unknown>, h: BoardHelper
     h.patchState(8, { boilerPsi: livePsi });
     refreshP8Dom();
   };
-  stage.querySelector<HTMLElement>('#p8-add')?.addEventListener('click', () => {
+  stage.querySelector<HTMLElement>('#p8-add')!.onclick = () => {
     soundEngine.playClick();
     livePsi = Math.min(160, Math.round(livePsi) + 10);
     h.patchState(8, { boilerPsi: livePsi });
     refreshP8Dom();
-  });
+  };
 
   stage.querySelector<HTMLInputElement>('#p8-r1')!.oninput = (e) => {
     pump1Rpm = Number((e.target as HTMLInputElement).value);
@@ -1410,7 +1410,7 @@ function boardP09(stage: HTMLElement, s: Record<string, unknown>, h: BoardHelper
   };
   h.registerCleanup(stopTimers);
 
-  heatBtn.addEventListener('pointerdown', () => {
+  heatBtn.onpointerdown = () => {
     if (heat >= 100 || genRunning) return;
     stopTimers();
     const stepPer50Ms = (100 / h.difficulty.p09HoldMs) * 50;
@@ -1425,7 +1425,7 @@ function boardP09(stage: HTMLElement, s: Record<string, unknown>, h: BoardHelper
         h.rerender();
       }
     }, 50);
-  });
+  };
 
   const releaseHold = () => {
     if (holdTimer === null) return;
@@ -1444,9 +1444,9 @@ function boardP09(stage: HTMLElement, s: Record<string, unknown>, h: BoardHelper
       }, 60);
     }
   };
-  heatBtn.addEventListener('pointerup', releaseHold);
-  heatBtn.addEventListener('pointerleave', releaseHold);
-  heatBtn.addEventListener('pointercancel', releaseHold);
+  heatBtn.onpointerup = releaseHold;
+  heatBtn.onpointerleave = releaseHold;
+  heatBtn.onpointercancel = releaseHold;
 
   stage.querySelector<HTMLElement>('#p9-crank')!.onclick = () => {
     soundEngine.playPowerOn();

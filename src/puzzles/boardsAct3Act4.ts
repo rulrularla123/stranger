@@ -619,13 +619,13 @@ function boardP13(stage: HTMLElement, s: Record<string, unknown>, h: BoardHelper
     window.removeEventListener('pointercancel', onPointerUp);
   });
 
-  scrubBox.addEventListener('pointerdown', (e) => {
+  scrubBox.onpointerdown = (e) => {
     scrubbing = true;
     paintCell(e.target as HTMLElement);
-  });
-  scrubBox.addEventListener('pointermove', (e) => {
+  };
+  scrubBox.onpointermove = (e) => {
     if (scrubbing) paintCell(e.target as HTMLElement);
-  });
+  };
   scrubBox.querySelectorAll<HTMLElement>('[data-sc]').forEach((d) => {
     d.onclick = () => paintCell(d);
   });
@@ -820,7 +820,7 @@ function boardP14(stage: HTMLElement, s: Record<string, unknown>, h: BoardHelper
   };
   h.registerCleanup(stopTimers);
 
-  pressBtn.addEventListener('pointerdown', () => {
+  pressBtn.onpointerdown = () => {
     if (!ropeDone) {
       h.setErr('먼저 4모서리 도르래를 대각선 순서로 모두 0% 이완하세요!');
       return;
@@ -840,7 +840,7 @@ function boardP14(stage: HTMLElement, s: Record<string, unknown>, h: BoardHelper
         h.solve(14, { rope, waxRot, pressed: true }, '4점 대각선 이완 및 밀랍 봉인 압착 복원이 완료되었어요!');
       }
     }, 50);
-  });
+  };
 
   const releaseHold = () => {
     if (pressTimer === null) return;
@@ -859,9 +859,9 @@ function boardP14(stage: HTMLElement, s: Record<string, unknown>, h: BoardHelper
       }, 60);
     }
   };
-  pressBtn.addEventListener('pointerup', releaseHold);
-  pressBtn.addEventListener('pointerleave', releaseHold);
-  pressBtn.addEventListener('pointercancel', releaseHold);
+  pressBtn.onpointerup = releaseHold;
+  pressBtn.onpointerleave = releaseHold;
+  pressBtn.onpointercancel = releaseHold;
 }
 
 /* -------------------------------------------------------------------------- *

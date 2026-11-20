@@ -560,18 +560,18 @@ class StrangerApp {
         </div>
 
         <div class="hud-chat-dock" id="hud-chat-dock">
-          <div class="signal-log-box ${this.logExpanded ? 'expanded' : ''}" id="hud-log-box">
-            <div class="signal-log-bar">
-              <button class="signal-log-head" id="hud-log-toggle">
-                <img class="hud-btn-ico" src="/assets/ui-icons/radio.svg" alt="" />
-                <span>팀 채팅</span>
-                <span class="signal-log-cnt" id="hud-log-cnt">0</span>
-                <span id="hud-log-chev">${this.logExpanded ? '▾' : '▴'}</span>
-              </button>
-              <button class="hud-chk-toggle primary-mini" id="hud-log-send" title="무전 보내기 (C)">+ 무전 (C)</button>
+          <div class="ms-chat-wrap ${this.logExpanded ? 'expanded' : 'collapsed'}" id="hud-log-box">
+            <div class="ms-chat-log" id="hud-log-list">
+              <div class="ms-chat-empty">아직 무전이 없습니다 · [C] 키로 보내세요</div>
             </div>
-            <div class="signal-log-list" id="hud-log-list">
-              <div class="signal-log-empty">아직 무전이 없습니다 · [C] 키로 보내세요</div>
+            <div class="ms-chat-bar">
+              <span class="ms-chat-chan">전체</span>
+              <button type="button" class="ms-chat-input-btn" id="hud-log-send" title="무전 보내기 (C)">
+                <span>무전 보내기 [C]</span>
+              </button>
+              <button type="button" class="ms-chat-btn" id="hud-log-up" title="위로 스크롤">▲</button>
+              <button type="button" class="ms-chat-btn" id="hud-log-down" title="아래로 스크롤">▼</button>
+              <button type="button" class="ms-chat-btn ms-chat-toggle-btn" id="hud-log-toggle" title="채팅 접기/펼치기">${this.logExpanded ? '−' : '+'}</button>
             </div>
           </div>
         </div>
@@ -686,9 +686,19 @@ class StrangerApp {
 
     this.root.querySelector('#hud-log-toggle')?.addEventListener('click', () => {
       this.logExpanded = !this.logExpanded;
-      this.root.querySelector('#hud-log-box')?.classList.toggle('expanded', this.logExpanded);
-      const chev = this.root.querySelector('#hud-log-chev');
-      if (chev) chev.textContent = this.logExpanded ? '▾' : '▴';
+      const box = this.root.querySelector('#hud-log-box');
+      box?.classList.toggle('expanded', this.logExpanded);
+      box?.classList.toggle('collapsed', !this.logExpanded);
+      const tgl = this.root.querySelector('#hud-log-toggle');
+      if (tgl) tgl.textContent = this.logExpanded ? '−' : '+';
+    });
+    this.root.querySelector('#hud-log-up')?.addEventListener('click', () => {
+      const list = this.root.querySelector<HTMLElement>('#hud-log-list');
+      if (list) list.scrollBy({ top: -64, behavior: 'smooth' });
+    });
+    this.root.querySelector('#hud-log-down')?.addEventListener('click', () => {
+      const list = this.root.querySelector<HTMLElement>('#hud-log-list');
+      if (list) list.scrollBy({ top: 64, behavior: 'smooth' });
     });
     this.root.querySelector('#hud-log-send')?.addEventListener('click', () => this.cMenu?.toggle(true));
     this.root.querySelector('#hud-chk-toggle')?.addEventListener('click', () => {
@@ -776,15 +786,6 @@ class StrangerApp {
       const myRole = this.session.getMyRole();
       this.overlayBackdrop.innerHTML = renderStatusWindowModalHtml(room, myRole, this.mapData);
       this.overlayBackdrop.querySelector('#btn-controls-ok')?.addEventListener('click', () => this.closeOverlay());
-      this.overlayBackdrop.querySelectorAll<HTMLElement>('[data-status-sw]').forEach((btn) => {
-        btn.onclick = () => {
-          this.switchRole(btn.dataset.statusSw as RoleId);
-          this.renderOverlay();
-        };
-      });
-      this.overlayBackdrop.querySelector('#status-summon-all')?.addEventListener('click', () => {
-        this.world?.summonAllTeammatesToActive();
-      });
     } else if (this.overlayMode === 'exit') {
       this.overlayBackdrop.innerHTML = renderExitConfirmModalHtml();
       this.overlayBackdrop.querySelector('#btn-exit-cancel')?.addEventListener('click', () => this.closeOverlay());
@@ -995,29 +996,23 @@ class StrangerApp {
   }
 
   private refreshSignalLog(room: RoomState) {
-    const cntEl = this.root.querySelector('#hud-log-cnt');
-    if (cntEl) cntEl.textContent = String(room.radioLog.length);
-
-    const list = this.root.querySelector('#hud-log-list');
+    const list = this.root.querySelector<HTMLElement>('#hud-log-list');
     if (!list) return;
     if (room.radioLog.length === 0) {
-      list.innerHTML = `<div class="signal-log-empty">아직 무전이 없습니다 · [C] 키로 보내세요</div>`;
+      list.innerHTML = `<div class="ms-chat-empty">아직 무전이 없습니다 · [C] 키로 보내세요</div>`;
       return;
     }
-    list.innerHTML = room.radioLog
-      .slice(0, 14)
-      .map((pkt, idx) => {
+    const ordered = [...room.radioLog.slice(0, 30)].reverse();
+    list.innerHTML = ordered
+      .map((pkt) => {
         const rm = ROLES[pkt.roleId];
-        return `<div class="signal-log-item ${idx === 0 ? 'latest' : ''}" style="--sc:${rm.color}">
-          <div class="signal-log-meta">
-            ${roleIconImgHtml(pkt.roleId, 'chat-role-ico')}
-            <strong style="color:${rm.color}">${escapeTokenText(pkt.senderName)}</strong>
-            ${idx === 0 ? '<span class="signal-new-tag">NEW</span>' : ''}
-          </div>
-          <div class="signal-log-content">${renderRadioContentHtml(pkt, room.slots)}</div>
+        return `<div class="ms-chat-line">
+          <span class="ms-chat-name" style="color:${rm.color}">${escapeTokenText(pkt.senderName)} :</span>
+          <span class="ms-chat-icons">${renderRadioContentHtml(pkt, room.slots)}</span>
         </div>`;
       })
       .join('');
+    list.scrollTop = list.scrollHeight;
   }
 
   private showRadioBanner(pkt: RadioPacket) {

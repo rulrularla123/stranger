@@ -1,0 +1,45 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 64" width="32" height="64" shape-rendering="crispEdges">
+  <!-- Hair outline & dark hair -->
+  <rect x="10" y="7" width="12" height="2" fill="#0B0E13"/>
+  <rect x="8" y="9" width="16" height="3" fill="#0B0E13"/>
+  <rect x="7" y="12" width="18" height="10" fill="#0B0E13"/>
+  <rect x="10" y="9" width="12" height="4" fill="#242B38"/>
+  <rect x="9" y="11" width="14" height="5" fill="#242B38"/>
+  <rect x="11" y="10" width="8" height="2" fill="#354052"/>
+  <!-- Face -->
+  <rect x="10" y="16" width="12" height="10" fill="#F2C8A4"/>
+  <rect x="11" y="25" width="10" height="2" fill="#0B0E13"/>
+  <rect x="11" y="24" width="10" height="2" fill="#F2C8A4"/>
+  <!-- Hair bangs -->
+  <rect x="10" y="14" width="3" height="3" fill="#242B38"/>
+  <rect x="15" y="14" width="3" height="2" fill="#242B38"/>
+  <rect x="20" y="14" width="2" height="3" fill="#242B38"/>
+  <!-- Eyes & soft smile -->
+  <rect x="12" y="19" width="2" height="3" fill="#0B0E13"/>
+  <rect x="18" y="19" width="2" height="3" fill="#0B0E13"/>
+  <rect x="12" y="19" width="1" height="1" fill="#FFFFFF"/>
+  <rect x="18" y="19" width="1" height="1" fill="#FFFFFF"/>
+  <rect x="14" y="23" width="4" height="1" fill="#9E5E4A"/>
+  <!-- Neck -->
+  <rect x="14" y="26" width="4" height="3" fill="#E3B18C"/>
+  <!-- Torso outline + navy school cardigan & white shirt -->
+  <rect x="8" y="28" width="16" height="16" fill="#0B0E13"/>
+  <rect x="10" y="29" width="12" height="14" fill="#2C3E58"/>
+  <rect x="14" y="29" width="4" height="11" fill="#EFF4FA"/>
+  <rect x="14" y="29" width="4" height="2" fill="#CBD7E6"/>
+  <!-- Arms & hands -->
+  <rect x="7" y="30" width="3" height="11" fill="#0B0E13"/>
+  <rect x="22" y="30" width="3" height="11" fill="#0B0E13"/>
+  <rect x="8" y="30" width="2" height="8" fill="#2C3E58"/>
+  <rect x="22" y="30" width="2" height="8" fill="#2C3E58"/>
+  <rect x="8" y="38" width="2" height="3" fill="#F2C8A4"/>
+  <rect x="22" y="38" width="2" height="3" fill="#F2C8A4"/>
+  <!-- Pants & shoes -->
+  <rect x="10" y="43" width="12" height="13" fill="#0B0E13"/>
+  <rect x="11" y="44" width="4" height="9" fill="#1E2530"/>
+  <rect x="17" y="44" width="4" height="9" fill="#1E2530"/>
+  <rect x="10" y="54" width="5" height="3" fill="#0B0E13"/>
+  <rect x="17" y="54" width="5" height="3" fill="#0B0E13"/>
+  <rect x="11" y="54" width="3" height="2" fill="#DCE4EC"/>
+  <rect x="18" y="54" width="3" height="2" fill="#DCE4EC"/>
+</svg>
