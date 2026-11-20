@@ -5,8 +5,6 @@ import {
   STORY_CHAPTER_STARTS,
   STORY_SLIDE_COUNT,
   STORY_SLIDES,
-  type StoryCharacterId,
-  type StoryEmotion,
   type StorySceneId,
   type StorySlide,
   type StorySpeakerKind,
@@ -321,43 +319,18 @@ const STORY_BG_URLS = [
   '/assets/guides/STRANGER-1F.png',
 ] as const;
 
-const STORY_PORTRAITS: Record<StoryCharacterId, Partial<Record<StoryEmotion, string>> & { default: string }> = {
-  doyun: {
-    default: '/assets/characters/story/harin_default.png',
-    laugh: '/assets/characters/story/harin_laugh.png',
-    surprised: '/assets/characters/story/harin_surprised.png',
-    serious: '/assets/characters/story/harin_serious.png',
-  },
-  maria: {
-    default: '/assets/characters/story/ian_default.png',
-    laugh: '/assets/characters/story/ian_laugh.png',
-    worried: '/assets/characters/story/ian_worried.png',
-  },
-  lin: {
-    default: '/assets/characters/story/lin_default.png',
-    curious: '/assets/characters/story/lin_curious.png',
-  },
-  aisha: {
-    default: '/assets/characters/story/kai_default.png',
-    excited: '/assets/characters/story/kai_excited.png',
-  },
-  jiho: {
-    default: '/assets/characters/story/jiho_shy.png',
-    shy: '/assets/characters/story/jiho_shy.png',
-  },
+const STORY_PORTRAITS: Record<RoleId, string> = {
+  doyun: '/assets/characters/story/harin_default.png',
+  maria: '/assets/characters/story/ian_default.png',
+  lin: '/assets/characters/story/lin_default.png',
+  aisha: '/assets/characters/story/kai_default.png',
 };
-
-function getStoryPortraitUrl(charId: StoryCharacterId, emotion: StoryEmotion = 'default'): string {
-  const map = STORY_PORTRAITS[charId];
-  return map[emotion] || map.default;
-}
 
 let storyBgsPreloaded = false;
 function preloadStoryBackgrounds(): void {
   if (storyBgsPreloaded || typeof Image === 'undefined') return;
   storyBgsPreloaded = true;
-  const portraitUrls = Object.values(STORY_PORTRAITS).flatMap((m) => Object.values(m).filter((u): u is string => Boolean(u)));
-  for (const url of new Set([...STORY_BG_URLS, ...portraitUrls])) {
+  for (const url of new Set([...STORY_BG_URLS, ...Object.values(STORY_PORTRAITS)])) {
     const img = new Image();
     img.src = url;
   }
@@ -397,31 +370,26 @@ function renderStorySceneBackdrop(scene: StorySceneId): string {
   `;
 }
 
-function isStoryCharacter(kind: StorySpeakerKind): kind is StoryCharacterId {
-  return kind === 'doyun' || kind === 'maria' || kind === 'lin' || kind === 'aisha' || kind === 'jiho';
+function isStoryHero(kind: StorySpeakerKind): kind is RoleId {
+  return kind === 'doyun' || kind === 'maria' || kind === 'lin' || kind === 'aisha';
 }
 
 function renderVnStandingBusts(slide: StorySlide): string {
-  const entries: { id: StoryCharacterId; emotion: StoryEmotion; active: boolean }[] = [];
+  const entries: { id: RoleId; active: boolean }[] = [];
 
-  if (isStoryCharacter(slide.kind)) {
-    const defEmo: StoryEmotion = slide.kind === 'jiho' ? 'shy' : 'default';
-    entries.push({ id: slide.kind, emotion: slide.emotion || defEmo, active: true });
-  } else if (slide.lead) {
-    const defEmo: StoryEmotion = slide.lead.id === 'jiho' ? 'shy' : 'default';
-    entries.push({ id: slide.lead.id, emotion: slide.lead.emotion || defEmo, active: false });
-  } else if (slide.emotion) {
-    entries.push({ id: 'doyun', emotion: slide.emotion, active: false });
+  if (isStoryHero(slide.kind)) {
+    entries.push({ id: slide.kind, active: true });
+  } else if (slide.lead && isStoryHero(slide.lead)) {
+    entries.push({ id: slide.lead, active: false });
   }
 
-  if (slide.partner && !entries.some((e) => e.id === slide.partner!.id)) {
-    const defEmo: StoryEmotion = slide.partner.id === 'jiho' ? 'shy' : 'default';
-    entries.push({ id: slide.partner.id, emotion: slide.partner.emotion || defEmo, active: false });
+  if (slide.partner && isStoryHero(slide.partner) && !entries.some((e) => e.id === slide.partner)) {
+    entries.push({ id: slide.partner, active: false });
   }
 
   if (entries.length === 0) return '';
 
-  // Keep Ha-rin (doyun) anchored on the left whenever two characters stand together
+  // Keep Ha-rin (doyun) anchored on the left whenever two heroes stand together
   if (entries.length === 2 && entries[1].id === 'doyun') {
     const tmp = entries[0];
     entries[0] = entries[1];
@@ -430,8 +398,8 @@ function renderVnStandingBusts(slide: StorySlide): string {
 
   const slotsHtml = entries
     .map(
-      (e) => `<div class="vn-bust-slot ${e.active ? 'is-active' : 'is-listener'}" data-char="${e.id}" data-emo="${e.emotion}">
-        <img class="vn-bust-img" src="${getStoryPortraitUrl(e.id, e.emotion)}" alt="" draggable="false" decoding="async" />
+      (e) => `<div class="vn-bust-slot ${e.active ? 'is-active' : 'is-listener'}" data-char="${e.id}">
+        <img class="vn-bust-img" src="${STORY_PORTRAITS[e.id]}" alt="" draggable="false" decoding="async" />
       </div>`
     )
     .join('');

@@ -194,6 +194,29 @@ export class SessionClient {
   setLocalActiveRole(roleId: RoleId) {
     this.myRole = roleId;
     if (this.room) {
+      if (this.room.soloSwitchEnabled) {
+        for (const r of ROLE_ORDER) {
+          const slot = this.room.slots[r];
+          if (!slot) continue;
+          slot.moving = false;
+          if (r === roleId) {
+            if (!slot.ownerClientId || slot.ownerClientId === this.clientId) {
+              slot.ownerClientId = this.clientId;
+              slot.isBot = false;
+            }
+          } else if (slot.ownerClientId === this.clientId || !slot.ownerClientId) {
+            slot.ownerClientId = null;
+            slot.isBot = Boolean(this.room.fillBots);
+          }
+        }
+        if (this.transportMode === 'supabase') {
+          this.sendSupabaseBroadcast('room_state', { room: this.room });
+          const slotsSnapshot = structuredClone(this.room.slots);
+          this.enqueueSupabaseUpdate(() => ({ slots: slotsSnapshot }));
+        } else {
+          this.syncBc();
+        }
+      }
       this.emit('role_switched', { roleId });
     }
   }

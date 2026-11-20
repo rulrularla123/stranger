@@ -1,8 +1,9 @@
 // Generates clean transparent upper-body standing illustrations in
-// public/assets/characters/story/*.png for the Zombie-High / RPG-Maker story UI.
+// public/assets/characters/story/*.png from the 4 base LD illustrations in
+// public/assets/characters/ld/.
 //
 // Usage:
-//   node scripts/build-story-portraits.mjs [--raw-dir <dir>] [--preview <out.png>]
+//   node scripts/build-story-portraits.mjs [--preview <out.png>]
 import fs from 'node:fs';
 import path from 'node:path';
 import { PNG } from 'pngjs';
@@ -11,12 +12,6 @@ const ROOT = path.resolve(import.meta.dirname, '..');
 const PUBLIC = path.join(ROOT, 'public');
 const LD_DIR = path.join(PUBLIC, 'assets', 'characters', 'ld');
 const OUT_DIR = path.join(PUBLIC, 'assets', 'characters', 'story');
-
-const rawArgIdx = process.argv.indexOf('--raw-dir');
-const RAW_DIR =
-  rawArgIdx >= 0 && process.argv[rawArgIdx + 1]
-    ? path.resolve(process.argv[rawArgIdx + 1])
-    : '/Users/kimmingun/.gemini/antigravity/brain/a9790075-4522-4683-8909-ab76a397d20a/scratch/story-raw';
 
 const previewArgIdx = process.argv.indexOf('--preview');
 const PREVIEW_OUT =
@@ -43,59 +38,12 @@ const PORTRAIT_SPECS = [
     extraSeeds: [[0.34, 0.45]],
   },
   {
-    name: 'harin_laugh',
-    src: path.join(RAW_DIR, 'harin_laugh.png'),
-    topFrac: 0.02,
-    bottomFrac: 1.0,
-    topPadOut: 28,
-    extraSeeds: [
-      [0.227, 0.474],
-      [0.275, 0.482],
-    ],
-  },
-  {
-    name: 'harin_surprised',
-    src: path.join(RAW_DIR, 'harin_surprised.png'),
-    topFrac: 0.02,
-    bottomFrac: 1.0,
-    topPadOut: 28,
-    extraSeeds: [],
-  },
-  {
-    name: 'harin_serious',
-    src: path.join(RAW_DIR, 'harin_serious.png'),
-    topFrac: 0.02,
-    bottomFrac: 1.0,
-    topPadOut: 28,
-    extraSeeds: [
-      [0.275, 0.97],
-      [0.727, 0.90],
-      [0.702, 0.80],
-    ],
-  },
-  {
     name: 'ian_default',
     src: path.join(LD_DIR, 'phil_ian_ld.png'),
     topFrac: 0.04,
     bottomFrac: 0.57,
     topPadOut: 24,
     extraSeeds: [[0.622, 0.434]],
-  },
-  {
-    name: 'ian_laugh',
-    src: path.join(RAW_DIR, 'ian_laugh.png'),
-    topFrac: 0.02,
-    bottomFrac: 1.0,
-    topPadOut: 24,
-    extraSeeds: [],
-  },
-  {
-    name: 'ian_worried',
-    src: path.join(RAW_DIR, 'ian_worried.png'),
-    topFrac: 0.01,
-    bottomFrac: 1.0,
-    topPadOut: 20,
-    extraSeeds: [[0.745, 0.807]],
   },
   {
     name: 'lin_default',
@@ -109,35 +57,11 @@ const PORTRAIT_SPECS = [
     ],
   },
   {
-    name: 'lin_curious',
-    src: path.join(RAW_DIR, 'lin_curious.png'),
-    topFrac: 0.01,
-    bottomFrac: 1.0,
-    topPadOut: 18,
-    extraSeeds: [[0.68, 0.735]],
-  },
-  {
     name: 'kai_default',
     src: path.join(LD_DIR, 'south_africa_kai_ld.png'),
     topFrac: 0.04,
     bottomFrac: 0.56,
     topPadOut: 26,
-    extraSeeds: [],
-  },
-  {
-    name: 'kai_excited',
-    src: path.join(RAW_DIR, 'kai_excited.png'),
-    topFrac: 0.01,
-    bottomFrac: 1.0,
-    topPadOut: 12,
-    extraSeeds: [],
-  },
-  {
-    name: 'jiho_shy',
-    src: path.join(RAW_DIR, 'jiho_shy.png'),
-    topFrac: 0.02,
-    bottomFrac: 1.0,
-    topPadOut: 28,
     extraSeeds: [],
   },
 ];

@@ -2793,10 +2793,6 @@ kbd {
   pointer-events: none;
 }
 
-.vn-bust-slot[data-emo='excited'] .vn-bust-img {
-  height: 112%;
-}
-
 .vn-bust-slot.is-active .vn-bust-img {
   filter: drop-shadow(0 8px 24px rgba(0, 0, 0, 0.72));
   transform: translateY(0) scale(1.01);

@@ -1,4 +1,4 @@
-import type { MapJson, RadioPacket, RoleId } from '../types/stranger.ts';
+import type { FloorKey, MapJson, RadioPacket, RoleId, RoomState } from '../types/stranger.ts';
 import { ROLES, ROLE_ORDER } from '../data/cMenuTokens.ts';
 import { PUZZLES_BY_ID, getObjectOwnerRole } from '../data/puzzleCatalog.ts';
 import type { SessionClient } from '../net/sessionClient.ts';
@@ -157,7 +157,7 @@ export class BotController {
 
   start() {
     if (this.timerId !== null) return;
-    this.timerId = window.setInterval(() => this.tick(), 260);
+    this.timerId = window.setInterval(() => this.tick(), 110);
   }
 
   stop() {
@@ -167,12 +167,67 @@ export class BotController {
     }
   }
 
+  private isBotControlled(room: RoomState, r: RoleId): boolean {
+    if (r === this.session.getMyRole()) return false;
+    const slot = room.slots[r];
+    if (!slot) return false;
+    if (slot.isBot && !slot.ownerClientId) return true;
+    if (room.fillBots && room.soloSwitchEnabled && slot.ownerClientId === this.session.getClientId()) {
+      return true;
+    }
+    return false;
+  }
+
+  private stepToward(
+    floor: FloorKey,
+    x: number,
+    y: number,
+    targetX: number,
+    targetY: number,
+    maxStep: number
+  ): { x: number; y: number } | null {
+    const dx = targetX - x;
+    const dy = targetY - y;
+    const dist = Math.hypot(dx, dy);
+    if (dist < 0.5) return null;
+    const ux = dx / dist;
+    const uy = dy / dist;
+    const step = Math.min(maxStep, dist);
+
+    // Try straight diagonal, then single-axis slides
+    const directX = x + ux * step;
+    const directY = y + uy * step;
+    if (this.world.canMove(floor, directX, directY, x, y)) return { x: directX, y: directY };
+
+    let movedX = x;
+    let movedY = y;
+    if (Math.abs(ux * step) >= 0.4 && this.world.canMove(floor, directX, y, x, y)) movedX = directX;
+    if (Math.abs(uy * step) >= 0.4 && this.world.canMove(floor, movedX, directY, x, y)) movedY = directY;
+    if (Math.hypot(movedX - x, movedY - y) >= 1.5) return { x: movedX, y: movedY };
+
+    // Bypass corners smoothly along +-45deg / +-90deg vectors
+    const angles = [Math.PI / 4, -Math.PI / 4, Math.PI / 2, -Math.PI / 2];
+    let best: { x: number; y: number; score: number } | null = null;
+    for (const ang of angles) {
+      const cos = Math.cos(ang);
+      const sin = Math.sin(ang);
+      const rx = ux * cos - uy * sin;
+      const ry = ux * sin + uy * cos;
+      const cx = x + rx * step * 0.85;
+      const cy = y + ry * step * 0.85;
+      if (this.world.canMove(floor, cx, cy, x, y)) {
+        const afterDist = Math.hypot(targetX - cx, targetY - cy);
+        if (!best || afterDist < best.score) best = { x: cx, y: cy, score: afterDist };
+      }
+    }
+    return best ? { x: best.x, y: best.y } : null;
+  }
+
   private executeBotHelp(pid: number, helperRole: RoleId): boolean {
     const room = this.session.getRoom();
     const pDef = PUZZLES_BY_ID[pid];
     if (!room || !pDef) return false;
-    const slot = room.slots[helperRole];
-    if (!slot || !slot.isBot || slot.ownerClientId) return false;
+    if (!this.isBotControlled(room, helperRole)) return false;
 
     const script = BOT_HELPER_SCRIPTS[pid]?.[helperRole];
     if (!script) return false;
@@ -221,8 +276,7 @@ export class BotController {
     if (botTargets.size === 0) return;
 
     for (const botRole of botTargets) {
-      const slot = room.slots[botRole];
-      if (!slot || !slot.isBot || slot.ownerClientId) continue;
+      if (!this.isBotControlled(room, botRole)) continue;
 
       // Prefer an unsolved puzzle in the sender's current room where this bot is a helper
       const roomPuzzle = Object.values(PUZZLES_BY_ID).find(
@@ -279,9 +333,7 @@ export class BotController {
       p16.beamReachedAtrium &&
       !p16.hereSent &&
       !room.solvedPids.includes(16) &&
-      activeRole !== 'lin' &&
-      room.slots.lin?.isBot &&
-      !room.slots.lin.ownerClientId &&
+      this.isBotControlled(room, 'lin') &&
       !this.sentClueFor.has('P16:HERE_BOT')
     ) {
       this.sentClueFor.add('P16:HERE_BOT');
@@ -295,22 +347,66 @@ export class BotController {
       (p) => p.floor === activeSlot.floor && p.room === activeSlot.scene && !room.solvedPids.includes(p.id)
     );
 
-    // Free spots beside the player for following bots, so nobody stacks on the player
-    // or on each other (see WorldEngine.findPartySpots).
-    const followers = ROLE_ORDER.filter(
-      (r) => r !== activeRole && room.slots[r]?.isBot && !room.slots[r].ownerClientId
-    );
+    // Free spots beside the player for following bots, assigned with idle hysteresis + nearest neighbor
+    // so bots neither crisscross each other nor dance in place when the player stops.
+    const followers = ROLE_ORDER.filter((r) => this.isBotControlled(room, r));
     const othersHere = ROLE_ORDER.filter((r) => r !== activeRole && !followers.includes(r))
       .map((r) => room.slots[r])
       .filter((s) => s && s.floor === activeSlot.floor && s.scene === activeSlot.scene)
       .map((s) => [s.x, s.y] as [number, number]);
-    const spots = this.world.findPartySpots(activeSlot.floor, activeSlot.x, activeSlot.y, followers.length, othersHere);
-    const formation = new Map<RoleId, [number, number]>(followers.map((r, i) => [r, spots[i]]));
+    const candidates = this.world.findPartySpots(
+      activeSlot.floor,
+      activeSlot.x,
+      activeSlot.y,
+      Math.max(followers.length + 2, 4),
+      othersHere
+    );
+    const placed: [number, number][] = [[activeSlot.x, activeSlot.y], ...othersHere];
+    const formation = new Map<RoleId, [number, number]>();
+    const needAssign: RoleId[] = [];
+
+    for (const r of followers) {
+      const s = room.slots[r];
+      const distLeader = s ? Math.hypot(s.x - activeSlot.x, s.y - activeSlot.y) : Infinity;
+      const validIdleSpot =
+        !activeSlot.moving &&
+        s &&
+        s.floor === activeSlot.floor &&
+        s.scene === activeSlot.scene &&
+        distLeader >= 22 &&
+        distLeader <= 62 &&
+        this.world.canMove(s.floor, s.x, s.y, activeSlot.x, activeSlot.y) &&
+        placed.every(([px, py]) => Math.abs(s.x - px) >= 20 || Math.abs(s.y - py) >= 32);
+      if (validIdleSpot) {
+        formation.set(r, [s.x, s.y]);
+        placed.push([s.x, s.y]);
+      } else {
+        needAssign.push(r);
+      }
+    }
+
+    const available = [...candidates];
+    for (const r of needAssign) {
+      const s = room.slots[r];
+      let bestIdx = 0;
+      let bestDist = Infinity;
+      for (let i = 0; i < available.length; i++) {
+        const [cx, cy] = available[i];
+        if (!placed.every(([px, py]) => Math.abs(cx - px) >= 20 || Math.abs(cy - py) >= 32)) continue;
+        const d = s ? Math.hypot(cx - s.x, cy - s.y) : i;
+        if (d < bestDist) {
+          bestDist = d;
+          bestIdx = i;
+        }
+      }
+      const chosen = available.splice(bestIdx, 1)[0] || [activeSlot.x, activeSlot.y];
+      formation.set(r, chosen);
+      placed.push(chosen);
+    }
 
     for (const r of ROLE_ORDER) {
-      if (r === activeRole) continue;
+      if (!this.isBotControlled(room, r)) continue;
       const slot = room.slots[r];
-      if (!slot || !slot.isBot || slot.ownerClientId) continue;
 
       if (isP16GatherPhase) {
         const [gx, gy] = GATHER_TARGETS[r];
@@ -322,7 +418,7 @@ export class BotController {
         const dy = gy - slot.y;
         const dist = Math.hypot(dx, dy);
         if (dist > 4) {
-          const step = Math.min(dist, 22);
+          const step = Math.min(dist, 14);
           const nx = slot.x + (dx / dist) * step;
           const ny = slot.y + (dy / dist) * step;
           const dir = Math.abs(dx) > Math.abs(dy) ? (dx < 0 ? 'left' : 'right') : dy < 0 ? 'up' : 'down';
@@ -333,11 +429,11 @@ export class BotController {
         continue;
       }
 
-      // Gently move bot to active player's room if separated
+      // Promptly follow active player to the new room if separated
       if (slot.floor !== activeSlot.floor || slot.scene !== activeSlot.scene) {
         const fl = this.mapData.floors[activeSlot.floor];
         const nearScene = fl?.scenes[activeSlot.scene];
-        if (nearScene && Math.random() < 0.35) {
+        if (nearScene) {
           const [tx, ty] = formation.get(r) || [activeSlot.x, activeSlot.y];
           this.session.moveSlot(r, {
             floor: activeSlot.floor,
@@ -370,7 +466,7 @@ export class BotController {
           targetY = pt[1];
           objDist = Math.hypot(targetX - slot.x, targetY - slot.y);
           // Once near its clue/device (or after ~1.6s in the room), inspect it & radio the info!
-          if (objDist <= 38 || ticksHere >= 6) {
+          if (objDist <= 38 || ticksHere >= 15) {
             this.sentClueFor.add(`${helperPuzzle.code}:${r}`);
             this.executeBotHelp(helperPuzzle.id, r);
           }
@@ -390,18 +486,12 @@ export class BotController {
       const dy = targetY - slot.y;
       const dist = Math.hypot(dx, dy);
       if (dist > (following ? 6 : 14)) {
-        // Followers keep up with the player (135 px/s); object walks stay gentle.
-        const step = Math.min(following ? (dist > 90 ? 40 : 30) : 12, dist);
-        const nx = slot.x + (dx / dist) * step;
-        const ny = slot.y + (dy / dist) * step;
-        let movedX = slot.x;
-        let movedY = slot.y;
-        if (this.world.canMove(slot.floor, nx, slot.y, slot.x, slot.y)) movedX = nx;
-        if (this.world.canMove(slot.floor, movedX, ny, slot.x, slot.y)) movedY = ny;
-
-        if (Math.hypot(movedX - slot.x, movedY - slot.y) > 0.5) {
-          const dir = Math.abs(dx) > Math.abs(dy) ? (dx < 0 ? 'left' : 'right') : dy < 0 ? 'up' : 'down';
-          this.session.moveSlot(r, { floor: slot.floor, scene: slot.scene, x: movedX, y: movedY, dir, moving: true });
+        // Match tick step (~123 px/s at 110ms) to WorldEngine's glide speed so motion stays continuous.
+        const maxStep = following ? (dist > 90 ? 18 : 13.5) : 12.5;
+        const moved = this.stepToward(slot.floor, slot.x, slot.y, targetX, targetY, maxStep);
+        if (moved) {
+          const dir = faceToward(slot.x, slot.y, moved.x, moved.y);
+          this.session.moveSlot(r, { floor: slot.floor, scene: slot.scene, x: moved.x, y: moved.y, dir, moving: true });
         } else if (slot.moving) {
           this.session.moveSlot(r, { floor: slot.floor, scene: slot.scene, x: slot.x, y: slot.y, dir: slot.dir, moving: false });
         }

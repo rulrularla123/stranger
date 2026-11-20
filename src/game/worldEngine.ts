@@ -470,7 +470,7 @@ export class WorldEngine {
       if (!dp || r === myRole || dp.floor !== s.floor || dp.scene !== s.scene || dist > 110) {
         this.drawPos[r] = { x: s.x, y: s.y, floor: s.floor, scene: s.scene, gliding: false };
       } else if (dist > 0.5) {
-        const step = Math.min(dist, Math.max(MOVE_SPEED * 1.05, dist * 4) * dt);
+        const step = Math.min(dist, Math.max(MOVE_SPEED * 0.92, dist * 3.5) * dt);
         dp.x += ((s.x - dp.x) / dist) * step;
         dp.y += ((s.y - dp.y) / dist) * step;
         dp.gliding = dist - step > 0.5;
@@ -481,10 +481,11 @@ export class WorldEngine {
       }
     }
 
-    // Advance walk clocks for all moving characters (local + remote + bots)
+    // Advance walk clocks: active player uses input state, teammates animate only while gliding smoothly
     for (const r of ROLE_ORDER) {
       const s = room.slots[r];
-      if (s.moving || this.drawPos[r]?.gliding) this.walkTimers[r] += dt;
+      const activelyMoving = r === myRole ? s.moving : Boolean(this.drawPos[r]?.gliding);
+      if (activelyMoving) this.walkTimers[r] += dt;
       else this.walkTimers[r] = 0;
     }
 
@@ -792,7 +793,8 @@ export class WorldEngine {
   private visualSlot(slot: CharacterSlot): CharacterSlot {
     const dp = this.drawPos[slot.roleId];
     if (!dp || dp.floor !== slot.floor || dp.scene !== slot.scene) return slot;
-    return { ...slot, x: dp.x, y: dp.y, moving: slot.moving || dp.gliding };
+    const isActive = slot.roleId === this.session.getMyRole();
+    return { ...slot, x: dp.x, y: dp.y, moving: isActive ? slot.moving : dp.gliding };
   }
 
   /**
